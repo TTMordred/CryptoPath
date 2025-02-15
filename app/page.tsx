@@ -88,7 +88,7 @@ const HomePage = () => {
           </p>
           <div className="flex justify-center">
             <div className="relative">
-              <video className="max-w-[800px] h-[650px] rounded-lg border-4 border-black p-1" autoPlay loop muted>
+              <video className="max-w-[800px] rounded-lg border-4 border-black p-1" autoPlay loop muted>
                 <source src="/Img/Videos/video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
