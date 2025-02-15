@@ -120,7 +120,7 @@ A Blockchain Transaction Information Visualization System designed to simplify t
 bash    
 
 #### Clone the repository
-git clone https://github.com/your-username/cryptopath.git
+git clone https://github.com/TTMordred/CryptoPath.git
 
 #### Navigate to project directory
 cd cryptopath
