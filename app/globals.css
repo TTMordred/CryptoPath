@@ -2,15 +2,206 @@
 @tailwind components;
 @tailwind utilities;
 
+/* General Styles */
+body {
+  background-color: black;
+  color: white;
+  font-family: sans-serif;
+  overflow-x: hidden;
+}
+
+/* Button Styles */
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: 1px solid white;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+#btn-sgd {
+  background-color: white;
+  color: black;
+}
+
+#btn-web3 {
+  background-color: transparent;
+  color: white;
+}
+
+.custom-image {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Video Container */
+.video-container {
+  background-color: #2d2d2d;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+
+/* Trusted Logo Styles */
+.trusted-logo {
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Test btn animation */
+.btn:hover {
+  border-radius: 0.9rem;
+}
+
+#btn-try:active,
+.btn:active,
+#btn-learnmore:active {
+  transform: scale(0.7);
+}
+
+/* Nav */
+#logo {
+  width: fit-content;
+  animation: slidein 2s forwards;
+  color: #ffffff;
+  margin-right: auto;
+  margin-left: 1rem;
+}
+#logo:hover {
+  animation: jelly 3s ease-in-out;
+  color: #0096FF;
+}
+#logo > h1 {
+  font-size: 2rem;
+}
+
+nav a {
+  position: relative;
+  padding: 1rem;
+  margin: 1rem;
+  transition: 0.2s;
+  animation: appear 2s forwards;
+}
+
+/* This creates a bar below elements in navigation menu */
+nav a::after {
+  content: "";
+  height: 3px;
+  width: 0;
+  background: #ffffff;
+  position: absolute;
+  left: 0;
+  bottom: -0.001rem;
+  transition: 0.5s;
+}
+nav a:hover::after {
+  width: 100%;
+}
+
+/* Display the icon for hamburger menu */
+#menu label {
+  position: absolute;
+  top: 0vh;
+  right: 0vw;
+  font-size: 1rem;
+  display: none;
+  color: #ffffff;
+  margin: 2rem;
+  animation: appear 2s ease-in-out;
+}
+
+/* No display input checkbox */
+.hamburger-menu-container input {
+  display: none;
+}
+.hamburger-menu {
+  display: none;
+  position: absolute;
+  right: 3rem;
+  top: 15vh;
+  background-color: #000000;
+  height: 25vh;
+  padding: 1rem;
+  border-radius: 20px;
+  overflow: auto;
+  z-index: 11111;
+}
+/* Only appear when checkbox is checked */
+.hamburger-menu-container input:checked + .hamburger-menu {
+  display: block;
+}
+/* Align the item in the center */
+.hamburger-menu nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+@media screen and (max-width: 750px) {
+  #menu label {
+    display: block;
+  }
+  #logo > h1 {
+    font-size: 1.5rem;
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
+@keyframes jelly {
+  0% {
+    transform: scale(1);
   }
-  body {
-    @apply bg-background text-foreground;
+  20% {
+    transform: scale(1.05);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+  70% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
   }
 }
-
+@keyframes hero-appear {
+  from {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes slidein {
+  from {
+    transform: translateX(-3rem);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes active {
+  0% {
+    border-radius: 0px;
+  }
+  50% {
+    border-radius: 20px;
+  }
+  100% {
+    border-radius: 0px;
+  }
+}

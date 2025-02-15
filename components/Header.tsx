@@ -1,57 +1,177 @@
-"use client"
+"use client"; // Ensures this runs on the client side
+import { useState } from "react";
+import Link from "next/link";
+import { useRef } from "react";
+import { Menu, X } from "lucide-react"; // Icons for open/close
+import { useRouter } from "next/navigation";
+import { Search } from "lucide-react"
+import { useEffect } from "react";
 
-import { MoonIcon, SunIcon } from "lucide-react"
-import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
-import { useEffect, useState } from "react"
 
-export default function Header() {
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+const Header = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [address, setAddress] = useState("")
+  const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<{ name: string } | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('currentUser');
+      if (storedUser) {
+        setCurrentUser(JSON.parse(storedUser));
+      }
+    }
+  }, []);
 
-  if (!mounted) {
-    return null
-  }
+  const handleSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (address) {
+      router.push(`/search/?address=${address}`);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    setCurrentUser(null);
+    setDropdownOpen(false);
+    window.location.href = "/login";
+  };
 
   return (
-    <header className="bg-white dark:bg-theme-navy border-b border-gray-200 dark:border-theme-blue shadow-md">
-      <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-        <div className="flex items-center space-x-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="w-8 h-8 text-theme-orange"
-          >
-            <path d="M11.584 2.376a.75.75 0 01.832 0l9 6a.75.75 0 11-.832 1.248L12 3.901 3.416 9.624a.75.75 0 01-.832-1.248l9-6z" />
-            <path
-              fillRule="evenodd"
-              d="M20.25 10.332v9.918H21a.75.75 0 010 1.5H3a.75.75 0 010-1.5h.75v-9.918a.75.75 0 01.634-.74A49.109 49.109 0 0112 9c2.59 0 5.134.202 7.616.592a.75.75 0 01.634.74zm-7.5 2.418a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75zm3-.75a.75.75 0 01.75.75v6.75a.75.75 0 01-1.5 0v-6.75a.75.75 0 01.75-.75zM9 12.75a.75.75 0 00-1.5 0v6.75a.75.75 0 001.5 0v-6.75z"
-              clipRule="evenodd"
-            />
-            <path d="M12 7.875a1.125 1.125 0 100-2.25 1.125 1.125 0 000 2.25z" />
-          </svg>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">CryptoPath</h1>
-        </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-          className="hover:bg-gray-100 dark:hover:bg-theme-blue"
-        >
-          {theme === "dark" ? (
-            <SunIcon className="h-[1.2rem] w-[1.2rem] text-theme-orange" />
-          ) : (
-            <MoonIcon className="h-[1.2rem] w-[1.2rem]" />
-          )}
-          <span className="sr-only">Toggle theme</span>
-        </Button>
+    <header className="flex items-center bg-black h-16 px-4">
+      {/* Logo */}
+      <div className="text-white mr-auto ml-4 text-3xl font-bold">
+        <h1 className = "ml-8">
+        <Link href = "/">Crypto<span className="text-[#F5B056]">Path<sub>&copy;</sub></span></Link>
+        </h1>
       </div>
-    </header>
-  )
-}
 
+      {/* Desktop Navigation */}
+      <nav className="hidden md:flex justify-center items-center space-x-6">
+        <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
+          Home
+        </Link>
+        <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
+          Transactions
+        </Link>
+        <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
+          Support
+        </a>
+        <form onSubmit={handleSearch} className="relative transition">
+          <input
+            type="text"
+            placeholder="Search wallet..."
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none"
+          />
+          <button type="submit" className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16}/>
+          </button>
+        </form>
+        {currentUser ? 
+              (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center text-white text-xs uppercase hover:text-[#F5B056] transition"
+                  >
+                      {currentUser.name}
+                    <svg
+                      className="w-4 h-4 ml-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                  {dropdownOpen && 
+                    (
+                      <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-20">
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )
+                  }
+                </div>
+              ) : 
+              (
+                <Link href="/login" className="text-white text-sm hover:text-[#F5B056] transition">
+                  Login
+                </Link>
+              )
+            }
+      </nav>
+
+      {/* Mobile Menu Button */}
+      <button
+        className="md:hidden text-white focus:outline-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        {isOpen ? <X size={28} /> : <Menu size={28} />}
+      </button>
+
+      {/* Mobile Menu */}
+      {isOpen && (
+        <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 shadow-lg md:hidden z-50 w-screen">
+          <nav className="flex flex-col space-y-4 text-center text-xl">
+            <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+              Home
+            </Link>
+            <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+              Transactions
+            </Link>
+            <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+              Support
+            </a>
+            <form onSubmit={handleSearch} className="relative flex justify-center mt-4 pt-2 text-xs">
+              <input
+                type="text"
+                placeholder="Search wallet..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none w-3/4"
+              />
+              <button type="submit" className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={25} />
+              </button>
+            </form>
+            {currentUser ? 
+              (
+                <div className="relative flex justify-center mt-4 pt-2">
+                  <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
+                    {currentUser.name}
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition"
+                  >
+                    Logout
+                  </button>
+                </div>
+
+              ) : 
+              (
+                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">
+                  Login
+                </Link>
+              )
+            }
+          </nav>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;
