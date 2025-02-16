@@ -119,12 +119,47 @@ export default function TransactionTable() {
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="all" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all" className="border-b border-white mx-3">All</TabsTrigger>
-            <TabsTrigger value="transfer" className="border-b border-white mx-3">Transfer</TabsTrigger>
-            <TabsTrigger value="swap" className="border-b border-white mx-3">Swap</TabsTrigger>
-            <TabsTrigger value="inflow" className="border-b border-white mx-3">Inflow</TabsTrigger>
-            <TabsTrigger value="outflow" className="border-b border-white mx-3">Outflow</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5 gap-2 p-1 bg-gradient-to-r from-gray-900 to-black rounded-lg">
+            <TabsTrigger 
+              value="all"
+              className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200 
+                hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              All
+            </TabsTrigger>
+            <TabsTrigger 
+              value="transfer"
+              className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200
+                hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              Transfer
+            </TabsTrigger>
+            <TabsTrigger 
+              value="swap"
+              className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200
+                hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              Swap
+            </TabsTrigger>
+            <TabsTrigger 
+              value="inflow"
+              className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200
+                hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              Inflow
+            </TabsTrigger>
+            <TabsTrigger 
+              value="outflow"
+              className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200
+                hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              Outflow
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="all">{renderTransactionTable(transactions)}</TabsContent>
           <TabsContent value="transfer">
@@ -140,11 +175,29 @@ export default function TransactionTable() {
             {renderTransactionTable(transactions.filter((tx) => tx.type === "outflow"))}
           </TabsContent>
         </Tabs>
-        <div className="flex justify-between mt-4">
-          <Button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+        <div className="flex items-center justify-between py-4 px-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
+              hover:bg-[#E69A45]
+              disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
+          >
             Previous
           </Button>
-          <Button onClick={() => setPage((p) => p + 1)}>Next</Button>
+          <Button
+            variant="outline" 
+            size="sm"
+            onClick={() => setPage((p) => p + 1)}
+            disabled={transactions.length < 20}
+            className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
+              hover:bg-[#E69A45]
+              disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
+          >
+            Next
+          </Button>
         </div>
       </CardContent>
     </Card>
