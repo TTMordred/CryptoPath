@@ -120,11 +120,11 @@ export default function TransactionTable() {
       <CardContent>
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="transfer">Transfer</TabsTrigger>
-            <TabsTrigger value="swap">Swap</TabsTrigger>
-            <TabsTrigger value="inflow">Inflow</TabsTrigger>
-            <TabsTrigger value="outflow">Outflow</TabsTrigger>
+            <TabsTrigger value="all" className="border-b border-white mx-3">All</TabsTrigger>
+            <TabsTrigger value="transfer" className="border-b border-white mx-3">Transfer</TabsTrigger>
+            <TabsTrigger value="swap" className="border-b border-white mx-3">Swap</TabsTrigger>
+            <TabsTrigger value="inflow" className="border-b border-white mx-3">Inflow</TabsTrigger>
+            <TabsTrigger value="outflow" className="border-b border-white mx-3">Outflow</TabsTrigger>
           </TabsList>
           <TabsContent value="all">{renderTransactionTable(transactions)}</TabsContent>
           <TabsContent value="transfer">
