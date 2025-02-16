@@ -54,28 +54,30 @@ const HomePage = () => {
 
       <div className="relative z-10 bg-transparent">
         {/* Description Section */}
-        <div className="container mx-auto px-4 py-12" data-aos="fade-up">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="text-center md:text-left md:w-1/2">
-              <h1 className="text-5xl md:text-6xl font-bold leading-tight text-center">
-                Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span>
-              </h1>
-              <div className="mt-6 flex flex-col md:flex-row gap-4 md:ml-20">
-                <input
-                  type="email"
-                  placeholder="Email address"
-                  className="px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border border-gray-700 text-white focus:outline-none"
-                />
-                <button className="bg-[#F5B056] text-black font-semibold px-6 py-3 rounded-full shadow-md hover:bg-gray-200 transition">
-                  Try CryptoPath
-                </button>
+        <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="text-center md:text-left md:w-1/2 md:pl-12">
+                <h1 className="text-5xl md:text-6xl font-bold leading-tight text-left ml-40 mb-20">
+                  Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span>
+                </h1>
+                <div className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    className="px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border border-gray-700 text-white focus:outline-none"
+                  />
+                  <button className="bg-[#F5B056] text-black font-semibold px-6 py-3 rounded-full shadow-md hover:bg-gray-200 transition">
+                    Try CryptoPath
+                  </button>
+                </div>
               </div>
-            </div>
-            <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
-              <video className="max-w-[250px] mx-auto" autoPlay loop muted>
-                <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
-                <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
-              </video>
+              <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
+                <video className="max-w-[250px] mx-auto" autoPlay loop muted>
+                  <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
+                  <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
@@ -87,8 +89,13 @@ const HomePage = () => {
             Get the lowest fees, fastest transactions, powerful APIs, and more
           </p>
           <div className="flex justify-center">
-            <div className="relative">
-              <video className="max-w-[800px] rounded-lg border-4 border-black p-1" autoPlay loop muted>
+            <div className="video-container">
+              <video 
+                className="w-full rounded-lg border-4 border-black" 
+                autoPlay 
+                loop 
+                muted
+              >
                 <source src="/Img/Videos/video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>

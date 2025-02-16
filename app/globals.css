@@ -40,6 +40,10 @@ body {
   background-color: #2d2d2d;
   border-radius: 0.375rem;
   overflow: hidden;
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 /* Trusted Logo Styles */
@@ -146,6 +150,18 @@ nav a:hover::after {
   }
   #logo > h1 {
     font-size: 1.5rem;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .video-container {
+    width: 90%;
+    max-width: 100%;
+  }
+  
+  .video-container video {
+    width: 100%;
+    height: auto;
   }
 }
 
