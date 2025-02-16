@@ -127,6 +127,7 @@ cd cryptopath
 
 #### Install dependencies
 npm install
+npm install next --legacy-peer-deps
 
 #### Set up environment variables
 echo "ETHERSCAN_API_KEY=6U137E3DGFMCCBQA8E3CAR1P1UW7EV8A6S" > .env.local
