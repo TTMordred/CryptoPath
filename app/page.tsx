@@ -58,7 +58,7 @@ const HomePage = () => {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row items-center">
               <div className="text-center md:text-left md:w-1/2 md:pl-12">
-                <h1 className="text-5xl md:text-6xl font-bold leading-tight text-left ml-40 mb-20">
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight text-center md:text-left mx-4 md:ml-40 mb-10 md:mb-20">
                   Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span>
                 </h1>
                 <div className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
