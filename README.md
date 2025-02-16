@@ -127,6 +127,7 @@ cd cryptopath
 
 #### Install dependencies
 npm install
+
 npm install next --legacy-peer-deps
 
 #### Set up environment variables
