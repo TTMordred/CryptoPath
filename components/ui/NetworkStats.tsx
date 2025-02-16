@@ -32,7 +32,7 @@ export default function TransactionExplorer() {
 
 
   // Etherscan API configuration
-  const ETHERSCAN_API_KEY = "RQ1E2Y5VTM4EKCNZTDHD58UCIXMPD34N1J"; // Replace with your API key
+  const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY; // Replace with your API key
   const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
 
   // Fetch network statistics
