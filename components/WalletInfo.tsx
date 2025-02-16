@@ -73,27 +73,33 @@ export default function WalletInfo() {
         <CardTitle>Wallet Information</CardTitle>
       </CardHeader>
       <CardContent>
-        <p>
-          <Wallet className="w-5 h-5 text-[#F5B056]" />
-          <strong>Address:</strong>{" "}
-          <span className="text-[#F5B056]">{walletData.address}</span>
-        </p>
-        <p>
-          <Coins className="w-5 h-5 text-gray-500" />
-          <strong> Balance:</strong> {walletData.balance}
-        </p>
-        {usdValue !== null && (
-          <p>
-            <DollarSign className="w-5 h-5 text-green-500" />
-            <strong> USD Value:</strong> ${usdValue.toFixed(2)}
-          </p>
-        )}
-        <p>
-          <ListOrdered className="w-5 h-5 text-blue-500" />
-          <strong> Transaction Count:</strong> {walletData.transactionCount}
-        </p>
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-800/50 transition-colors">
+            <Wallet className="w-6 h-6 text-[#F5B056]" />
+            <p>
+              <strong>Address:</strong>{" "}
+              <span className="text-[#F5B056]">{walletData.address}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-800/50 transition-colors">
+            <Coins className="w-6 h-6 text-gray-500" />
+            <p><strong>Balance:</strong> {walletData.balance}</p>
+          </div>
+
+          {usdValue !== null && (
+            <div className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-800/50 transition-colors">
+              <DollarSign className="w-6 h-6 text-green-500" />
+              <p><strong>USD Value:</strong> ${usdValue.toFixed(2)}</p>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-800/50 transition-colors">
+            <ListOrdered className="w-6 h-6 text-blue-500" />
+            <p><strong>Transaction Count:</strong> {walletData.transactionCount}</p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
 }
-
