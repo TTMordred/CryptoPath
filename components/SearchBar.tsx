@@ -29,7 +29,7 @@ export default function SearchBar() {
           className="pl-10 pr-4 py-2 w-full"
         />
       </div>
-      <Button type="submit">Search</Button>
+      <Button type="submit" className = "bg-[#F5B056]">Search</Button>
     </form>
   )
 }

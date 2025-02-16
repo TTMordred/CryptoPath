@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { Coins } from "lucide-react"
 
 interface TokenBalance {
   token: string
@@ -69,7 +70,7 @@ export default function Portfolio() {
         <table className="w-full">
           <thead>
             <tr>
-              <th className="text-left">Token</th>
+              <th className="text-left"><Coins className="w-5 h-5 text-yellow-500" />Token</th>
               <th className="text-right">Balance</th>
               <th className="text-right">USD Value</th>
             </tr>

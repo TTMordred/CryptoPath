@@ -25,7 +25,7 @@ A Blockchain Transaction Information Visualization System designed to simplify t
   *Role:* Back-end & Data Integration Lead
 
 - **Nguyen Minh Duy**  
-  *Student ID:* [To be added]  
+  *Student ID:* 104974743 
   *Role:* Full-Stack Developer / UI & UX
 
 ## 3. Project Structure

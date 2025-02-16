@@ -13,8 +13,8 @@ export default function Transactions() {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-theme-navy">
-      <main className="container mx-auto p-4 text-black">
+    <div className="min-h-screen text-white">
+      <main className="container mx-auto p-4">
         <div className="mb-8">
           <SearchBar />
         </div>

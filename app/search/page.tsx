@@ -1,6 +1,7 @@
 
 import React, { Suspense } from "react";
 import dynamic from "next/dynamic";
+import ParticlesBackground from "@/components/ParticlesBackground";
 
 // Dynamically import the client component with suspense enabled.
 const TransactionContent = dynamic(
@@ -11,6 +12,7 @@ const TransactionContent = dynamic(
 export default function SearchPage() {
   return (
     <Suspense fallback={<div>Loading search page...</div>}>
+      <ParticlesBackground/>
       <TransactionContent />
     </Suspense>
   );

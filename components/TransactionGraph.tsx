@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2} from "lucide-react";
 
 // Dynamically import ForceGraph2D (without generic type arguments)
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
@@ -165,7 +165,7 @@ export default function TransactionGraph() {
   }
 
   return (
-    <Card className="h-[540px]">
+    <Card className="h-[540px] bg-gray-900">
       <CardHeader>
         <CardTitle>Transaction Graph</CardTitle>
       </CardHeader>
@@ -191,13 +191,13 @@ export default function TransactionGraph() {
                   ? "rgba(255, 0, 0, 0.5)"
                   : "rgba(255, 255, 0, 0.5)";
               ctx.fill();
-              ctx.fillStyle = "black";
+              ctx.fillStyle = "white";
               ctx.fillText(label, x, y);
             }) as any
           }
           nodeRelSize={6}
           linkWidth={1}
-          linkColor={() => "rgba(0,0,0,0.2)"}
+          linkColor={() => "rgb(255, 255, 255)"}
           linkDirectionalParticles={2}
           linkDirectionalParticleWidth={3}
           linkDirectionalParticleSpeed={0.005}

@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
+import { Wallet, Coins, DollarSign, ListOrdered } from "lucide-react"
 
 interface WalletData {
   address: string
@@ -73,19 +74,23 @@ export default function WalletInfo() {
       </CardHeader>
       <CardContent>
         <p>
+          <Wallet className="w-5 h-5 text-[#F5B056]" />
           <strong>Address:</strong>{" "}
           <span className="text-[#F5B056]">{walletData.address}</span>
         </p>
         <p>
-          <strong>Balance:</strong> {walletData.balance}
+          <Coins className="w-5 h-5 text-gray-500" />
+          <strong> Balance:</strong> {walletData.balance}
         </p>
         {usdValue !== null && (
           <p>
-            <strong>USD Value:</strong> ${usdValue.toFixed(2)}
+            <DollarSign className="w-5 h-5 text-green-500" />
+            <strong> USD Value:</strong> ${usdValue.toFixed(2)}
           </p>
         )}
         <p>
-          <strong>Transaction Count:</strong> {walletData.transactionCount}
+          <ListOrdered className="w-5 h-5 text-blue-500" />
+          <strong> Transaction Count:</strong> {walletData.transactionCount}
         </p>
       </CardContent>
     </Card>
