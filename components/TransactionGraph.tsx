@@ -204,7 +204,7 @@ export default function TransactionGraph() {
           d3VelocityDecay={0.3}
           d3AlphaDecay={0.01}
           onNodeClick={handleNodeClick}
-          width={800}
+          width={580}
           height={440}
         />
       </CardContent>
