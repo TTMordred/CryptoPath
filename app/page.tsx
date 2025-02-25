@@ -67,7 +67,7 @@ const HomePage = () => {
                     placeholder="Email address"
                     className="px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border border-gray-700 text-white focus:outline-none"
                   />
-                  <button className="bg-[#F5B056] text-black font-semibold px-6 py-3 rounded-full shadow-md hover:bg-gray-200 transition">
+                  <button className="cp-button cp-button--primary">
                     Try CryptoPath
                   </button>
                 </div>

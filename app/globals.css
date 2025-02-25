@@ -2,222 +2,315 @@
 @tailwind components;
 @tailwind utilities;
 
-/* General Styles */
-body {
-  background-color: black;
-  color: white;
-  font-family: sans-serif;
-  overflow-x: hidden;
-}
+/**
+ * CryptoPath Design System
+ * 
+ * Naming convention:
+ * - cp-* for component blocks
+ * - cp-*__* for component elements
+ * - cp-*--* for component modifiers
+ */
 
-/* Button Styles */
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: 1px solid white;
-  border-radius: 0.375rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-#btn-sgd {
-  background-color: white;
-  color: black;
-}
-
-#btn-web3 {
-  background-color: transparent;
-  color: white;
-}
-
-.custom-image {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Video Container */
-.video-container {
-  background-color: #2d2d2d;
-  border-radius: 0.375rem;
-  overflow: hidden;
-  position: relative;
-  width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
-}
-
-/* Trusted Logo Styles */
-.trusted-logo {
-  background-color: #ffffff;
-  padding: 1rem;
-  border-radius: 0.375rem;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-/* Test btn animation */
-.btn:hover {
-  border-radius: 0.9rem;
-}
-
-#btn-try:active,
-.btn:active,
-#btn-learnmore:active {
-  transform: scale(0.7);
-}
-
-/* Nav */
-#logo {
-  width: fit-content;
-  animation: slidein 2s forwards;
-  color: #ffffff;
-  margin-right: auto;
-  margin-left: 1rem;
-}
-#logo:hover {
-  animation: jelly 3s ease-in-out;
-  color: #0096FF;
-}
-#logo > h1 {
-  font-size: 2rem;
-}
-
-nav a {
-  position: relative;
-  padding: 1rem;
-  margin: 1rem;
-  transition: 0.2s;
-  animation: appear 2s forwards;
-}
-
-/* This creates a bar below elements in navigation menu */
-nav a::after {
-  content: "";
-  height: 3px;
-  width: 0;
-  background: #ffffff;
-  position: absolute;
-  left: 0;
-  bottom: -0.001rem;
-  transition: 0.5s;
-}
-nav a:hover::after {
-  width: 100%;
-}
-
-/* Display the icon for hamburger menu */
-#menu label {
-  position: absolute;
-  top: 0vh;
-  right: 0vw;
-  font-size: 1rem;
-  display: none;
-  color: #ffffff;
-  margin: 2rem;
-  animation: appear 2s ease-in-out;
-}
-
-/* No display input checkbox */
-.hamburger-menu-container input {
-  display: none;
-}
-.hamburger-menu {
-  display: none;
-  position: absolute;
-  right: 3rem;
-  top: 15vh;
-  background-color: #000000;
-  height: 25vh;
-  padding: 1rem;
-  border-radius: 20px;
-  overflow: auto;
-  z-index: 11111;
-}
-/* Only appear when checkbox is checked */
-.hamburger-menu-container input:checked + .hamburger-menu {
-  display: block;
-}
-/* Align the item in the center */
-.hamburger-menu nav {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-@media screen and (max-width: 750px) {
-  #menu label {
-    display: block;
-  }
-  #logo > h1 {
-    font-size: 1.5rem;
+/* ======================================
+ * Base Styles
+ * ====================================== */
+@layer base {
+  body {
+    @apply bg-black text-white font-sans overflow-x-hidden;
   }
 }
 
-@media screen and (max-width: 768px) {
-  .video-container {
-    width: 90%;
-    max-width: 100%;
+@layer components {
+  /* ======================================
+   * Layout Components
+   * ====================================== */
+  .cp-container {
+    @apply container mx-auto px-4;
   }
   
-  .video-container video {
-    width: 100%;
-    height: auto;
+  .cp-section {
+    @apply py-12;
   }
+  
+  .cp-grid {
+    @apply grid grid-cols-1 md:grid-cols-3 gap-6;
+  }
+  
+  /* ======================================
+   * Typography System
+   * ====================================== */
+  .cp-heading-1 {
+    @apply text-4xl font-bold mb-4;
+  }
+  
+  .cp-heading-2 {
+    @apply text-3xl font-bold text-center mb-8;
+  }
+  
+  .cp-text-accent {
+    @apply text-[#F5B056];
+  }
+  
+  .cp-body-text {
+    @apply text-lg mb-6;
+  }
+  
+  /* ======================================
+   * Button System
+   * ====================================== */
+  .cp-button {
+    @apply px-6 py-3 rounded-lg font-semibold transition cursor-pointer;
+  }
+  
+  .cp-button--primary {
+    @apply bg-[#F5B056] text-black hover:bg-gray-200;
+  }
+  
+  .cp-button--secondary {
+    @apply bg-transparent text-white border border-white hover:border-[#F5B056] hover:text-[#F5B056];
+  }
+  
+  .cp-button--rounded {
+    @apply rounded-full;
+  }
+  
+  /* Legacy button styles - consider migrating to cp-button system */
+  .btn {
+    @apply py-3 px-6 border border-white rounded-md font-semibold cursor-pointer transition-all duration-200;
+  }
+  
+  .btn:hover {
+    @apply rounded-[0.9rem];
+  }
+  
+  .btn:active {
+    @apply scale-70;
+  }
+  
+  #btn-sgd {
+    @apply bg-white text-black;
+  }
+  
+  #btn-web3 {
+    @apply bg-transparent text-white;
+  }
+  
+  /* ======================================
+   * Card System
+   * ====================================== */
+  .cp-card {
+    @apply rounded-lg shadow-md overflow-hidden;
+  }
+  
+  .cp-card--dark {
+    @apply bg-black text-white border border-gray-700;
+  }
+  
+  .cp-card__header {
+    @apply p-6;
+  }
+  
+  .cp-card__content {
+    @apply p-6 pt-0;
+  }
+  
+  .cp-card__footer {
+    @apply p-6 pt-0 flex items-center;
+  }
+  
+  /* ======================================
+   * Form System
+   * ====================================== */
+  .cp-form-group {
+    @apply grid gap-2 mb-4;
+  }
+  
+  .cp-label {
+    @apply text-sm font-medium text-white;
+  }
+  
+  .cp-input {
+    @apply px-4 py-2 rounded-md focus:outline-none;
+  }
+  
+  .cp-input--dark {
+    @apply bg-gray-900 border border-gray-700 text-white;
+  }
+  
+  /* ======================================
+   * Media Components
+   * ====================================== */
+  .cp-video-container {
+    @apply bg-[#2d2d2d] rounded-md overflow-hidden relative w-full max-w-[800px] mx-auto;
+  }
+  
+  /* Legacy video container - consider migrating to cp-video-container */
+  .video-container {
+    @apply bg-[#2d2d2d] rounded-md overflow-hidden relative w-full max-w-[800px] mx-auto;
+  }
+  
+  @media screen and (max-width: 768px) {
+    .video-container {
+      @apply w-[90%] max-w-full;
+    }
+    
+    .video-container video {
+      @apply w-full h-auto;
+    }
+  }
+  
+  /* ======================================
+   * Brand Components
+   * ====================================== */
+  .cp-logo {
+    @apply font-bold text-3xl;
+  }
+  
+  .cp-logo__accent {
+    @apply text-[#F5B056];
+  }
+  
+  /* Legacy logo styles - consider migrating to cp-logo system */
+  #logo {
+    @apply w-fit mr-auto ml-4 text-white;
+    animation: slidein 2s forwards;
+  }
+  
+  #logo:hover {
+    @apply text-[#0096FF];
+    animation: jelly 3s ease-in-out;
+  }
+  
+  #logo > h1 {
+    @apply text-2xl;
+  }
+  
+  @media screen and (max-width: 750px) {
+    #logo > h1 {
+      @apply text-xl;
+    }
+  }
+  
+  /* ======================================
+   * Partner Components
+   * ====================================== */
+  .cp-trusted-partner {
+    @apply bg-white p-4 rounded-md shadow-md text-center;
+  }
+  
+  /* Legacy trusted logo styles - consider migrating to cp-trusted-partner */
+  .trusted-logo {
+    @apply bg-white p-4 rounded-md shadow-md text-center;
+  }
+  
+  /* ======================================
+   * Navigation
+   * ====================================== */
+  .cp-nav-link {
+    @apply text-white text-sm hover:text-[#F5B056] transition relative;
+  }
+  
+  .cp-nav-link::after {
+    @apply content-[""] h-[3px] w-0 bg-white absolute left-0 bottom-0 transition-all duration-500;
+  }
+  
+  .cp-nav-link:hover::after {
+    @apply w-full;
+  }
+  
+  /* Legacy navigation styles - consider migrating to cp-nav-link */
+  nav a {
+    @apply relative p-4 m-4 transition-all duration-200;
+    animation: appear 2s forwards;
+  }
+  
+  nav a::after {
+    @apply content-[""] h-[3px] w-0 bg-white absolute left-0 bottom-0 transition-all duration-500;
+  }
+  
+  nav a:hover::after {
+    @apply w-full;
+  }
+  
+  /* ======================================
+   * Mobile Menu
+   * ====================================== */
+  #menu label {
+    @apply absolute top-0 right-0 text-base hidden text-white m-8;
+    animation: appear 2s ease-in-out;
+  }
+  
+  .hamburger-menu-container input {
+    @apply hidden;
+  }
+  
+  .hamburger-menu {
+    @apply hidden absolute right-12 top-[15vh] bg-black h-[25vh] p-4 rounded-[20px] overflow-auto z-[11111];
+  }
+  
+  .hamburger-menu-container input:checked + .hamburger-menu {
+    @apply block;
+  }
+  
+  .hamburger-menu nav {
+    @apply flex flex-col items-center justify-center;
+  }
+  
+  @media screen and (max-width: 750px) {
+    #menu label {
+      @apply block;
+    }
+  }
+  
+  /* ======================================
+   * Utility Classes
+   * ====================================== */
+  .cp-fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .cp-animate-pulse {
+    @apply animate-pulse;
+  }
+  
+  .custom-image {
+    @apply max-w-full h-auto;
+  }
+}
+
+/* ======================================
+ * Animation Keyframes
+ * ====================================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes jelly {
-  0% {
-    transform: scale(1);
-  }
-  20% {
-    transform: scale(1.05);
-  }
-  50% {
-    transform: scale(0.9);
-  }
-  70% {
-    transform: scale(1.03);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  20% { transform: scale(1.05); }
+  50% { transform: scale(0.9); }
+  70% { transform: scale(1.03); }
+  100% { transform: scale(1); }
 }
+
 @keyframes hero-appear {
-  from {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
+  from { transform: scale(1.4); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
+
 @keyframes slidein {
-  from {
-    transform: translateX(-3rem);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(-3rem); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
 }
+
 @keyframes appear {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
+
 @keyframes active {
-  0% {
-    border-radius: 0px;
-  }
-  50% {
-    border-radius: 20px;
-  }
-  100% {
-    border-radius: 0px;
-  }
+  0% { border-radius: 0px; }
+  50% { border-radius: 20px; }
+  100% { border-radius: 0px; }
 }
