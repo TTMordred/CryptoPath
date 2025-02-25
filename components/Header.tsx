@@ -6,6 +6,7 @@ import { Menu, X } from "lucide-react"; // Icons for open/close
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react"
 import { useEffect } from "react";
+import Image from "next/image";
 
 
 const Header = () => {
@@ -43,8 +44,17 @@ const Header = () => {
     <header className="flex items-center bg-black h-16 px-4">
       {/* Logo */}
       <div className="text-white mr-auto ml-4 text-3xl font-bold">
-        <h1 className = "ml-8">
-        <Link href = "/">Crypto<span className="text-[#F5B056]">Path<sub>&copy;</sub></span></Link>
+        <h1 className="ml-8">
+          <Link href="/">
+            <Image
+              src="/Img/logo/logo2.png"
+              alt="CryptoPath Logo"
+              width={75}
+              height={75}
+              className="inline-block mr-2"
+            />
+            Crypto<span className="text-[#F5B056]">Path<sub>&copy;</sub></span>
+          </Link>
         </h1>
       </div>
 

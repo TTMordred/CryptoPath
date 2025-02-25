@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "CryptoPath",
   description: "Create by members of group 3",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({
