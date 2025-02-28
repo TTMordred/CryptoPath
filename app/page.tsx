@@ -7,6 +7,7 @@ import ParticlesBackground from '@/components/ParticlesBackground';
 import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import PartnerBar from '@/components/PartnerBar';
 
 type Tab = 'sgd' | 'web3';
 
@@ -81,6 +82,7 @@ const HomePage = () => {
             </div>
           </div>
         </div>
+        <PartnerBar />
 
         {/* Trade Like a Pro Section */}
         <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
