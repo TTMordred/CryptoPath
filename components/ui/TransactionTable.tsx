@@ -40,6 +40,7 @@ export default function TransactionExplorer() {
   // Etherscan API configuration
   const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY; // Replace with your API key
   const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
+
   interface MethodSignatures {
     [key: string]: string;
   }
@@ -111,9 +112,7 @@ const getRelativeTime = (timestamp: number) => {
 
     try {
       setIsLoading(true)
-      const latestBlockResponse = await fetch(
-        `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
-      )
+      const latestBlockResponse = await fetch(API_URL)
       const latestBlockData = await latestBlockResponse.json()
       const latestBlock = parseInt(latestBlockData.result, 16)
 

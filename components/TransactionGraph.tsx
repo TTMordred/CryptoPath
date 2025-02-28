@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,6 +53,7 @@ function getNameForAddress(address: string): string | null {
 
 export default function TransactionGraph() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const address = searchParams.get("address");
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -115,9 +116,9 @@ export default function TransactionGraph() {
   const handleNodeClick = useCallback(
     (node: { [others: string]: any }, event: MouseEvent) => {
       const n = node as GraphNode;
-      window.open(`https://etherscan.io/address/${n.id}`, "_blank");
+      router.push(`/search/?address=${n.id}`);
     },
-    []
+    [router]
   );
 
   // Update nodes to reflect their transaction type ("both" if a node has both incoming and outgoing links)

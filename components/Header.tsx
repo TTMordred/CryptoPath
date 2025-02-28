@@ -33,6 +33,10 @@ const Header = () => {
     }
   };
 
+  const handleSearchIconClick = () => {
+    router.push('/search');
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('currentUser');
     setCurrentUser(null);
@@ -77,7 +81,7 @@ const Header = () => {
             onChange={(e) => setAddress(e.target.value)}
             className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none"
           />
-          <button type="submit" className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+          <button type="button" onClick={handleSearchIconClick} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16}/>
           </button>
         </form>
@@ -152,7 +156,7 @@ const Header = () => {
                 onChange={(e) => setAddress(e.target.value)}
                 className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none w-3/4"
               />
-              <button type="submit" className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
+              <button type="button" onClick={handleSearchIconClick} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={25} />
               </button>
             </form>
