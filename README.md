@@ -142,7 +142,17 @@ npm run dev
 - Neo4j database
 - Git
 
-### 6.2. Installation
+### 6.2. ReInstallation If Needed
+
+ Xóa cache và thư mục .next
+rm -rf .next
+npm cache clean --force
+
+ Cài lại dependencies
+npm install
+
+ Khởi động lại server
+npm run dev
 
 ### 6.3. Configuration
 - Configure environment variables
