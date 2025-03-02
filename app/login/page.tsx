@@ -164,7 +164,7 @@ function LoginPageContent() {
         ens: ens?.name || null,
       });
       localStorage.setItem('currentUser', JSON.stringify({ walletAddress: address }));
-      router.push('/'); // Chuyển hướng về trang chính
+      window.location.href = '/';
     }
   }, [wallet, router, isLoggedOut]);
 
