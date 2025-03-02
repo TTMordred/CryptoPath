@@ -1,4 +1,4 @@
-# CryptoPath
+# CryptoPath - Path Your Crypto Future
  CryptoPath COS30049-Computing Technology Innovation Project
 
 ## 1. Project Overview
