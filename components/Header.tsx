@@ -12,23 +12,45 @@ const Header = () => {
   const [address, setAddress] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ name: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('currentUser');
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
+    const updateCurrentUser = () => {
+      if (typeof window !== "undefined") {
+        const storedUser = localStorage.getItem("currentUser");
+        if (storedUser) {
+          setCurrentUser(JSON.parse(storedUser));
+        } else {
+          setCurrentUser(null);
+        }
       }
-    }
+    };
+  
+    // Cập nhật khi component mount
+    updateCurrentUser();
+  
+    // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
+    window.addEventListener("storage", updateCurrentUser);
+  
+    // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
+    const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
+  
+    return () => {
+      window.removeEventListener("storage", updateCurrentUser);
+      clearInterval(interval);
+    };
   }, []);
+
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
-    
+    if (address) {
+      router.push(`/search/?address=${address}`);
+    }
+
     setIsLoading(true);
     
     try {
@@ -52,10 +74,20 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('currentUser');
+    localStorage.removeItem("currentUser");
     setCurrentUser(null);
     setDropdownOpen(false);
-    window.location.href = "/login";
+    router.push("/login");
+    // Thông báo cho người dùng ngắt kết nối ví thủ công (tùy chọn)
+    if (typeof window !== "undefined" && window.ethereum) {
+      console.log("Please disconnect your wallet manually in MetaMask.");
+      // Hoặc hiển thị một thông báo UI nếu cần
+    }
+
+  };
+  const formatWalletAddress = (walletAddress: string) => {
+    if (!walletAddress) return "";
+    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
 
   return (
