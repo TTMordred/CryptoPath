@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import "./globals.css";
+import { SplashScreen } from '@/components/SplashScreen';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,11 +18,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "CryptoPath",
-  description: "Create by members of group 3",
+  description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
   icons: {
     icon: "/favicon.ico",
   },
 };
+
 
 export default function RootLayout({
   children,
@@ -33,6 +35,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SplashScreen />
         <Header />
         {children}
         <Footer />
