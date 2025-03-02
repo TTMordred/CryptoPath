@@ -58,8 +58,8 @@ export function SplashScreen({ minimumLoadTimeMs = 2500 }: SplashScreenProps) {
           </div>
 
           {/* Background hexagon */}
-          <div className="absolute inset-0 flex items-center justify-center opacity-40">
-            <Hexagon className="w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] text-white" strokeWidth={0.1} />
+          <div className="absolute inset-0 flex items-center justify-center opacity-70">
+            <Hexagon className="w-[80vw] h-[80vw] max-w-[600px] max-h-[600px] text-white" strokeWidth={0.1} fill="black" fillOpacity={0.9} />
           </div>
 
           <div className="relative z-10 flex flex-col items-center justify-center space-y-8">
