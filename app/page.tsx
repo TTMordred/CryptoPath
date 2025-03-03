@@ -128,7 +128,7 @@ const HomePage = () => {
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
           <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
             <h1 className="text-4xl font-bold mb-4">Trade like <span className="text-[#F5B056]">a pro</span></h1>
-            <p className="text-lg mb-12">
+            <p className="text-lg mb-20">
               Get the lowest fees, fastest transactions, powerful APIs, and more
             </p>
             <div className="flex justify-center">
@@ -171,7 +171,7 @@ const HomePage = () => {
               <div className="flex justify-center md:justify-start space-x-4">
                 <button
                   className={`px-4 py-2 rounded-md font-semibold ${
-                    activeTab === 'sgd' ? 'bg-[#F5B056] text-black' : 'bg-black text-white'
+                    activeTab === 'sgd' ? 'bg-[#F5B056] hover:bg-[#ff6500] text-black' : 'bg-black text-white'
                   }`}
                   onClick={() => switchContent('sgd')}
                 >
@@ -214,7 +214,7 @@ const HomePage = () => {
         <section className="py-12 mb-8 md:mb-12" data-aos="fade-up">
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">
-              Meet the <span className="text-[#F5B056]">Team</span>
+              Meet the <span className="text-[#ff6500]">Team</span>
             </h2>
             <p className="mt-2 text-base md:text-lg text-gray-300">
               We are always willing to listen to everyone!
@@ -414,7 +414,7 @@ const HomePage = () => {
               <p className="text-lg italic mb-4">
                 "CryptoPath is an amazing platform for tracking transactions. I can't even picture what the world would be like without it"
               </p>
-              <p className="font-bold text-[#F5B056]">Nguyen Minh Duy</p>
+              <p className="font-bold text-[#ff6500]">Nguyen Minh Duy</p>
               <p>Founder of CryptoPath</p>
             </div>
           </div>
