@@ -1,6 +1,8 @@
 # CryptoPath - Path Your Crypto Future
  CryptoPath COS30049-Computing Technology Innovation Project
 
+### Installation at part 6.
+
 ## 1. Project Overview
 
 **Project Name:** CRYPTOPATH  
