@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Eye, ChevronLeft, ChevronRight, Download, Copy } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
 import { ethers } from 'ethers';
-import { formatEther } from 'ethers'
+import { formatEther } from 'ethers/lib/utils';
 
 
 interface Stats {
