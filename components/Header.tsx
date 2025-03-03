@@ -79,7 +79,7 @@ const Header = () => {
     setDropdownOpen(false);
     router.push("/login");
     // Thông báo cho người dùng ngắt kết nối ví thủ công (tùy chọn)
-    if (typeof window !== "undefined" && window.ethereum) {
+    if (typeof window !== "undefined" && (window as any).ethereum) {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }

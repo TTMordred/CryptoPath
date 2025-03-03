@@ -7,7 +7,6 @@ import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react
 import injectedModule from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import coinbaseModule from '@web3-onboard/coinbase';
-import { ethers } from 'ethers';
 import infinityWalletModule from '@web3-onboard/infinity-wallet'
 import safeModule from '@web3-onboard/gnosis'
 import trezorModule from '@web3-onboard/trezor'
