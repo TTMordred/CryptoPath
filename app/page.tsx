@@ -12,6 +12,107 @@ import toast from 'react-hot-toast';
 
 type Tab = 'sgd' | 'web3';
 
+// Language types
+type Language = 'en' | 'vi';
+
+// Translation object
+const translations = {
+  en: {
+    vietnamPremierCrypto: "Vietnam's Premier Crypto Platform",
+    joinAllInOne: "Join the all-in-one crypto ",
+    appInVietnam: "app in Vietnam",
+    emailPlaceholder: "Your Email Address...",
+    signUpSuccess: "Sign Up Successfully!",
+    processing: "Processing...",
+    tryCryptoPath: "Try CryptoPath",
+    tradeLikePro: "Trade like ",
+    aPro: "a pro",
+    getLowestFees: "Get the lowest fees, fastest transactions, powerful APIs, and more",
+    oneApplication: "One Application. ",
+    infinitePotential: "Infinite Potential",
+    exploreNFTMarketplace: "Explore the world's best NFT marketplace, DEX, and wallets supporting all your favorite chains.",
+    exploreDecentralized: "Explore decentralized applications and experience cutting-edge blockchain technology.",
+    exchange: "Exchange",
+    web3: "Web3",
+    accompanyingYou: "Accompanying You ",
+    everyStep: "Every Step of the Way",
+    fromCryptoTransactions: "From cryptocurrency transactions to your first NFT purchase, CryptoPath will guide you through the entire process.",
+    believeInYourself: "Believe in yourself and never stop learning.",
+    meetTheTeam: "Meet the ",
+    team: "Team",
+    willingToListen: "We are always willing to listen to everyone!",
+    whatIsCryptoPath: "What is ",
+    cryptoPath: "CryptoPath?",
+    hearFromTopIndustry: "Hear from top industry leaders to understand",
+    whyCryptoPathIsFavorite: "why CryptoPath is everyone's favorite application.",
+    learnMore: "Learn More",
+    whatIsCryptocurrency: "What is Cryptocurrency?",
+    explainingNewCurrency: "Explaining the \"new currency of the world\"",
+    redefiningSystem: "Redefining the system",
+    welcomeToWeb3: "Welcome to Web3",
+    whatIsBlockchain: "What is Blockchain?",
+    understandBlockchain: "Understand how Blockchain works",
+    trustedBy: "Trusted",
+    industryLeaders: "by industry leaders",
+    testimonialText: "\"CryptoPath is an amazing platform for tracking transactions. I can't even picture what the world would be like without it\"",
+    founderOf: "Founder of CryptoPath",
+    readyToStart: "Ready to start your crypto journey?",
+    joinThousands: "Join thousands of Vietnamese users who are already trading, investing, and earning with CryptoPath.",
+    downloadNow: "Download Now",
+    pleaseEnterEmail: "Please enter your email address",
+    pleaseEnterValidEmail: "Please enter a valid email address",
+    errorOccurred: "An error occurred while registering!",
+    registrationSuccessful: "Registration successful! Please check your email."
+  },
+  vi: {
+    vietnamPremierCrypto: "Nền tảng Crypto hàng đầu Việt Nam",
+    joinAllInOne: "Tham gia ứng dụng crypto ",
+    appInVietnam: "tất cả trong một ở Việt Nam",
+    emailPlaceholder: "Địa chỉ Email của bạn...",
+    signUpSuccess: "Đăng ký thành công!",
+    processing: "Đang xử lý...",
+    tryCryptoPath: "Dùng thử CryptoPath",
+    tradeLikePro: "Giao dịch như ",
+    aPro: "chuyên gia",
+    getLowestFees: "Nhận phí thấp nhất, giao dịch nhanh nhất, API mạnh mẽ và nhiều hơn nữa",
+    oneApplication: "Một ứng dụng. ",
+    infinitePotential: "Tiềm năng vô hạn",
+    exploreNFTMarketplace: "Khám phá thị trường NFT, DEX tốt nhất thế giới và ví hỗ trợ tất cả các chuỗi yêu thích của bạn.",
+    exploreDecentralized: "Khám phá các ứng dụng phi tập trung và trải nghiệm công nghệ blockchain tiên tiến.",
+    exchange: "Sàn giao dịch",
+    web3: "Web3",
+    accompanyingYou: "Đồng hành cùng bạn ",
+    everyStep: "trong từng bước đi",
+    fromCryptoTransactions: "Từ giao dịch tiền điện tử đến việc mua NFT đầu tiên, CryptoPath sẽ hướng dẫn bạn qua toàn bộ quá trình.",
+    believeInYourself: "Hãy tin vào chính mình và không ngừng học hỏi.",
+    meetTheTeam: "Gặp gỡ ",
+    team: "Đội ngũ",
+    willingToListen: "Chúng tôi luôn sẵn sàng lắng nghe mọi người!",
+    whatIsCryptoPath: "CryptoPath ",
+    cryptoPath: "là gì?",
+    hearFromTopIndustry: "Lắng nghe từ các nhà lãnh đạo hàng đầu trong ngành để hiểu",
+    whyCryptoPathIsFavorite: "tại sao CryptoPath là ứng dụng yêu thích của mọi người.",
+    learnMore: "Tìm hiểu thêm",
+    whatIsCryptocurrency: "Tiền điện tử là gì?",
+    explainingNewCurrency: "Giải thích về \"đồng tiền mới của thế giới\"",
+    redefiningSystem: "Định nghĩa lại hệ thống",
+    welcomeToWeb3: "Chào mừng đến với Web3",
+    whatIsBlockchain: "Blockchain là gì?",
+    understandBlockchain: "Hiểu cách Blockchain hoạt động",
+    trustedBy: "Được tin dùng",
+    industryLeaders: "bởi các nhà lãnh đạo ngành",
+    testimonialText: "\"CryptoPath là một nền tảng tuyệt vời để theo dõi giao dịch. Tôi thậm chí không thể tưởng tượng thế giới sẽ như thế nào nếu không có nó\"",
+    founderOf: "Nhà sáng lập CryptoPath",
+    readyToStart: "Sẵn sàng bắt đầu hành trình tiền điện tử của bạn?",
+    joinThousands: "Tham gia cùng hàng nghìn người dùng Việt Nam đang giao dịch, đầu tư và kiếm tiền với CryptoPath.",
+    downloadNow: "Tải xuống ngay",
+    pleaseEnterEmail: "Vui lòng nhập địa chỉ email của bạn",
+    pleaseEnterValidEmail: "Vui lòng nhập địa chỉ email hợp lệ",
+    errorOccurred: "Đã xảy ra lỗi khi đăng ký!",
+    registrationSuccessful: "Đăng ký thành công! Vui lòng kiểm tra email của bạn."
+  }
+};
+
 const teamMembers = [
   {
     name: 'Minh Duy',
@@ -48,154 +149,151 @@ const HomePage = () => {
   const [emailError, setEmailError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [language, setLanguage] = useState<Language>('en');
 
   useEffect(() => {
     AOS.init({
       duration: 1000, // Animation duration (in ms)
       once: true, // Whether animation should happen only once while scrolling down
     });
+
+    // Initialize language based on browser preference
+    const browserLanguage = getUserLanguage();
+    setLanguage(browserLanguage);
+
+    // Get language from localStorage if available
+    const storedLanguage = localStorage.getItem('language') as Language;
+    if (storedLanguage) {
+      setLanguage(storedLanguage);
+    }
   }, []);
+
+  // Simple browser language detection
+  const getUserLanguage = (): Language => {
+    return typeof navigator !== 'undefined' && navigator.language.startsWith('vi') ? 'vi' : 'en';
+  };
 
   const switchContent = (tab: Tab) => {
     setActiveTab(tab);
   };
 
-// Add this function at the top of your component
-const getUserLanguage = (): string => {
-  // Simple browser language detection
-  return typeof navigator !== 'undefined' && navigator.language.startsWith('vi') ? 'vi' : 'en';
-};
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    setEmailError('');
+    setIsSuccess(false);
+  };
 
-// Add this variable in your component
-const language = getUserLanguage();
-
-const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  setEmail(e.target.value);
-  setEmailError('');
-  setIsSuccess(false);
-};
-
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Email validation with language-specific messages
-  if (!email) {
-    setEmailError(language === 'en' ? 'Please enter your email address' : 'Vui lòng nhập địa chỉ email của bạn');
-    return;
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    setEmailError(language === 'en' ? 'Please enter a valid email address' : 'Vui lòng nhập địa chỉ email hợp lệ');
-    return;
-  }
-
-  try {
-    setIsSubmitting(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Call API to register email with language parameter
-    const response = await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, language }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || (language === 'en' 
-        ? 'An error occurred while registering!' 
-        : 'Đã xảy ra lỗi khi đăng ký!'));
+    // Email validation with language-specific messages
+    if (!email) {
+      setEmailError(translations[language].pleaseEnterEmail);
+      return;
     }
 
-    // Handle success
-    setEmail('');
-    setIsSuccess(true);
-    
-    // Success message based on language
-    const successMessage = language === 'en' 
-      ? 'Registration successful! Please check your email.' 
-      : 'Đăng ký thành công! Vui lòng kiểm tra email của bạn.';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setEmailError(translations[language].pleaseEnterValidEmail);
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
       
-    toast.success(successMessage);
-    
-  } catch (error) {
-    console.error(language === 'en' ? 'Error:' : 'Lỗi:', error);
-    toast.error(error instanceof Error ? error.message : (language === 'en' 
-      ? 'An error occurred while registering!' 
-      : 'Đã xảy ra lỗi khi đăng ký!'));
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+      // Call API to register email with language parameter
+      const response = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, language }),
+      });
 
-return (
-  <div className="relative font-sans">
-    <ParticlesBackground />
+      const data = await response.json();
 
-    <div className="relative z-10 bg-transparent">
-      {/* Description Section */}
-      <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="text-center md:text-left md:w-1/2 md:pl-12">
-              <p className="text-[#F5B056] mb-2 md:ml-40">
-                {language === 'en' ? "Vietnam's Premier Crypto Platform" : "Nền tảng Crypto hàng đầu Việt Nam"}
-              </p>
-              <h1 className="text-4xl md:text-6xl font-bold leading-tight text-center md:text-left mx-4 md:ml-40 mb-10 md:mb-20">
-                {language === 'en' 
-                  ? <>Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span></> 
-                  : <>Tham gia ứng dụng crypto <span className="text-[#F5B056]">tất cả trong một ở Việt Nam</span></>}
-              </h1>
-              <form onSubmit={handleSubmit} className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
-                <div className="relative w-full md:w-auto">
-                  <input
-                    type="email"
-                    placeholder={language === 'en' ? "Your Email Address..." : "Địa chỉ Email của bạn..."}
-                    value={email}
-                    onChange={handleEmailChange}
+      if (!response.ok) {
+        throw new Error(data.message || translations[language].errorOccurred);
+      }
+
+      // Handle success
+      setEmail('');
+      setIsSuccess(true);
+      
+      // Success message based on language
+      toast.success(translations[language].registrationSuccessful);
+      
+    } catch (error) {
+      console.error(language === 'en' ? 'Error:' : 'Lỗi:', error);
+      toast.error(error instanceof Error ? error.message : translations[language].errorOccurred);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const t = translations[language];
+
+  return (
+    <div className="relative font-sans">
+      <ParticlesBackground />
+
+      <div className="relative z-10 bg-transparent">
+        {/* Description Section */}
+        <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
+          <div className="container mx-auto px-4">
+            <div className="flex flex-col md:flex-row items-center">
+              <div className="text-center md:text-left md:w-1/2 md:pl-12">
+                <p className="text-[#F5B056] mb-2 md:ml-40">
+                  {t.vietnamPremierCrypto}
+                </p>
+                <h1 className="text-4xl md:text-6xl font-bold leading-tight text-center md:text-left mx-4 md:ml-40 mb-10 md:mb-20">
+                  {t.joinAllInOne}<span className="text-[#F5B056]">{t.appInVietnam}</span>
+                </h1>
+                <form onSubmit={handleSubmit} className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
+                  <div className="relative w-full md:w-auto">
+                    <input
+                      type="email"
+                      placeholder={t.emailPlaceholder}
+                      value={email}
+                      onChange={handleEmailChange}
+                      disabled={isSubmitting}
+                      className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${
+                        emailError ? 'border-red-500' : isSuccess ? 'border-green-500' : 'border-gray-700'
+                      } text-white focus:outline-none transition-colors`}
+                    />
+                    {emailError && <p className="text-red-500 text-sm mt-1 absolute">{emailError}</p>}
+                    {isSuccess && <p className="text-green-500 text-sm mt-1 absolute">
+                      {t.signUpSuccess}
+                    </p>}
+                  </div>
+                  <button 
+                    type="submit" 
                     disabled={isSubmitting}
-                    className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${
-                      emailError ? 'border-red-500' : isSuccess ? 'border-green-500' : 'border-gray-700'
-                    } text-white focus:outline-none transition-colors`}
-                  />
-                  {emailError && <p className="text-red-500 text-sm mt-1 absolute">{emailError}</p>}
-                  {isSuccess && <p className="text-green-500 text-sm mt-1 absolute">
-                    {language === 'en' ? 'Sign Up Successfully!' : 'Đăng ký thành công!'}
-                  </p>}
-                </div>
-                <button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className={`cp-button cp-button--primary ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
-                >
-                  {isSubmitting 
-                    ? (language === 'en' ? 'Processing...' : 'Đang xử lý...') 
-                    : (language === 'en' ? 'Try CryptoPath' : 'Dùng thử CryptoPath')}
-                </button>
-              </form>
-            </div>
+                    className={`cp-button cp-button--primary ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                  >
+                    {isSubmitting ? t.processing : t.tryCryptoPath}
+                  </button>
+                </form>
+              </div>
 
-            <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
-              <video className="max-w-[250px] mx-auto" autoPlay loop muted>
-                <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
-                <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
-              </video>
+              <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
+                <video className="max-w-[250px] mx-auto" autoPlay loop muted>
+                  <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
+                  <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
+                </video>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
         <PartnerBar />
 
         {/* Trade Like a Pro Section */}
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
           <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
-            <h1 className="text-4xl font-bold mb-4">Trade like <span className="text-[#F5B056]">a pro</span></h1>
+            <h1 className="text-4xl font-bold mb-4">{t.tradeLikePro}<span className="text-[#F5B056]">{t.aPro}</span></h1>
             <p className="text-lg mb-20">
-              Get the lowest fees, fastest transactions, powerful APIs, and more
+              {t.getLowestFees}
             </p>
             <div className="flex justify-center">
               <div className="video-container relative">
@@ -228,11 +326,9 @@ return (
               />
             </div>
             <div className="w-full md:w-1/2 text-center md:text-left mt-8 md:mt-0">
-              <h1 className="text-4xl font-bold mb-4">One Application. <span className="text-[#F5B056]">Infinite Potential</span></h1>
+              <h1 className="text-4xl font-bold mb-4">{t.oneApplication}<span className="text-[#F5B056]">{t.infinitePotential}</span></h1>
               <p className="text-lg mb-6">
-                {activeTab === 'sgd'
-                  ? "Explore the world's best NFT marketplace, DEX, and wallets supporting all your favorite chains."
-                  : 'Explore decentralized applications and experience cutting-edge blockchain technology.'}
+                {activeTab === 'sgd' ? t.exploreNFTMarketplace : t.exploreDecentralized}
               </p>
               <div className="flex justify-center md:justify-start space-x-4">
                 <button
@@ -241,7 +337,7 @@ return (
                   }`}
                   onClick={() => switchContent('sgd')}
                 >
-                  Exchange
+                  {t.exchange}
                 </button>
                 <button
                   className={`px-4 py-2 rounded-md font-semibold ${
@@ -249,7 +345,7 @@ return (
                   }`}
                   onClick={() => switchContent('web3')}
                 >
-                  Web3
+                  {t.web3}
                 </button>
               </div>
             </div>
@@ -258,11 +354,11 @@ return (
 
         {/* Evolution Illustration Section */}
         <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
-          <h1 className="text-4xl font-bold mb-4">Accompanying You <span className="text-[#F5B056]">Every Step of the Way</span></h1>
+          <h1 className="text-4xl font-bold mb-4">{t.accompanyingYou}<span className="text-[#F5B056]">{t.everyStep}</span></h1>
           <p className="text-lg mb-12">
-            From cryptocurrency transactions to your first NFT purchase, CryptoPath will guide you through the entire process.
+            {t.fromCryptoTransactions}
             <br />
-            Believe in yourself and never stop learning.
+            {t.believeInYourself}
           </p>
           <div className="flex justify-center">
             <div className="relative">
@@ -280,10 +376,10 @@ return (
         <section className="py-12 mb-8 md:mb-12" data-aos="fade-up">
           <div className="text-center mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">
-              Meet the <span className="text-[#ff6500]">Team</span>
+              {t.meetTheTeam}<span className="text-[#ff6500]">{t.team}</span>
             </h2>
             <p className="mt-2 text-base md:text-lg text-gray-300">
-              We are always willing to listen to everyone!
+              {t.willingToListen}
             </p>
           </div>
 
@@ -353,17 +449,17 @@ return (
         {/* CryptoPath Introduction and Trusted Leaders Section */}
         <div className="container mx-auto px-4 py-8" data-aos="fade-up">
           <div className="text-center">
-            <h1 className="text-4xl font-bold mb-4">What is <span className="text-[#F5B056]">CryptoPath?</span></h1>
+            <h1 className="text-4xl font-bold mb-4">{t.whatIsCryptoPath}<span className="text-[#F5B056]">{t.cryptoPath}</span></h1>
             <p className="text-lg mb-6">
-              Hear from top industry leaders to understand
+              {t.hearFromTopIndustry}
               <br />
-              why CryptoPath is everyone's favorite application.
+              {t.whyCryptoPathIsFavorite}
             </p>
             <button
               id="btn-learnmore"
               className="bg-[#F5B056] text-black px-6 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition"
             >
-              Learn More
+              {t.learnMore}
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
@@ -378,8 +474,8 @@ return (
                 allowFullScreen
               ></iframe>
               <div className="p-4">
-                <h2 className="text-xl font-bold">What is Cryptocurrency?</h2>
-                <p className="text-sm text-gray-400">Explaining the "new currency of the world"</p>
+                <h2 className="text-xl font-bold">{t.whatIsCryptocurrency}</h2>
+                <p className="text-sm text-gray-400">{t.explainingNewCurrency}</p>
               </div>
             </div>
 
@@ -394,8 +490,8 @@ return (
                 allowFullScreen
               ></iframe>
               <div className="p-4">
-                <h2 className="text-xl font-bold">Redefining the system</h2>
-                <p className="text-sm text-gray-400">Welcome to Web3</p>
+                <h2 className="text-xl font-bold">{t.redefiningSystem}</h2>
+                <p className="text-sm text-gray-400">{t.welcomeToWeb3}</p>
               </div>
             </div>
 
@@ -410,19 +506,18 @@ return (
                 allowFullScreen
               ></iframe>
               <div className="p-4">
-                <h2 className="text-xl font-bold">What is Blockchain?</h2>
-                <p className="text-sm text-gray-400">Understand how Blockchain works</p>
+                <h2 className="text-xl font-bold">{t.whatIsBlockchain}</h2>
+                <p className="text-sm text-gray-400">{t.understandBlockchain}</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Trusted Leaders Section */}
-        
         <div className="container mx-auto px-4 py-12" data-aos="fade-up">
           <div className="text-center mb-12">
             <h1 className="text-4xl font-bold">
-              <span>Trusted</span> by <span className="text-[#F5B056]">industry leaders</span>
+              <span>{t.trustedBy}</span> <span className="text-[#F5B056]">{t.industryLeaders}</span>
             </h1>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-16 text-center">
@@ -478,10 +573,10 @@ return (
             </div>
             <div className="text-center md:text-left">
               <p className="text-lg italic mb-4">
-                "CryptoPath is an amazing platform for tracking transactions. I can't even picture what the world would be like without it"
+                {t.testimonialText}
               </p>
               <p className="font-bold text-[#ff6500]">Nguyen Minh Duy</p>
-              <p>Founder of CryptoPath</p>
+              <p>{t.founderOf}</p>
             </div>
           </div>
         </div>
@@ -489,23 +584,23 @@ return (
         {/* CTA Section (New) */}
         <div className="container mx-auto px-4 py-12" data-aos="fade-up">
           <div className="bg-gradient-to-r from-[#F5B056]/20 to-black rounded-lg p-8 text-center max-w-4xl mx-auto border border-black">
-            <h2 className="text-3xl font-bold mb-4">Ready to start your crypto journey?</h2>
+            <h2 className="text-3xl font-bold mb-4">{t.readyToStart}</h2>
             <p className="text-lg mb-8">
-              Join thousands of Vietnamese users who are already trading, investing, and earning with CryptoPath.
+              {t.joinThousands}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button className="bg-[#F5B056] text-black px-8 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition">
-                Download Now
+                {t.downloadNow}
               </button>
               <button className="bg-transparent border border-[#F5B056] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#F5B056]/10 transition">
-                Learn More
+                {t.learnMore}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Insert FAQ component here */}
-        <FAQ />
+        {/* Insert FAQ component here - Pass language to FAQ component */}
+        <FAQ language={language} />
       </div>
     </div>
   );
