@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import "./globals.css";
 import { SplashScreen } from '@/components/SplashScreen';
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         <SplashScreen />
         <Header />
         {children}
+        <Toaster position="top-center" />
         <Footer />
       </body>
     </html>
