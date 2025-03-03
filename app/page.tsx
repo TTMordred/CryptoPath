@@ -8,6 +8,7 @@ import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import PartnerBar from '@/components/PartnerBar';
+import toast from 'react-hot-toast';
 
 type Tab = 'sgd' | 'web3';
 
@@ -45,6 +46,8 @@ const HomePage = () => {
   const [activeTab, setActiveTab] = useState<Tab>('sgd');
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   useEffect(() => {
     AOS.init({
@@ -57,70 +60,133 @@ const HomePage = () => {
     setActiveTab(tab);
   };
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    setEmailError('');
-  };
+// Add this function at the top of your component
+const getUserLanguage = (): string => {
+  // Simple browser language detection
+  return typeof navigator !== 'undefined' && navigator.language.startsWith('vi') ? 'vi' : 'en';
+};
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) {
-      setEmailError('Please enter your email address');
-      return;
+// Add this variable in your component
+const language = getUserLanguage();
+
+const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  setEmail(e.target.value);
+  setEmailError('');
+  setIsSuccess(false);
+};
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  // Email validation with language-specific messages
+  if (!email) {
+    setEmailError(language === 'en' ? 'Please enter your email address' : 'Vui lòng nhập địa chỉ email của bạn');
+    return;
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setEmailError(language === 'en' ? 'Please enter a valid email address' : 'Vui lòng nhập địa chỉ email hợp lệ');
+    return;
+  }
+
+  try {
+    setIsSubmitting(true);
+    
+    // Call API to register email with language parameter
+    const response = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, language }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || (language === 'en' 
+        ? 'An error occurred while registering!' 
+        : 'Đã xảy ra lỗi khi đăng ký!'));
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setEmailError('Please enter a valid email address');
-      return;
-    }
-
-    // Submit email logic here
-    console.log('Email submitted:', email);
+    // Handle success
     setEmail('');
-    // You could add a success message here
-  };
+    setIsSuccess(true);
+    
+    // Success message based on language
+    const successMessage = language === 'en' 
+      ? 'Registration successful! Please check your email.' 
+      : 'Đăng ký thành công! Vui lòng kiểm tra email của bạn.';
+      
+    toast.success(successMessage);
+    
+  } catch (error) {
+    console.error(language === 'en' ? 'Error:' : 'Lỗi:', error);
+    toast.error(error instanceof Error ? error.message : (language === 'en' 
+      ? 'An error occurred while registering!' 
+      : 'Đã xảy ra lỗi khi đăng ký!'));
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
-  return (
-    <div className="relative font-sans">
-      <ParticlesBackground />
+return (
+  <div className="relative font-sans">
+    <ParticlesBackground />
 
-      <div className="relative z-10 bg-transparent">
-        {/* Description Section */}
-        <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col md:flex-row items-center">
-              <div className="text-center md:text-left md:w-1/2 md:pl-12">
-                <p className="text-[#F5B056] mb-2 md:ml-40">Vietnam's Premier Crypto Platform</p>
-                <h1 className="text-4xl md:text-6xl font-bold leading-tight text-center md:text-left mx-4 md:ml-40 mb-10 md:mb-20">
-                  Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span>
-                </h1>
-                <form onSubmit={handleSubmit} className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
-                  <div className="relative w-full md:w-auto">
-                    <input
-                      type="email"
-                      placeholder="Email address"
-                      value={email}
-                      onChange={handleEmailChange}
-                      className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${emailError ? 'border-red-500' : 'border-gray-700'} text-white focus:outline-none`}
-                    />
-                    {emailError && <p className="text-red-500 text-sm mt-1 absolute">{emailError}</p>}
-                  </div>
-                  <button type="submit" className="cp-button cp-button--primary">
-                    Try CryptoPath
-                  </button>
-                </form>
-              </div>
+    <div className="relative z-10 bg-transparent">
+      {/* Description Section */}
+      <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center">
+            <div className="text-center md:text-left md:w-1/2 md:pl-12">
+              <p className="text-[#F5B056] mb-2 md:ml-40">
+                {language === 'en' ? "Vietnam's Premier Crypto Platform" : "Nền tảng Crypto hàng đầu Việt Nam"}
+              </p>
+              <h1 className="text-4xl md:text-6xl font-bold leading-tight text-center md:text-left mx-4 md:ml-40 mb-10 md:mb-20">
+                {language === 'en' 
+                  ? <>Join the all-in-one crypto <span className="text-[#F5B056]">app in Vietnam</span></> 
+                  : <>Tham gia ứng dụng crypto <span className="text-[#F5B056]">tất cả trong một ở Việt Nam</span></>}
+              </h1>
+              <form onSubmit={handleSubmit} className="mt-6 flex flex-col md:flex-row gap-4 md:ml-40">
+                <div className="relative w-full md:w-auto">
+                  <input
+                    type="email"
+                    placeholder={language === 'en' ? "Your Email Address..." : "Địa chỉ Email của bạn..."}
+                    value={email}
+                    onChange={handleEmailChange}
+                    disabled={isSubmitting}
+                    className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${
+                      emailError ? 'border-red-500' : isSuccess ? 'border-green-500' : 'border-gray-700'
+                    } text-white focus:outline-none transition-colors`}
+                  />
+                  {emailError && <p className="text-red-500 text-sm mt-1 absolute">{emailError}</p>}
+                  {isSuccess && <p className="text-green-500 text-sm mt-1 absolute">
+                    {language === 'en' ? 'Sign Up Successfully!' : 'Đăng ký thành công!'}
+                  </p>}
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className={`cp-button cp-button--primary ${isSubmitting ? 'opacity-70 cursor-not-allowed' : ''}`}
+                >
+                  {isSubmitting 
+                    ? (language === 'en' ? 'Processing...' : 'Đang xử lý...') 
+                    : (language === 'en' ? 'Try CryptoPath' : 'Dùng thử CryptoPath')}
+                </button>
+              </form>
+            </div>
 
-              <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
-                <video className="max-w-[250px] mx-auto" autoPlay loop muted>
-                  <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
-                  <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
-                </video>
-              </div>
+            <div className="md:w-1/2 flex justify-center mt-10 md:mt-0">
+              <video className="max-w-[250px] mx-auto" autoPlay loop muted>
+                <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
+                <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
+              </video>
             </div>
           </div>
         </div>
+      </div>
 
         <PartnerBar />
 

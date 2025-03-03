@@ -134,6 +134,11 @@ npm install next --legacy-peer-deps
 create the .env.local file with the content below: 
 ETHERSCAN_API_KEY=6U137E3DGFMCCBQA8E3CAR1P1UW7EV8A6S
 ETHERSCAN_API_URL=https://api.etherscan.io/api
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@example.com
+SMTP_PASSWORD=your-password
 
 #### Start the development server
 npm run dev
