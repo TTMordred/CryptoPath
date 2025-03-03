@@ -200,7 +200,7 @@ const HomePage = () => {
           </p>
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute -inset-1 bg-[#F5B056]/20 rounded-lg blur"></div>
+              <div className="absolute -inset-1 bg-[#ff6500]/20 rounded-lg blur"></div>
               <video className="max-w-full relative rounded-lg" autoPlay loop muted playsInline>
                 <source src="/Img/Videos/Evolution.webm" type="video/webm" />
                 <source src="/Img/Videos/Evolution.mp4" type="video/mp4" />
