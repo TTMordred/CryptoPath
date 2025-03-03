@@ -34,6 +34,7 @@
     "@radix-ui/react-toggle-group": "^1.1.2",
     "@radix-ui/react-tooltip": "^1.1.8",
     "@safe-global/safe-apps-provider": "^0.18.5",
+    "@safe-global/safe-apps-sdk": "^8.1.0",
     "@web3-onboard/coinbase": "^2.4.2",
     "@web3-onboard/dcent": "^2.2.10",
     "@web3-onboard/frontier": "^2.1.1",
