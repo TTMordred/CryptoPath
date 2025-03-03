@@ -158,7 +158,7 @@ const Header = () => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center text-white text-xs uppercase hover:text-[#F5B056] transition"
               >
-                {currentUser.name}
+                 {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
                 <svg
                   className="w-4 h-4 ml-1"
                   fill="currentColor"

@@ -151,7 +151,10 @@ function LoginPageContent() {
     address: string;
     ens: string | null;
   }
-
+  const formatWalletAddress = (walletAddress: string) => {
+    if (!walletAddress) return "";
+    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  };
   const [account, setAccount] = useState<Account | null>(null);
 
   // Handle wallet connection
@@ -162,7 +165,11 @@ function LoginPageContent() {
         address,
         ens: ens?.name || null,
       });
-      localStorage.setItem('currentUser', JSON.stringify({ walletAddress: address }));
+      const userData = {
+        walletAddress: address,
+        name: ens?.name || formatWalletAddress(address), // Sử dụng ENS nếu có, nếu không thì dùng địa chỉ ví rút gọn
+      };
+      localStorage.setItem('currentUser', JSON.stringify(userData));
       window.location.href = '/';
     }
   }, [wallet, router, isLoggedOut]);
