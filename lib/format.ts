@@ -1,4 +1,4 @@
-// lib/utils/format.ts
+// lib/format.ts
 export const formatCurrency = (value: number): string => {
     if (typeof value !== "number" || isNaN(value)) return "$0.00";
   
