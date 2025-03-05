@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Hexagon } from "lucide-react";
+import Image from "next/image";
 
 interface SplashScreenProps {
   minimumLoadTimeMs?: number;
@@ -71,7 +72,20 @@ export function SplashScreen({ minimumLoadTimeMs = 2500 }: SplashScreenProps) {
               className="flex flex-col items-center"
             >
               <div className="flex items-center mb-4">
-                <Hexagon className="w-12 h-12 mr-2 text-primary" />
+                <div className="relative w-12 h-12 mr-2">
+                <Hexagon className="w-12 h-12 absolute text-primary z-10" />
+
+                {/* Logo inside but under Hexagon */}
+                <div className="absolute inset-0 flex items-center justify-center z-0">
+                  <Image 
+                    src="/Img/logo/logo4.svg" 
+                    alt="CryptoPath Logo" 
+                    width={18} 
+                    height={18}
+                    className="brightness-95 drop-shadow-[0_0_0.2px_#FFD700]"
+                  />
+                </div>
+                </div>
                 <motion.h1 
                   className="text-4xl md:text-6xl font-bold tracking-tight"
                   initial={{ opacity: 0 }}
