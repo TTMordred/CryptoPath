@@ -35,6 +35,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@safe-global/safe-apps-provider": "^0.18.5",
     "@safe-global/safe-apps-sdk": "^8.1.0",
+    "@tanstack/react-query": "^5.67.1",
     "@web3-onboard/coinbase": "^2.4.2",
     "@web3-onboard/dcent": "^2.2.10",
     "@web3-onboard/frontier": "^2.1.1",
@@ -54,6 +55,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.4",
+    "eccrypto": "^1.1.6",
     "embla-carousel-react": "^8.5.2",
     "ethers": "^5.7.2",
     "framer-motion": "^12.4.7",
@@ -72,6 +74,7 @@
     "react-icons": "^5.4.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "^2.15.1",
+    "sonner": "^2.0.1",
     "tailwind-merge": "^3.0.1",
     "vaul": "^1.1.2"
   },

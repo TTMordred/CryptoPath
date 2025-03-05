@@ -3,8 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
-import "./globals.css";
 import { SplashScreen } from '@/components/SplashScreen';
+import QueryProvider from "./QueryProvider"; // ✅ Import Client Component
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,21 +25,16 @@ export const metadata: Metadata = {
   },
 };
 
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SplashScreen />
-        <Header />
-        {children}
-        <Footer />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
+          <SplashScreen />
+          <Header />
+          {children}
+          <Footer />
+        </QueryProvider>
       </body>
     </html>
   );
