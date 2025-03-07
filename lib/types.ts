@@ -149,7 +149,9 @@ export type Coin = {
         usd: string;
       };
     };
-  };
+};
+
+
   
   export type GlobalData = {
     active_cryptocurrencies: number;

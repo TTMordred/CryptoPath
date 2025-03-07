@@ -1,0 +1,146 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 0%;  /* Pure black */
+    --foreground: 220 10% 98%;
+
+    --card: 215 50% 5%;  /* Dark blue-black for cards */
+    --card-foreground: 220 10% 98%;
+
+    --popover: 215 50% 5%;
+    --popover-foreground: 220 10% 98%;
+
+    --primary: 35 90% 65%;  /* Changed to #f5b056 (orange) */
+    --primary-foreground: 220 10% 98%;
+
+    --secondary: 217 33% 17%;  /* Slightly blue-tinted dark gray */
+    --secondary-foreground: 220 10% 98%;
+
+    --muted: 215 25% 20%;
+    --muted-foreground: 220 10% 70%;
+
+    --accent: 35 90% 60%;  /* Changed to orange accent */
+    --accent-foreground: 220 90% 80%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 35 90% 65%;  /* Changed to match new primary color */
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 215 50% 5%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 220 30% 10%;
+    --foreground: 220 10% 98%;
+
+    --card: 220 30% 12%;
+    --card-foreground: 220 10% 98%;
+
+    --popover: 220 30% 12%;
+    --popover-foreground: 220 10% 98%;
+
+    --primary: 220 90% 50%;
+    --primary-foreground: 220 10% 98%;
+
+    --secondary: 220 20% 18%;
+    --secondary-foreground: 220 10% 98%;
+
+    --muted: 220 10% 20%;
+    --muted-foreground: 220 10% 70%;
+
+    --accent: 220 70% 25%;
+    --accent-foreground: 220 90% 80%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 20% 26%;
+    --input: 220 20% 26%;
+    --ring: 220 90% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: none; /* Removed gradient background for pure black */
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-sm;
+  }
+  
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-md border border-white/5 shadow-md;
+  }
+  
+  .button-hover-effect {
+    @apply relative overflow-hidden transition-all duration-300 before:absolute before:inset-0 before:z-0 before:bg-primary/10 before:opacity-0 before:transition-opacity hover:before:opacity-100;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* New styling components - updated with orange colors */
+  .neon-border {
+    @apply border border-orange-500/30 shadow-[0_0_15px_rgba(245,176,86,0.3)];
+  }
+  
+  .crypto-card {
+    @apply glass-dark rounded-xl transition-all duration-300 hover:shadow-[0_0_25px_rgba(245,176,86,0.2)] hover:border-orange-500/50 hover:-translate-y-1;
+  }
+  
+  .gradient-text {
+    @apply bg-gradient-to-r from-orange-400 to-amber-500 bg-clip-text text-transparent;
+  }
+}
+
+/* Additional animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px 2px rgba(245, 176, 86, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(245, 176, 86, 0.5);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 4s ease-in-out infinite;
+}
