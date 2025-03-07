@@ -11,7 +11,9 @@ import Loader from "@/components/Loader";
 export const ClientContent = () => {
   const [topGainers, setTopGainers] = useState<any[]>([]);
   const [topLosers, setTopLosers] = useState<any[]>([]);
-
+  const handleCardClick = (coin: any) => {
+    console.log("Clicked coin:", coin);
+  };
   const { isLoading } = useQuery({
     queryKey: ["topMovers"],
     queryFn: async () => {
@@ -60,7 +62,7 @@ export const ClientContent = () => {
                   <Loader />
                 ) : (
                   topGainers.map((coin) => (
-                    <CoinCard key={coin.id} coin={coin} />
+                    <CoinCard key={coin.id} coin={coin} onCardClick={() => handleCardClick(coin)} />
                   ))
                 )}
               </div>
@@ -81,7 +83,7 @@ export const ClientContent = () => {
                   <Loader />
                 ) : (
                   topLosers.map((coin) => (
-                    <CoinCard key={coin.id} coin={coin} />
+                    <CoinCard key={coin.id} coin={coin} onCardClick={() => handleCardClick(coin)} />
                   ))
                 )}
               </div>
