@@ -38,40 +38,51 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
 };
 
 export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
+  if (!id) {
+    console.error("No coin ID provided");
+    throw new Error("Coin ID is required");
+  }
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     
-    console.log(`Fetching data for coin with id: ${id}`);
+    const url = `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`;
+    console.log(`Fetching data for coin with id: ${id}, URL: ${url}`);
     
-    const response = await fetch(
-      `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`, 
-      {
-        signal: controller.signal,
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        cache: "no-store"
-      }
-    );
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    });
     
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error(`API request failed with status ${response.status}: ${response.statusText}`);
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText}`);
+      const errorText = await response.text(); // Lấy chi tiết lỗi từ server
+      console.error(`API request failed with status ${response.status}: ${response.statusText} - ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}: ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
     console.log(`Successfully fetched data for coin: ${data.name}`);
     return data;
   } catch (error) {
-    console.error(`Error fetching coin detail for ${id}:`, error);
-    throw error;
+    if (error instanceof Error) {
+      if (error.name === "AbortError") {
+        console.error(`Fetch aborted for coin ${id} due to timeout`);
+        throw new Error("Request timed out after 30 seconds");
+      }
+      console.error(`Error fetching coin detail for ${id}: ${error.message}`);
+      throw error;
+    }
+    console.error(`Unknown error fetching coin detail for ${id}:`, error);
+    throw new Error("An unknown error occurred while fetching coin data");
   }
 };
-
 export const getCoinHistory = async (
   id: string,
   days = 7

@@ -1,5 +1,5 @@
 "use client";
-
+import CoinDetailModal from "./CoinDetaiModal";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
@@ -35,7 +35,10 @@ const CoinTable = () => {
   const [sortKey, setSortKey] = useState<string>("market_cap");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const perPage = 20;
-
+  const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null); // Thêm trạng thái cho modal
+  const handleCardClick = (coinId: string) => {
+    setSelectedCoinId(coinId); // Mở modal với coinId được chọn
+  };
   const { data: coins, isLoading, isFetching } = useQuery({
     queryKey: ["coins", page, perPage],
     queryFn: () => getCoins(page, perPage),
@@ -168,8 +171,8 @@ const CoinTable = () => {
                         {coin.market_cap_rank}
                       </TableCell>
                       <TableCell>
-                        <Link 
-                          href={`/coin/${coin.id}`} 
+                        <div 
+                          onClick={() => handleCardClick(coin.id)}
                           className="flex items-center gap-3 hover:text-primary transition-colors"
                         >
                           <img 
@@ -184,7 +187,7 @@ const CoinTable = () => {
                               {coin.symbol.toUpperCase()}
                             </span>
                           </div>
-                        </Link>
+                        </div>
                       </TableCell>
                       <TableCell>{formatCurrency(coin.current_price)}</TableCell>
                       <TableCell className={getColorForPercentChange(coin.price_change_percentage_24h)}>
@@ -240,6 +243,11 @@ const CoinTable = () => {
           </div>
         </div>
       </div>
+      <CoinDetailModal
+          coinId={selectedCoinId}
+          isOpen={!!selectedCoinId}
+          onClose={() => setSelectedCoinId(null)}
+        />
     </section>
   );
 };

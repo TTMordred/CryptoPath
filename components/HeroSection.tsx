@@ -31,7 +31,7 @@ const StatCard = ({
   change?: { value: string; color: string } 
   isLoading: boolean;
 }) => (
-  <div className="glass rounded-xl p-5 flex flex-col justify-between h-full border border-border/50 transition-all duration-300 hover:shadow-md hover:translate-y-[-2px]">
+  <div className="glass rounded-xl p-5 flex flex-col justify-between h-full border border-border/50 transition-all duration-300 hover:shadow-[0_0_40px_rgba(245,176,86,0.4)] hover:border-orange-500/80 hover:-translate-y-2">
     <div className="flex justify-between items-start mb-3">
       <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
       <Icon className="h-4 w-4 text-primary opacity-70" />
@@ -77,7 +77,7 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="pt-8 pb-12 relative overflow-hidden">
+    <section className="pt-8 pb-12 relative overflow-hidden ">
       {/* Background decoration */}
       <div className="absolute -top-[300px] -right-[300px] w-[600px] h-[600px] bg-primary/5 rounded-full filter blur-3xl opacity-50" />
       <div className="absolute -bottom-[200px] -left-[200px] w-[400px] h-[400px] bg-primary/5 rounded-full filter blur-3xl opacity-50" />

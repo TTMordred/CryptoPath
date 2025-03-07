@@ -1,14 +1,19 @@
 "use client";
-
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCoins } from "@/lib/api/coinApi";
 import { Button } from "@/components/ui/button";
 import CoinCard from "./CoinCard";
+import CoinDetailModal from "./CoinDetaiModal";
 
 export const TopMoversSection = () => {
   const [topGainers, setTopGainers] = useState<any[]>([]);
   const [topLosers, setTopLosers] = useState<any[]>([]);
+  const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null); // Thêm trạng thái cho modal
+
+  const handleCardClick = (coinId: string) => {
+    setSelectedCoinId(coinId); // Mở modal với coinId được chọn
+  };
 
   const { isLoading, isError } = useQuery({
     queryKey: ["topMovers"],
@@ -22,7 +27,7 @@ export const TopMoversSection = () => {
         setTopLosers(sorted.slice(-4).reverse());
         return coins;
       } catch (error) {
-        console.error("Error fetching top movers:", error);
+        console.error("Lỗi khi lấy top movers:", error);
         const mockCoins = Array.from({ length: 8 }, (_, i) => ({
           id: `mock-${i}`,
           name: `Coin ${i + 1}`,
@@ -75,13 +80,13 @@ export const TopMoversSection = () => {
     if (isError) {
       return (
         <div className="col-span-full p-8 text-center bg-destructive/10 rounded-xl pulse-glow">
-          <p className="text-muted-foreground mb-4 font-medium">Failed to load market data</p>
+          <p className="text-muted-foreground mb-4 font-medium">Không thể tải dữ liệu thị trường</p>
           <Button 
             variant="outline" 
             onClick={() => window.location.reload()}
             className="pulse-glow hover:bg-primary hover:text-primary-foreground transition-colors"
           >
-            Try Again
+            Thử lại
           </Button>
         </div>
       );
@@ -112,7 +117,7 @@ export const TopMoversSection = () => {
             Top Movers (24h)
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Discover the biggest gainers and losers in the cryptocurrency market over the last 24 hours.
+            Khám phá các coin tăng và giảm mạnh nhất trên thị trường tiền điện tử trong 24 giờ qua.
           </p>
         </div>
 
@@ -141,7 +146,11 @@ export const TopMoversSection = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               {topGainers.length > 0
                 ? topGainers.map((coin) => (
-                    <CoinCard key={coin.id} coin={coin} />
+                    <CoinCard 
+                      key={coin.id} 
+                      coin={coin} 
+                      onCardClick={handleCardClick} // Truyền hàm xử lý click
+                    />
                   ))
                 : renderPlaceholder()}
             </div>
@@ -171,12 +180,23 @@ export const TopMoversSection = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               {topLosers.length > 0
                 ? topLosers.map((coin) => (
-                    <CoinCard key={coin.id} coin={coin} />
+                    <CoinCard 
+                      key={coin.id} 
+                      coin={coin} 
+                      onCardClick={handleCardClick} // Truyền hàm xử lý click
+                    />
                   ))
                 : renderPlaceholder()}
             </div>
           </div>
         </div>
+
+        {/* Thêm CoinDetailModal */}
+        <CoinDetailModal
+          coinId={selectedCoinId}
+          isOpen={!!selectedCoinId}
+          onClose={() => setSelectedCoinId(null)}
+        />
       </div>
     </section>
   );

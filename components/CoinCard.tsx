@@ -15,20 +15,22 @@ interface CoinCardProps {
     market_cap: number;
     market_cap_rank: number;
   };
+  onCardClick: (coinId: string) => void;
 }
 
-const CoinCard: React.FC<CoinCardProps> = ({ coin }) => {
+const CoinCard: React.FC<CoinCardProps> = ({ coin, onCardClick }) => {
   const isPositive = coin.price_change_percentage_24h > 0;
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleCardClick = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent the Link navigation
     setIsModalOpen(true); // Open the modal
+    onCardClick(coin.id);
   };
   return (
-    <>
     <Link
       href={`/coin/${coin.id}`}
+      onClick={handleCardClick}
       className="crypto-card p-5 flex flex-col h-full pulse-glow cursor-pointer relative glass-dark rounded-xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(245,176,86,0.4)] hover:border-orange-500/80 hover:-translate-y-2"
     >
       <style jsx>{`
@@ -102,12 +104,6 @@ const CoinCard: React.FC<CoinCardProps> = ({ coin }) => {
         </div>
       </div>
     </Link>
-    <CoinDetailModal
-    coinId={coin.id}
-    isOpen={isModalOpen}
-    onClose={() => setIsModalOpen(false)}
-  />
-  </>
   );
 };
 
