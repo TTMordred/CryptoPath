@@ -117,7 +117,7 @@ export const TopMoversSection = () => {
             Top Movers (24h)
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Khám phá các coin tăng và giảm mạnh nhất trên thị trường tiền điện tử trong 24 giờ qua.
+          Explore the top gaining and losing coins in the cryptocurrency market over the past 24 hours
           </p>
         </div>
 
