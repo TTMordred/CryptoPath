@@ -59,7 +59,7 @@ const FaucetRequest: React.FC<FaucetRequestProps> = ({
         ) : (
           <>
             <FaCoins className="inline-block mr-2" />
-            {timeRemaining ? `Cooldown: ${timeRemaining}` : 'Claim tBNB'}
+            {timeRemaining ? `Cooldown: ${timeRemaining}` : 'Claim PATH'}
           </>
         )}
       </button>
