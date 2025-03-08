@@ -12,6 +12,7 @@ import Image from "next/image";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("")
+  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ name: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -28,8 +29,11 @@ const Header = () => {
 
   const handleSearch = (event: React.FormEvent) => {
     event.preventDefault();
-    if (address) {
+    if (!address) return;
+    if (searchType === "onchain") {
       router.push(`/search/?address=${address}`);
+    } else {
+      router.push(`/search-offchain/?address=${address}`);
     }
   };
 
@@ -81,6 +85,14 @@ const Header = () => {
             onChange={(e) => setAddress(e.target.value)}
             className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none"
           />
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+            className="ml-2 px-2 py-1 text-sm text-white bg-black rounded focus:outline-none 
+             hover:bg-gray-800 transition-colored">
+            <option value="onchain">On-Chain</option>
+            <option value="offchain">Off-Chain</option>
+          </select>
           <button type="button" onClick={handleSearchIconClick} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16}/>
           </button>
@@ -156,6 +168,13 @@ const Header = () => {
                 onChange={(e) => setAddress(e.target.value)}
                 className="p-2 pl-10 rounded-md text-black border border-gray-300 focus:outline-none w-3/4"
               />
+              <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                className="ml-2 px-2 py-1 text-sm text-white bg-black rounded focus:outline-none hover:bg-gray-800 transition-colored">
+                <option value="onchain">On-Chain</option>
+                <option value="offchain">Off-Chain</option>
+              </select>
               <button type="button" onClick={handleSearchIconClick} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-500">
                 <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={25} />
               </button>
