@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart, PieChart, Pie, Cell } from "recharts";
+import { BarChart3, Gauge, Wallet, History, CheckCircle2, Network } from "lucide-react";
 
 const transactionTypeData = [
   { week: 'W1', defi: 450, nft: 320, swap: 230 },
@@ -69,7 +70,10 @@ export default function WalletCharts() {
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="text-xl text-gray-300">Transaction Types</CardTitle>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-[#F5B056]" />
+                <CardTitle className="text-xl text-gray-300">Transaction Types</CardTitle>
+              </div>
               <div className="flex gap-3">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-[#a855f7]"></div>
@@ -113,7 +117,10 @@ export default function WalletCharts() {
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle className="text-xl text-gray-300">Gas Usage Distribution</CardTitle>
+              <div className="flex items-center gap-2">
+                <Gauge className="w-5 h-5 text-[#F5B056]" />
+                <CardTitle className="text-xl text-gray-300">Gas Usage Distribution</CardTitle>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -145,7 +152,10 @@ export default function WalletCharts() {
         {/* Token Distribution */}
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader className="p-4">
-            <CardTitle className="text-sm text-gray-300">Token Distribution</CardTitle>
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-[#F5B056]" />
+              <CardTitle className="text-sm text-gray-300">Token Distribution</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="h-[100px]">
@@ -178,7 +188,10 @@ export default function WalletCharts() {
         {/* Wallet Age Activity */}
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader className="p-4">
-            <CardTitle className="text-sm text-gray-300">Wallet Age Activity</CardTitle>
+            <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-[#F5B056]" />
+              <CardTitle className="text-sm text-gray-300">Wallet Age Activity</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="h-[100px]">
@@ -209,7 +222,10 @@ export default function WalletCharts() {
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader className="p-4">
             <div className="flex justify-between items-center">
-              <CardTitle className="text-sm text-gray-300">Success Rate</CardTitle>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-[#22c55e]" />
+                <CardTitle className="text-sm text-gray-300">Success Rate</CardTitle>
+              </div>
               <div className="text-[#22c55e] text-lg font-semibold">85%</div>
             </div>
           </CardHeader>
@@ -242,7 +258,10 @@ export default function WalletCharts() {
         {/* Network Interactions */}
         <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
           <CardHeader className="p-4">
-            <CardTitle className="text-sm text-gray-300">Network Interactions</CardTitle>
+            <div className="flex items-center gap-2">
+              <Network className="w-4 h-4 text-[#F5B056]" />
+              <CardTitle className="text-sm text-gray-300">Network Interactions</CardTitle>
+            </div>
           </CardHeader>
           <CardContent className="p-4">
             <div className="h-[100px]">
