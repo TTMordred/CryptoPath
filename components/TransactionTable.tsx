@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { TransactionTableProps } from '@/lib/types'
 
 interface Transaction {
   id: string
@@ -18,7 +19,7 @@ interface Transaction {
   type: "transfer" | "swap" | "inflow" | "outflow"
 }
 
-export default function TransactionTable() {
+export default function TransactionTable({ data }: TransactionTableProps) {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
   const [transactions, setTransactions] = useState<Transaction[]>([])
