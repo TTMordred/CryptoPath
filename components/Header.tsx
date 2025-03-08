@@ -118,6 +118,9 @@ const Header = () => {
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
+          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                PriceTable
+            </Link>
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
           </Link>
@@ -210,6 +213,9 @@ const Header = () => {
             <nav className="flex flex-col space-y-4 text-center text-xl">
               <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Home
+              </Link>
+              <Link href="/pricetable" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Pricetable
               </Link>
               <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Transactions
