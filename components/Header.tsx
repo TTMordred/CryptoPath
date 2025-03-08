@@ -27,22 +27,21 @@ const Header = () => {
         }
       }
     };
-  
+
     // Cập nhật khi component mount
     updateCurrentUser();
-  
+
     // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
     window.addEventListener("storage", updateCurrentUser);
-  
+
     // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
     const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
-  
+
     return () => {
       window.removeEventListener("storage", updateCurrentUser);
       clearInterval(interval);
     };
   }, []);
-
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -52,10 +51,10 @@ const Header = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
       // Simulate loading time (can be replaced with actual API call)
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2500));
       router.push(`/search/?address=${encodeURIComponent(address)}`);
     } catch (error) {
       console.error("Search error:", error);
@@ -83,8 +82,8 @@ const Header = () => {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }
-
   };
+
   const formatWalletAddress = (walletAddress: string) => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
@@ -117,21 +116,24 @@ const Header = () => {
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
           </Link>
+          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
+            Faucet
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
-          
+
           {/* Improved Search Form without button */}
           <form onSubmit={handleSearch} className="relative">
             {/* Search icon that navigates to search page on click */}
-            <button 
-              type="button" 
-              onClick={handleSearchIconClick} 
+            <button
+              type="button"
+              onClick={handleSearchIconClick}
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200"
             >
               <Search size={16} />
             </button>
-            
+
             <Input
               type="text"
               placeholder="Search wallet..."
@@ -139,7 +141,7 @@ const Header = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
             />
-            
+
             {address.length > 0 && (
               <button
                 type="button"
@@ -151,14 +153,14 @@ const Header = () => {
               </button>
             )}
           </form>
-          
+
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center text-white text-xs uppercase hover:text-[#F5B056] transition"
               >
-                 {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
+                {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
                 <svg
                   className="w-4 h-4 ml-1"
                   fill="currentColor"
@@ -166,7 +168,7 @@ const Header = () => {
                 >
                   <path
                     fillRule="evenodd"
-                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 111.414 1.414l-4 4a1 1 01-1.414 0l-4-4a1 1 0 010-1.414z"
                     clipRule="evenodd"
                   />
                 </svg>
@@ -207,21 +209,24 @@ const Header = () => {
               <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Transactions
               </Link>
+              <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Faucet
+              </Link>
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
               </a>
-              
+
               {/* Improved Mobile Search Form without button */}
               <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2">
                 {/* Search icon that navigates to search page on click */}
-                <button 
-                  type="button" 
-                  onClick={handleSearchIconClick} 
+                <button
+                  type="button"
+                  onClick={handleSearchIconClick}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 >
                   <Search size={18} />
                 </button>
-                
+
                 <Input
                   type="text"
                   placeholder="Search wallet..."
@@ -229,7 +234,7 @@ const Header = () => {
                   onChange={(e) => setAddress(e.target.value)}
                   className="pl-10 pr-10 py-2 w-full text-black transition-all duration-200 focus:border-amber-500"
                 />
-                
+
                 {address.length > 0 && (
                   <button
                     type="button"
@@ -241,7 +246,7 @@ const Header = () => {
                   </button>
                 )}
               </form>
-              
+
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
                   <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
@@ -263,7 +268,7 @@ const Header = () => {
           </div>
         )}
       </header>
-      
+
       {/* Loading Screen */}
       <LoadingScreen isLoading={isLoading} />
     </>

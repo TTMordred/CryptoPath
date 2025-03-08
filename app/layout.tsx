@@ -6,6 +6,7 @@ import ParticlesBackground from "@/components/ParticlesBackground";
 import "./globals.css";
 import { SplashScreen } from '@/components/SplashScreen';
 import { Toaster } from 'react-hot-toast';
+import { WalletProvider } from '@/components/Faucet/walletcontext'; // Thêm WalletProvider
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-// adding og image
+
 export const metadata: Metadata = { 
   title: "CryptoPath",
   description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
@@ -53,11 +54,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SplashScreen />
-        <Header />
-        {children}
-        <Toaster position="top-center" />
-        <Footer />
+        <WalletProvider> {/* Bao bọc bằng WalletProvider */}
+          <SplashScreen />
+          <Header />
+          {children}
+          <Toaster position="top-center" />
+          <Footer />
+        </WalletProvider>
       </body>
     </html>
   );
