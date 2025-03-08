@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -47,6 +48,7 @@ const Header = () => {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
+
     if (address) {
       router.push(`/search/?address=${address}`);
     }
@@ -84,7 +86,9 @@ const Header = () => {
       // Hoặc hiển thị một thông báo UI nếu cần
     }
 
+
   };
+
   const formatWalletAddress = (walletAddress: string) => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
@@ -124,8 +128,10 @@ const Header = () => {
             Support
           </a>
           
+
           {/* Improved Search Form without button */}
           <form onSubmit={handleSearch} className="relative">
+
             {/* Search icon that navigates to search page on click */}
             <button 
               type="button" 
@@ -153,6 +159,7 @@ const Header = () => {
                 <X size={12} />
               </button>
             )}
+
           </form>
           
           {currentUser ? (
@@ -217,6 +224,7 @@ const Header = () => {
                 Support
               </a>
               
+
               {/* Improved Mobile Search Form without button */}
               <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2">
                 {/* Search icon that navigates to search page on click */}
@@ -251,7 +259,7 @@ const Header = () => {
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
                   <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
-                    {currentUser.name}
+                    {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
                   </Link>
                   <button
                     onClick={handleLogout}
