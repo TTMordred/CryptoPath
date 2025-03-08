@@ -14,6 +14,10 @@ export default function TransactionExplorer() {
       <div className="relative z-10">
         {/* Main Content */}
         <div className="container mx-auto p-4">
+          <div className="mb-6">
+            <RevenueGraph />
+          </div>
+          <WalletCharts />
           <NetworkStats />
         </div>
       </div>
