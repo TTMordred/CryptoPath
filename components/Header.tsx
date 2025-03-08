@@ -10,7 +10,9 @@ import { LoadingScreen } from "@/components/loading-screen";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
+
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -48,6 +50,7 @@ const Header = () => {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
+
     
     setIsLoading(true);
     
@@ -60,6 +63,18 @@ const Header = () => {
       } else {
         router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
       }
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Simulate loading time (can be replaced with actual API call)
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      router.push(`/search/?address=${encodeURIComponent(address)}`);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -86,6 +101,7 @@ const Header = () => {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }
+
   };
   
   const formatWalletAddress = (walletAddress: string) => {
@@ -162,6 +178,7 @@ const Header = () => {
               <option value="onchain">On-Chain</option>
               <option value="offchain">Off-Chain</option>
             </select>
+
           </form>
           
           {currentUser ? (
@@ -223,6 +240,7 @@ const Header = () => {
                 Support
               </a>
               
+
               {/* Improved Mobile Search Form with search type selector */}
               <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
                 <div className="relative w-full">
@@ -263,6 +281,7 @@ const Header = () => {
                   <option value="onchain">On-Chain</option>
                   <option value="offchain">Off-Chain</option>
                 </select>
+
               </form>
               
               {currentUser ? (

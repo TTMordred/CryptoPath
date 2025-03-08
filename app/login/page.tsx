@@ -1,12 +1,141 @@
 'use client';
-
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
-export default function LoginPage() {
-  
+import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
+import injectedModule from '@web3-onboard/injected-wallets';
+import walletConnectModule from '@web3-onboard/walletconnect';
+import coinbaseModule from '@web3-onboard/coinbase';
+import infinityWalletModule from '@web3-onboard/infinity-wallet'
+import safeModule from '@web3-onboard/gnosis'
+import trezorModule from '@web3-onboard/trezor'
+import magicModule from '@web3-onboard/magic'
+import dcentModule from '@web3-onboard/dcent';
 
+const dcent = dcentModule();
+import sequenceModule from '@web3-onboard/sequence'
+import tahoModule from '@web3-onboard/taho'
+import trustModule from '@web3-onboard/trust'
+import okxModule from '@web3-onboard/okx'
+import frontierModule from '@web3-onboard/frontier';
+
+const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129'; // Replace with your Infura key
+
+// Initialize WalletConnect with projectId
+const walletConnect = walletConnectModule({
+  projectId: 'b773e42585868b9b143bb0f1664670f1', // Replace with your WalletConnect project ID
+  optionalChains: [1, 137] // Optional: specify chains you want to support
+});
+
+
+const injected = injectedModule();
+const coinbase = coinbaseModule();
+const infinityWallet = infinityWalletModule()
+const safe = safeModule()
+const sequence = sequenceModule()
+const taho = tahoModule() // Previously named Tally Ho wallet
+const trust = trustModule()
+const okx = okxModule()
+const frontier = frontierModule()
+const trezorOptions = {
+  email: 'test@test.com',
+  appUrl: 'https://www.blocknative.com'
+}
+
+const trezor = trezorModule(trezorOptions)
+
+const magic = magicModule({
+  apiKey: 'pk_live_E9B0C0916678868E'
+})
+
+const wallets = [infinityWallet,
+  sequence,
+  injected,
+  trust,
+  okx,
+  frontier,
+  taho,
+  coinbase,
+  dcent,
+  walletConnect,
+  safe,
+  magic];
+
+const chains = [
+  {
+    id: '0x1',
+    token: 'ETH',
+    label: 'Ethereum Mainnet',
+    rpcUrl: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+  {
+    id: 11155111,
+    token: 'ETH',
+    label: 'Sepolia',
+    rpcUrl: 'https://rpc.sepolia.org/'
+  },
+  {
+    id: '0x13881',
+    token: 'MATIC',
+    label: 'Polygon - Mumbai',
+    rpcUrl: 'https://matic-mumbai.chainstacklabs.com',
+  },
+  {
+    id: '0x38',
+    token: 'BNB',
+    label: 'Binance',
+    rpcUrl: 'https://bsc-dataseed.binance.org/'
+  },
+  {
+    id: '0xA',
+    token: 'OETH',
+    label: 'OP Mainnet',
+    rpcUrl: 'https://mainnet.optimism.io'
+  },
+  {
+    id: '0xA4B1',
+    token: 'ARB-ETH',
+    label: 'Arbitrum',
+    rpcUrl: 'https://rpc.ankr.com/arbitrum'
+  },
+  {
+    id: '0xa4ec',
+    token: 'ETH',
+    label: 'Celo',
+    rpcUrl: 'https://1rpc.io/celo'
+  },
+  {
+    id: 666666666,
+    token: 'DEGEN',
+    label: 'Degen',
+    rpcUrl: 'https://rpc.degen.tips'
+  },
+  {
+    id: 2192,
+    token: 'SNAX',
+    label: 'SNAX Chain',
+    rpcUrl: 'https://mainnet.snaxchain.io'
+  }
+];
+
+const appMetadata = {
+  name: 'CryptoPath',
+  //icon: '<svg><rect width="100" height="100" fill="#ff6500"/></svg>', // Replace with your actual icon
+  description: 'Login to CryptoPath with your wallet',
+  recommendedInjectedWallets: [
+    { name: 'MetaMask', url: 'https://metamask.io' },
+    { name: 'Coinbase', url: 'https://wallet.coinbase.com/' },
+  ],
+};
+
+const web3Onboard = init({
+  wallets,
+  chains,
+  appMetadata,
+});
+
+function LoginPageContent() {
   const router = useRouter();
 
   // Form state
@@ -15,8 +144,35 @@ export default function LoginPage() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
+  // Wallet state
+  const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+  interface Account {
+    address: string;
+    ens: string | null;
+  }
+  const formatWalletAddress = (walletAddress: string) => {
+    if (!walletAddress) return "";
+    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  };
+  const [account, setAccount] = useState<Account | null>(null);
 
- 
+  // Handle wallet connection
+  useEffect(() => {
+    if (wallet?.provider && !isLoggedOut) { // Chỉ đăng nhập nếu chưa logout
+      const { address, ens } = wallet.accounts[0];
+      setAccount({
+        address,
+        ens: ens?.name || null,
+      });
+      const userData = {
+        walletAddress: address,
+        name: ens?.name || formatWalletAddress(address), // Sử dụng ENS nếu có, nếu không thì dùng địa chỉ ví rút gọn
+      };
+      localStorage.setItem('currentUser', JSON.stringify(userData));
+      window.location.href = '/';
+    }
+  }, [wallet, router, isLoggedOut]);
 
   // Helper functions (using localStorage for demo purposes)
   const validateEmail = (email: string) => {
@@ -73,13 +229,26 @@ export default function LoginPage() {
       );
       localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
       window.location.href = "/";
+      window.location.reload();
+    }
+  };
+
+  const handleWalletConnect = () => {
+    if (!wallet) {
+      connect(); // Kết nối ví nếu chưa kết nối
+    } else {
+      disconnect({ label: wallet.label }); // Ngắt kết nối ví
+      setAccount(null);
+      setIsLoggedOut(true); // Đánh dấu đã logout
+      localStorage.removeItem('currentUser');
+      router.push('/login'); // Chuyển hướng về trang login
     }
   };
 
   return (
     <>
-    <div className = "relative">
-      <ParticlesBackground/>
+      <div className="relative">
+        <ParticlesBackground />
         <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
           <div id="form-container" className="w-full max-w-sm md:max-w-3xl">
             <div className="card bg-transparent rounded-md shadow-lg overflow-hidden">
@@ -227,9 +396,11 @@ export default function LoginPage() {
                       </button>
                       <button
                         id="connectButton"
+                        type="button"
+                        onClick={handleWalletConnect}
+                        disabled={connecting}
                         className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
                       >
-                        {/* Wallet icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -270,5 +441,13 @@ export default function LoginPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Web3OnboardProvider web3Onboard={web3Onboard}>
+      <LoginPageContent />
+    </Web3OnboardProvider>
   );
 }
