@@ -10,7 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
-  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -48,18 +48,17 @@ const Header = () => {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
-    
+
+    if (address) {
+      router.push(`/search/?address=${address}`);
+    }
+
     setIsLoading(true);
     
     try {
       // Simulate loading time (can be replaced with actual API call)
       await new Promise(resolve => setTimeout(resolve, 2500));
-      
-      if (searchType === "onchain") {
-        router.push(`/search/?address=${encodeURIComponent(address)}`);
-      } else {
-        router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
-      }
+      router.push(`/search/?address=${encodeURIComponent(address)}`);
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -86,8 +85,10 @@ const Header = () => {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }
+
+
   };
-  
+
   const formatWalletAddress = (walletAddress: string) => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
@@ -124,8 +125,10 @@ const Header = () => {
             Support
           </a>
           
-          {/* Improved Search Form with search type selector */}
-          <form onSubmit={handleSearch} className="relative flex items-center">
+
+          {/* Improved Search Form without button */}
+          <form onSubmit={handleSearch} className="relative">
+
             {/* Search icon that navigates to search page on click */}
             <button 
               type="button" 
@@ -153,15 +156,7 @@ const Header = () => {
                 <X size={12} />
               </button>
             )}
-            
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-              className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
-            >
-              <option value="onchain">On-Chain</option>
-              <option value="offchain">Off-Chain</option>
-            </select>
+
           </form>
           
           {currentUser ? (
@@ -223,46 +218,36 @@ const Header = () => {
                 Support
               </a>
               
-              {/* Improved Mobile Search Form with search type selector */}
-              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
-                <div className="relative w-full">
-                  {/* Search icon that navigates to search page on click */}
-                  <button 
-                    type="button" 
-                    onClick={handleSearchIconClick} 
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  >
-                    <Search size={18} />
-                  </button>
-                  
-                  <Input
-                    type="text"
-                    placeholder="Search wallet..."
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    className="pl-10 pr-10 py-2 w-full text-black transition-all duration-200 focus:border-amber-500"
-                  />
-                  
-                  {address.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={clearAddress}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent p-1 rounded-full"
-                      aria-label="Clear input"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
-                </div>
-                
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+
+              {/* Improved Mobile Search Form without button */}
+              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2">
+                {/* Search icon that navigates to search page on click */}
+                <button 
+                  type="button" 
+                  onClick={handleSearchIconClick} 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 >
-                  <option value="onchain">On-Chain</option>
-                  <option value="offchain">Off-Chain</option>
-                </select>
+                  <Search size={18} />
+                </button>
+                
+                <Input
+                  type="text"
+                  placeholder="Search wallet..."
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="pl-10 pr-10 py-2 w-full text-black transition-all duration-200 focus:border-amber-500"
+                />
+                
+                {address.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearAddress}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent p-1 rounded-full"
+                    aria-label="Clear input"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </form>
               
               {currentUser ? (

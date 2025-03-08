@@ -63,7 +63,7 @@
   }
   
   .cp-button--primary {
-    @apply bg-[#F5B056] text-black hover:bg-gray-200;
+    @apply bg-[#F5B056] text-black hover:bg-[#ff6500];
   }
   
   .cp-button--secondary {
@@ -277,6 +277,113 @@
     @apply max-w-full h-auto;
   }
 }
+
+  /* ======================================
+   * Cube Classes For Animation of Loading Screen
+   * ====================================== */
+
+/* 3D Cube Animation */
+.cube-container {
+  perspective: 800px;
+  width: 150px;
+  height: 150px;
+  position: relative;
+}
+
+.cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: rotate 8s infinite linear;
+  transform-origin: center center;
+}
+
+.cube:hover {
+  animation-play-state: paused;
+}
+
+.face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: rgba(59, 130, 246, 0.2);
+  border: 2px solid rgba(59, 130, 246, 0.8);
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  backface-visibility: visible;
+}
+
+.front {
+  transform: translateZ(75px);
+}
+
+.back {
+  transform: rotateY(180deg) translateZ(75px);
+}
+
+.right {
+  transform: rotateY(90deg) translateZ(75px);
+}
+
+.left {
+  transform: rotateY(-90deg) translateZ(75px);
+}
+
+.top {
+  transform: rotateX(90deg) translateZ(75px);
+}
+
+.bottom {
+  transform: rotateX(-90deg) translateZ(75px);
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotateX(0) rotateY(0) rotateZ(0);
+  }
+  25% {
+    transform: rotateX(90deg) rotateY(45deg) rotateZ(180deg);
+  }
+  50% {
+    transform: rotateX(180deg) rotateY(90deg) rotateZ(360deg);
+  }
+  75% {
+    transform: rotateX(270deg) rotateY(135deg) rotateZ(180deg);
+  }
+  100% {
+    transform: rotateX(360deg) rotateY(180deg) rotateZ(0);
+  }
+}
+
+/* Add a subtle floating effect to make the animation more dynamic */
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.cube-container {
+  animation: float 3s ease-in-out infinite;
+}
+
+.clip-hexagon {
+  clip-path: polygon(
+    50% 0%, 100% 25%, 100% 75%, 
+    50% 100%, 0% 75%, 0% 25%
+  );
+}
+
 
 /* ======================================
  * Animation Keyframes

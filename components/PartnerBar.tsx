@@ -25,9 +25,9 @@ const partners = [
 
 export default function PartnerBar() {
   return (
-    <div className="w-full py-10 bg-black">
+    <div className="w-full py-14 bg-black"> {/* Increased padding */}
       <div className="container mx-auto px-4">
-        <div className="flex justify-center items-center gap-16">
+        <div className="flex justify-center items-center gap-20">
           {partners.map((partner) => (
             <a
               key={partner.name}
