@@ -103,7 +103,7 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
             return;
           }
 
-          const accounts = await window.ethereum.request({ 
+          const accounts = await window.ethereum?.request({ 
             method: 'eth_accounts' 
           });
           
