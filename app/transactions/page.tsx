@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import NetworkStats from '@/components/ui/NetworkStats';
 import ParticlesBackground from '@/components/ParticlesBackground';
+import RevenueGraph from '@/components/ui/RevenueGraph';
+import WalletCharts from '@/components/ui/WalletCharts';
 
 export default function TransactionExplorer() {
   return (
