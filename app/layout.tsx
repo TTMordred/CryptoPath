@@ -56,14 +56,14 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <WalletProvider> {/* Bao bọc bằng WalletProvider */}
-        <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
-          <SplashScreen />
-          <Header />
-          {children}
-          <Toaster position="top-center" />
-          <Footer />
+          <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
+            <SplashScreen />
+            <Header />
+            {children}
+            <Toaster position="top-center" />
+            <Footer />
+          </QueryProvider>
         </WalletProvider>
-         </QueryProvider>
       </body>
     </html>
   );
