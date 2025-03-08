@@ -28,22 +28,21 @@ const Header = () => {
         }
       }
     };
-  
+
     // Cập nhật khi component mount
     updateCurrentUser();
-  
+
     // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
     window.addEventListener("storage", updateCurrentUser);
-  
+
     // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
     const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
-  
+
     return () => {
       window.removeEventListener("storage", updateCurrentUser);
       clearInterval(interval);
     };
   }, []);
-
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -54,7 +53,7 @@ const Header = () => {
     }
 
     setIsLoading(true);
-    
+
     try {
       // Simulate loading time (can be replaced with actual API call)
       await new Promise(resolve => setTimeout(resolve, 2500));
@@ -85,8 +84,6 @@ const Header = () => {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }
-
-
   };
 
   const formatWalletAddress = (walletAddress: string) => {
@@ -124,23 +121,25 @@ const Header = () => {
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
           </Link>
+          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
+            Faucet
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
-          
 
           {/* Improved Search Form without button */}
           <form onSubmit={handleSearch} className="relative">
 
             {/* Search icon that navigates to search page on click */}
-            <button 
-              type="button" 
-              onClick={handleSearchIconClick} 
+            <button
+              type="button"
+              onClick={handleSearchIconClick}
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200"
             >
               <Search size={16} />
             </button>
-            
+
             <Input
               type="text"
               placeholder="Search wallet..."
@@ -148,7 +147,7 @@ const Header = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
             />
-            
+
             {address.length > 0 && (
               <button
                 type="button"
@@ -161,7 +160,7 @@ const Header = () => {
             )}
 
           </form>
-          
+
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -220,6 +219,9 @@ const Header = () => {
               <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Transactions
               </Link>
+              <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Faucet
+              </Link>
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
               </a>
@@ -277,7 +279,7 @@ const Header = () => {
           </div>
         )}
       </header>
-      
+
       {/* Loading Screen */}
       <LoadingScreen isLoading={isLoading} />
     </>
