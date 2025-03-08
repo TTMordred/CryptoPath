@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -46,6 +47,7 @@ const Header = () => {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
+
     if (address) {
       router.push(`/search/?address=${address}`);
     }
@@ -113,6 +115,9 @@ const Header = () => {
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
+          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                PriceTable
+            </Link>
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
           </Link>
@@ -125,6 +130,7 @@ const Header = () => {
 
           {/* Improved Search Form without button */}
           <form onSubmit={handleSearch} className="relative">
+
             {/* Search icon that navigates to search page on click */}
             <button
               type="button"
@@ -152,6 +158,7 @@ const Header = () => {
                 <X size={12} />
               </button>
             )}
+
           </form>
 
           {currentUser ? (
@@ -206,6 +213,9 @@ const Header = () => {
               <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Home
               </Link>
+              <Link href="/pricetable" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Pricetable
+              </Link>
               <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Transactions
               </Link>
@@ -250,7 +260,7 @@ const Header = () => {
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
                   <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
-                    {currentUser.name}
+                    {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
                   </Link>
                   <button
                     onClick={handleLogout}
