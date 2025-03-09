@@ -11,6 +11,7 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
 
+  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -57,7 +58,11 @@ const Header = () => {
     try {
       // Simulate loading time (can be replaced with actual API call)
       await new Promise(resolve => setTimeout(resolve, 2500));
-      router.push(`/search/?address=${encodeURIComponent(address)}`);
+      if (searchType === "onchain") {
+        router.push(`/search/?address=${encodeURIComponent(address)}`);
+      } else {
+        router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
+      }
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -129,7 +134,7 @@ const Header = () => {
           </a>
 
           {/* Improved Search Form without button */}
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={handleSearch} className="relative flex items-center">
 
             {/* Search icon that navigates to search page on click */}
             <button
@@ -159,6 +164,14 @@ const Header = () => {
               </button>
             )}
 
+            <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+              >
+                <option value="onchain">On-Chain</option>
+                <option value="offchain">Off-Chain</option>
+            </select>
           </form>
 
           {currentUser ? (
@@ -228,7 +241,7 @@ const Header = () => {
               
 
               {/* Improved Mobile Search Form without button */}
-              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2">
+              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
                 {/* Search icon that navigates to search page on click */}
                 <button 
                   type="button" 
@@ -256,6 +269,14 @@ const Header = () => {
                     <X size={16} />
                   </button>
                 )}
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                >
+                  <option value="onchain">On-Chain</option>
+                  <option value="offchain">Off-Chain</option>
+                </select>
               </form>
               
               {currentUser ? (
