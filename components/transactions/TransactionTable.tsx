@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import Link from 'next/link'
 import { Eye, ChevronLeft, ChevronRight, Download, Copy } from 'lucide-react'
 import { toast } from "@/components/ui/use-toast"
-import { ethers } from 'ethers';
+import { utils } from 'ethers'
 
 interface Stats {
   transactions24h: number;
@@ -35,8 +35,7 @@ export default function TransactionExplorer() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Etherscan API configuration
-  const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-  const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
+  const ETHERSCAN_API_KEY = '6U137E3DGFMCCBQA8E3CAR1P1UW7EV8A6S';
 
   interface MethodSignatures {
     [key: string]: string;
@@ -102,26 +101,43 @@ export default function TransactionExplorer() {
 
   // Fetch latest blocks and their transactions
   const fetchLatestTransactions = useCallback(async () => {
-    if (!ETHERSCAN_API_KEY) {
-      console.error('Etherscan API key is not set')
-      return
-    }
-
     try {
-      setIsLoading(true)
-      const latestBlockResponse = await fetch(API_URL)
-      const latestBlockData = await latestBlockResponse.json()
-      const latestBlock = parseInt(latestBlockData.result, 16)
-
+      setIsLoading(true);
+      
+      // First, get the latest block number
+      const blockNumberResponse = await fetch(
+        `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
+      );
+      
+      if (!blockNumberResponse.ok) {
+        throw new Error('Failed to fetch latest block number');
+      }
+      
+      const blockNumberData = await blockNumberResponse.json();
+      if (blockNumberData.error) {
+        throw new Error(blockNumberData.error.message);
+      }
+      
+      const latestBlock = parseInt(blockNumberData.result, 16);
+      
+      // Then, get the transactions from the latest block
       const response = await fetch(
         `https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=true&apikey=${ETHERSCAN_API_KEY}`
-      )
-      const data = await response.json()
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch block transactions');
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
 
       if (data.result && data.result.transactions) {
         const formattedTransactions = await Promise.all(
           data.result.transactions.slice(0, 50).map(async (tx: any) => {
-            const timestamp = parseInt(data.result.timestamp, 16)
+            const timestamp = parseInt(data.result.timestamp, 16);
             return {
               hash: tx.hash,
               method: getTransactionMethod(tx.input),
@@ -129,40 +145,31 @@ export default function TransactionExplorer() {
               age: getRelativeTime(timestamp),
               from: tx.from,
               to: tx.to || 'Contract Creation',
-              amount: ethers.utils.formatEther(tx.value) + ' ETH',
-              fee: ethers.utils.formatEther(BigInt(tx.gas) * BigInt(tx.gasPrice)),
+              amount: utils.formatEther(tx.value) + ' ETH',
+              fee: utils.formatEther(BigInt(tx.gas) * BigInt(tx.gasPrice)),
               timestamp: timestamp
-            }
+            };
           })
-        )
-        setTransactions(formattedTransactions)
+        );
+        setTransactions(formattedTransactions);
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error)
+      console.error('Error fetching transactions:', error);
       toast({
         title: "Error fetching transactions",
-        description: "Failed to fetch latest transactions.",
+        description: error instanceof Error ? error.message : "Failed to fetch latest transactions.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [ETHERSCAN_API_KEY, API_URL])
-
-  useEffect(() => {
-    fetchLatestTransactions()
-    const interval = setInterval(fetchLatestTransactions, 150000) // Refresh every 2.5 minutes
-    return () => clearInterval(interval)
-  }, [fetchLatestTransactions])
+  }, [ETHERSCAN_API_KEY]);
 
   useEffect(() => {
     fetchLatestTransactions();
-    const interval = setInterval(() => {
-      fetchLatestTransactions();
-    }, 150000); // Refresh every 2.5 minutes
-
+    const interval = setInterval(fetchLatestTransactions, 15000); // Refresh every 15 seconds
     return () => clearInterval(interval);
-  }, [currentPage]); //Refresh every page changes
+  }, [fetchLatestTransactions, currentPage]);
 
   // Effect to handle responsive design
   useEffect(() => {

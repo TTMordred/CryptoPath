@@ -26,17 +26,16 @@ export default function TransactionExplorer() {
   const [, setIsMobile] = useState(false);
   const [stats, setStats] = useState<Stats>(initialStats);
   const [, setTotalTransactions] = useState<number>(0);
-  const [, setLoading] = useState<boolean>(true);
-  const [, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
   const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
 
   const fetchNetworkStats = async () => {
     try {
-      const gasResponse = await fetch(
-        `https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=${ETHERSCAN_API_KEY}`
-      );
+      // Fetch gas prices
+      const gasResponse = await fetch('/api/etherscan?module=gastracker&action=gasoracle');
       const gasData = await gasResponse.json();
 
       if (gasData.status === "1") {
@@ -47,27 +46,34 @@ export default function TransactionExplorer() {
         }));
       }
 
-      const blockResponse = await fetch(
-        `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
-      );
+      // Fetch latest block number
+      const blockResponse = await fetch('/api/etherscan?module=proxy&action=eth_blockNumber');
       const blockData = await blockResponse.json();
       const latestBlock = parseInt(blockData.result, 16);
       
-      const blocksIn24h = Math.floor(86400 / 15);
+      const blocksIn24h = Math.floor(86400 / 15); // Approximate blocks in 24h
 
+      // Fetch transaction count
       const txCountResponse = await fetch(
-        `https://api.etherscan.io/api?module=proxy&action=eth_getBlockTransactionCountByNumber&tag=${latestBlock.toString(16)}&apikey=${ETHERSCAN_API_KEY}`
+        `/api/etherscan?module=proxy&action=eth_getBlockTransactionCountByNumber&tag=${latestBlock.toString(16)}`
       );
       const txCountData = await txCountResponse.json();
       const txCount = parseInt(txCountData.result, 16);
 
+      // Fetch pending transactions
+      const pendingResponse = await fetch('/api/pending');
+      const pendingData = await pendingResponse.json();
+
       setStats(prev => ({
         ...prev,
         transactions24h: txCount * blocksIn24h,
-        pendingTransactions: txCount
+        pendingTransactions: pendingData.pendingTransactions || 0
       }));
     } catch (error) {
       console.error('Error fetching network stats:', error);
+      setError('Failed to fetch network stats');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -95,10 +101,7 @@ export default function TransactionExplorer() {
 
   useEffect(() => {
     fetchNetworkStats();
-    const interval = setInterval(() => {
-      fetchNetworkStats();
-    }, 30000);
-
+    const interval = setInterval(fetchNetworkStats, 30000); // Update every 30 seconds
     return () => clearInterval(interval);
   }, []);
 
