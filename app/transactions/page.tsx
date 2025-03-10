@@ -1,10 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import NetworkStats from '@/components/ui/NetworkStats';
+import { Metadata } from "next"
+import { Suspense } from "react"
+import NetworkStats from '@/components/transactions/NetworkStats';
 import ParticlesBackground from '@/components/ParticlesBackground';
-import RevenueGraph from '@/components/ui/RevenueGraph';
-import WalletCharts from '@/components/ui/WalletCharts';
+import RevenueGraph from '@/components/transactions/RevenueGraph';
+import { Skeleton } from "@/components/ui/skeleton"
+import WalletCharts from '@/components/transactions/WalletCharts';
 
 export default function TransactionExplorer() {
   return (

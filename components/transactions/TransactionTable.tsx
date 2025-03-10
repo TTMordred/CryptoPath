@@ -13,7 +13,7 @@ interface Stats {
   pendingTransactions: number;
   networkFee: number;
   avgGasFee: number;
-  totalTransactionAmount: number; // New field for total transaction amount
+  totalTransactionAmount: number;
 }
 
 // Initial state
@@ -22,7 +22,7 @@ const initialStats: Stats = {
   pendingTransactions: 0,
   networkFee: 0,
   avgGasFee: 0,
-  totalTransactionAmount: 0, // Initialize to 0
+  totalTransactionAmount: 0,
 };
 
 export default function TransactionExplorer() {
@@ -34,9 +34,8 @@ export default function TransactionExplorer() {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-
   // Etherscan API configuration
-  const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY; // Replace with your API key
+  const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
   const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
 
   interface MethodSignatures {
@@ -78,23 +77,23 @@ export default function TransactionExplorer() {
   };
 
   // Function to get relative time
-const getRelativeTime = (timestamp: number) => {
-  const now = Date.now();
-  const diff = now - timestamp * 1000;
+  const getRelativeTime = (timestamp: number) => {
+    const now = Date.now();
+    const diff = now - timestamp * 1000;
 
-  // Ensure diff is not negative
-  if (diff < 0) return "Just now";
+    // Ensure diff is not negative
+    if (diff < 0) return "Just now";
 
-  const seconds = Math.floor(diff / 1000);
+    const seconds = Math.floor(diff / 1000);
 
-  if (seconds < 60) return `${seconds} secs ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} mins ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hrs ago`;
-  const days = Math.floor(hours / 24);
-  return `${days} days ago`;
-};
+    if (seconds < 60) return `${seconds} secs ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} mins ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} hrs ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} days ago`;
+  };
 
   // Function to truncate addresses
   const truncateAddress = (address: string) => {
@@ -148,7 +147,7 @@ const getRelativeTime = (timestamp: number) => {
     } finally {
       setIsLoading(false)
     }
-  }, [toast])
+  }, [ETHERSCAN_API_KEY, API_URL])
 
   useEffect(() => {
     fetchLatestTransactions()
@@ -156,8 +155,6 @@ const getRelativeTime = (timestamp: number) => {
     return () => clearInterval(interval)
   }, [fetchLatestTransactions])
 
-
-  // Effect to fetch data
   useEffect(() => {
     fetchLatestTransactions();
     const interval = setInterval(() => {
@@ -176,7 +173,6 @@ const getRelativeTime = (timestamp: number) => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
 
   // Utility functions (handleDownload, copyToClipboard, etc.)
   const copyToClipboard = async (text: string) => {
@@ -228,24 +224,19 @@ const getRelativeTime = (timestamp: number) => {
   };
 
   const formatTimestamp = (timestamp: number): string => {
-    // Create a date object from the timestamp
-    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
-
-    // Convert to GMT+7
+    const date = new Date(timestamp * 1000);
     const options: Intl.DateTimeFormatOptions = {
-        timeZone: 'Asia/Bangkok', // GMT+7 timezone
+        timeZone: 'Asia/Bangkok',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false // Use 24-hour format
+        hour12: false
     };
-
-    // Format the date
-    return date.toLocaleString('en-GB', options).replace(',', ''); // Remove comma for better CSV formatting
-};
+    return date.toLocaleString('en-GB', options).replace(',', '');
+  };
 
   const handleMethodClick = (method: string) => {
     setSelectedMethod(method === selectedMethod ? null : method);
@@ -258,8 +249,6 @@ const getRelativeTime = (timestamp: number) => {
   return (
     <div className="min-h-screen bg-transparent text-white font-exo2">
       <div className="container mx-auto p-4">
-
-
         {/* Transaction table header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-4">
           <div className="mb-4 md:mb-0">
@@ -319,10 +308,9 @@ const getRelativeTime = (timestamp: number) => {
           </div>
         </div>
 
-
-{/* Transaction table */}
-<div className="overflow-x-auto">
-<Table className="w-full border border-gray-800 rounded-2xl">
+        {/* Transaction table */}
+        <div className="overflow-x-auto">
+          <Table className="w-full border border-gray-800 rounded-2xl">
             <TableHeader>
               <TableRow className="bg-gray-900 border-b border-gray-800">
                 <TableHead className="w-[50px]"></TableHead>
@@ -345,7 +333,7 @@ const getRelativeTime = (timestamp: number) => {
                 </TableRow>
               ) : (
                 transactions.map((tx, index) => (
-                    <TableRow key={index} className="bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors">
+                  <TableRow key={index} className="bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors">
                     <TableCell className="p-0">
                       <div className="flex items-center justify-center h-full">
                         <Eye size={16} className="text-gray-400" />
@@ -502,8 +490,4 @@ const formatFee = (fee: string) => {
   if (!fee) return '0';
   const value = parseFloat(fee);
   return value.toFixed(6);
-};
-                      
-
-
-                        
+}; 
