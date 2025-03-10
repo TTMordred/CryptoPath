@@ -127,8 +127,6 @@ const FaucetPage = () => {
               </div>
 
               <div className="mt-8 text-sm text-gray-400 space-y-2">
-                <p>• Maximum 1 claim per 6 hours</p>
-                <p>• Maximum 3 claims per day</p>
                 <p>• Test tokens have no real value</p>
                 <p>• Connected to BSC Testnet</p>
               </div>

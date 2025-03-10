@@ -124,6 +124,9 @@ const Header = () => {
           <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
             Faucet
           </Link>
+          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">
+            NFT
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
@@ -221,6 +224,9 @@ const Header = () => {
               </Link>
               <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Faucet
+              </Link>
+              <Link href="/NFT" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                NFT
               </Link>
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
