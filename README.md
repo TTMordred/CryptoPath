@@ -10,7 +10,7 @@
 - Git
 
 ### Setup Instructions
-```bash
+```dotenv
 # Clone the repository
 git clone https://github.com/TTMordred/CryptoPath.git
 
