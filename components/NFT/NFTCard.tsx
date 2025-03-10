@@ -123,7 +123,6 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
           quality={85}
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
       </div>
 
       {/* Phần thông tin */}
