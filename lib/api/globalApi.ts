@@ -4,7 +4,7 @@ import { GlobalData } from "@/lib/types";
 
 export const getGlobalData = async (): Promise<GlobalData> => {
   try {
-    const response = await fetch("https://api.coingecko.com/api/v3/global", {
+    const response = await fetch(process.env.COINGECKO_API_URL ?? "", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

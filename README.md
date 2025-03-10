@@ -36,6 +36,11 @@ SMTP_PASSWORD=your-password
 NEO4J_URI=neo4j+s://your-database-uri
 NEO4J_USERNAME=your-username
 NEO4J_PASSWORD=your-password
+INFURA_KEY=7d389678fba04ceb9510b2be4fff5129
+WALLETCONNECT_PROJECT_ID=b773e42585868b9b143bb0f1664670f1
+TREZOR_EMAIL=test@test.com
+TREZOR_APP_URL=https://www.blocknative.com
+COINGECKO_API_URL=https://api.coingecko.com/api/v3/global
 ```
 ```bash
 # Start the development server

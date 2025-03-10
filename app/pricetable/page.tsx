@@ -1,9 +1,9 @@
 "use client";
 
 import ParticlesBackground from "@/components/ParticlesBackground";
-import HeroSection from "@/components/HeroSection";
-import TopMoversSection from "@/components/TopMoversSection";
-import CoinTable from "@/components/CoinTable";
+import HeroSection from "@/components/Price/HeroSection";
+import TopMoversSection from "@/components/Price/TopMoversSection";
+import CoinTable from "@/components/Price/CoinTable";
 // ----------------- Main Page Component -----------------
 const Page = () => {
   return (

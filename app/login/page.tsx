@@ -20,12 +20,16 @@ import trustModule from '@web3-onboard/trust'
 import okxModule from '@web3-onboard/okx'
 import frontierModule from '@web3-onboard/frontier';
 
-const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129'; // Replace with your Infura key
+require('dotenv').config();
+
+const INFURA_KEY = process.env.INFURA_KEY;
+console.log(INFURA_KEY);
+; // Replace with your Infura key
 
 // Initialize WalletConnect with projectId
 const walletConnect = walletConnectModule({
-  projectId: 'b773e42585868b9b143bb0f1664670f1', // Replace with your WalletConnect project ID
-  optionalChains: [1, 137] // Optional: specify chains you want to support
+  projectId: process.env.WALLETCONNECT_PROJECT_ID, // Lấy từ biến môi trường
+  optionalChains: [1, 137]
 });
 
 
@@ -39,11 +43,11 @@ const trust = trustModule()
 const okx = okxModule()
 const frontier = frontierModule()
 const trezorOptions = {
-  email: 'test@test.com',
-  appUrl: 'https://www.blocknative.com'
-}
+  email: process.env.TREZOR_EMAIL ?? "",
+  appUrl: process.env.TREZOR_APP_URL ?? "https://default-url.com"
+};
 
-const trezor = trezorModule(trezorOptions)
+const trezor = trezorModule(trezorOptions);
 
 const magic = magicModule({
   apiKey: 'pk_live_E9B0C0916678868E'
