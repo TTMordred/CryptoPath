@@ -10,6 +10,8 @@ import { LoadingScreen } from "@/components/loading-screen";
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
+
+  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
@@ -27,36 +29,40 @@ const Header = () => {
         }
       }
     };
-  
+
     // Cập nhật khi component mount
     updateCurrentUser();
-  
+
     // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
     window.addEventListener("storage", updateCurrentUser);
-  
+
     // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
     const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
-  
+
     return () => {
       window.removeEventListener("storage", updateCurrentUser);
       clearInterval(interval);
     };
   }, []);
 
-
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!address.trim()) return;
+
     if (address) {
       router.push(`/search/?address=${address}`);
     }
 
     setIsLoading(true);
-    
+
     try {
       // Simulate loading time (can be replaced with actual API call)
       await new Promise(resolve => setTimeout(resolve, 2500));
-      router.push(`/search/?address=${encodeURIComponent(address)}`);
+      if (searchType === "onchain") {
+        router.push(`/search/?address=${encodeURIComponent(address)}`);
+      } else {
+        router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
+      }
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -83,8 +89,8 @@ const Header = () => {
       console.log("Please disconnect your wallet manually in MetaMask.");
       // Hoặc hiển thị một thông báo UI nếu cần
     }
-
   };
+
   const formatWalletAddress = (walletAddress: string) => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
@@ -114,24 +120,31 @@ const Header = () => {
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
+          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                PriceTable
+            </Link>
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
+          </Link>
+          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
+            Faucet
           </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
-          
+
           {/* Improved Search Form without button */}
-          <form onSubmit={handleSearch} className="relative">
+          <form onSubmit={handleSearch} className="relative flex items-center">
+
             {/* Search icon that navigates to search page on click */}
-            <button 
-              type="button" 
-              onClick={handleSearchIconClick} 
+            <button
+              type="button"
+              onClick={handleSearchIconClick}
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200"
             >
               <Search size={16} />
             </button>
-            
+
             <Input
               type="text"
               placeholder="Search wallet..."
@@ -139,7 +152,7 @@ const Header = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
             />
-            
+
             {address.length > 0 && (
               <button
                 type="button"
@@ -150,8 +163,17 @@ const Header = () => {
                 <X size={12} />
               </button>
             )}
+
+            <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+              >
+                <option value="onchain">On-Chain</option>
+                <option value="offchain">Off-Chain</option>
+            </select>
           </form>
-          
+
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
               <button
@@ -204,15 +226,22 @@ const Header = () => {
               <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Home
               </Link>
+              <Link href="/pricetable" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Pricetable
+              </Link>
               <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Transactions
+              </Link>
+              <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
+                Faucet
               </Link>
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
               </a>
               
+
               {/* Improved Mobile Search Form without button */}
-              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2">
+              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
                 {/* Search icon that navigates to search page on click */}
                 <button 
                   type="button" 
@@ -240,12 +269,20 @@ const Header = () => {
                     <X size={16} />
                   </button>
                 )}
+                <select
+                  value={searchType}
+                  onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                >
+                  <option value="onchain">On-Chain</option>
+                  <option value="offchain">Off-Chain</option>
+                </select>
               </form>
               
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
                   <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
-                    {currentUser.name}
+                    {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -263,7 +300,7 @@ const Header = () => {
           </div>
         )}
       </header>
-      
+
       {/* Loading Screen */}
       <LoadingScreen isLoading={isLoading} />
     </>

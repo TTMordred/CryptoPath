@@ -1,5 +1,6 @@
 // lib/types.ts
 
+
 // Transaction related types
 export interface TransactionTableProps {
   data?: {

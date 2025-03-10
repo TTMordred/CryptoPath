@@ -4,16 +4,15 @@ import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Search, X } from "lucide-react"
-import { LoadingScreen } from "@/components/loading-screen";
+import { Search,X } from "lucide-react"
+import { LoadingScreen } from "@/components/loading-screen"
 
-export default function SearchBar() {
+export default function SearchBarOffChain() {
   const [address, setAddress] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+  const [searchType, setSearchType] = useState<"onchain" | "offchain">("offchain");
 
-  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
-  
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!address.trim()) return;
@@ -34,7 +33,7 @@ export default function SearchBar() {
       setIsLoading(false);
     }
   }
-
+  
   const clearAddress = () => {
     setAddress("")
   }
@@ -67,7 +66,7 @@ export default function SearchBar() {
             </button>
           )}
         </div>
-        
+          
         <Button 
           type="submit" 
           className="bg-amber-500 hover:bg-amber-400 text-black font-medium shadow-md transition-colors duration-200"
@@ -84,8 +83,8 @@ export default function SearchBar() {
                 <option value="offchain">Off-Chain</option>
         </select>
       </form>
-      
       <LoadingScreen isLoading={isLoading} />
     </>
   )
 }
+
