@@ -13,7 +13,7 @@ declare global {
 const particlesConfig = {
   particles: {
     number: {
-      value: 100,
+      value: 35,
       density: {
         enable: true,
         value_area: 800,
@@ -57,7 +57,7 @@ const particlesConfig = {
         mode: "grab",
       },
       onclick: {
-        enable: true,
+        enable: false,
         mode: "push",
       },
     },
