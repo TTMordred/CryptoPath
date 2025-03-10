@@ -25,7 +25,7 @@ npm install next --legacy-peer-deps
 touch .env.local
 ```
 Populate `.env.local` with:
-```
+```sh
 ETHERSCAN_API_KEY=YOUR_API_KEY
 ETHERSCAN_API_URL=https://api.etherscan.io/api
 SMTP_HOST=smtp.example.com
