@@ -69,7 +69,9 @@ const Header = () => {
       setIsLoading(false);
     }
   };
-
+  const handleSettingClick = () => {
+    router.push('/Settings');
+  };
   const clearAddress = () => {
     setAddress("");
   };
@@ -128,9 +130,6 @@ const Header = () => {
           </Link>
           <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
             Faucet
-          </Link>
-          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">
-            NFT
           </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
@@ -204,6 +203,14 @@ const Header = () => {
                   >
                     Logout
                   </button>
+                  
+                  <button
+                   onClick={handleSettingClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Setting
+                  </button>
+                  
                 </div>
               )}
             </div>
@@ -237,9 +244,6 @@ const Header = () => {
               </Link>
               <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Faucet
-              </Link>
-              <Link href="/NFT" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
-                NFT
               </Link>
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
@@ -295,6 +299,12 @@ const Header = () => {
                     className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition"
                   >
                     Logout
+                  </button>
+                  <button
+                    onClick={handleSettingClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Setting
                   </button>
                 </div>
               ) : (
