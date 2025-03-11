@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getCoins } from "@/lib/api/coinApi";
-import HeroSection from "./HeroSection";
-import CoinTable from "./CoinTable";
+
+import HeroSection from "@/components/table/HeroSection";
+import CoinTable from "@/components/table/CoinTable";
 import CoinCard from "./CoinCard";
 import Loader from "@/components/Loader";
 
