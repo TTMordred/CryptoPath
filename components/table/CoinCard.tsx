@@ -108,4 +108,6 @@ const CoinCard: React.FC<CoinCardProps> = ({ coin, onCardClick }) => {
   );
 };
 
+
 export default CoinCard;
+

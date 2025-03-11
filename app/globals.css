@@ -63,7 +63,7 @@
   }
   
   .cp-button--primary {
-    @apply bg-[#F5B056] text-black hover:bg-[#ff6500];
+    @apply bg-[#F5B056] text-black hover:bg-gray-200;
   }
   
   .cp-button--secondary {
