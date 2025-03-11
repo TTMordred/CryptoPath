@@ -176,9 +176,9 @@ export default function TransactionTable() {
           </TabsContent>
         </Tabs>
         <div className="flex items-center justify-between py-4 px-4">
-          <Button
-            variant="outline"
-            size="sm"
+            <Button
+              variant="outline"
+              size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
@@ -186,10 +186,10 @@ export default function TransactionTable() {
               disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
           >
             Previous
-          </Button>
-          <Button
-            variant="outline" 
-            size="sm"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={transactions.length < 20}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
@@ -197,7 +197,7 @@ export default function TransactionTable() {
               disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
           >
             Next
-          </Button>
+            </Button>
         </div>
       </CardContent>
     </Card>
