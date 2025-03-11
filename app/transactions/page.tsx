@@ -1,13 +1,31 @@
 'use client';
 
-import Link from 'next/link';
-import { Metadata } from "next"
 import { Suspense } from "react"
 import NetworkStats from '@/components/transactions/NetworkStats';
 import ParticlesBackground from '@/components/ParticlesBackground';
 import RevenueGraph from '@/components/transactions/RevenueGraph';
-import { Skeleton } from "@/components/ui/skeleton"
 import WalletCharts from '@/components/transactions/WalletCharts';
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2 } from "lucide-react";
+
+// Loading component
+const LoadingCard = ({ children }: { children: React.ReactNode }) => (
+  <Card className="w-full p-4 bg-gray-900 border-gray-800">
+    <CardContent className="flex items-center justify-center gap-2">
+      <Loader2 className="h-4 w-4 animate-spin text-[#F5B056]" />
+      <p className="text-sm text-gray-500">{children}</p>
+    </CardContent>
+  </Card>
+);
+
+// Error boundary component
+const ErrorCard = ({ error }: { error: string }) => (
+  <Card className="w-full p-4 bg-gray-900 border-gray-800">
+    <CardContent className="text-center text-red-500">
+      {error}
+    </CardContent>
+  </Card>
+);
 
 export default function TransactionExplorer() {
   return (
@@ -15,17 +33,23 @@ export default function TransactionExplorer() {
       <ParticlesBackground />
       
       <div className="relative z-10">
-        {/* Main Content */}
         <div className="container mx-auto p-4">
+          {/* Revenue Graph */}
           <div className="mb-6">
-            <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
+            <Suspense fallback={<LoadingCard>Loading revenue graph...</LoadingCard>}>
               <RevenueGraph />
             </Suspense>
           </div>
-          <Suspense fallback={<Skeleton className="h-[300px] w-full" />}>
-            <WalletCharts />
-          </Suspense>
-          <Suspense fallback={<Skeleton className="h-[500px] w-full" />}>
+
+          {/* Wallet Charts */}
+          <div className="mb-6">
+            <Suspense fallback={<LoadingCard>Loading wallet charts...</LoadingCard>}>
+              <WalletCharts />
+            </Suspense>
+          </div>
+
+          {/* Network Stats and Transaction Table */}
+          <Suspense fallback={<LoadingCard>Loading network stats...</LoadingCard>}>
             <NetworkStats />
           </Suspense>
         </div>
