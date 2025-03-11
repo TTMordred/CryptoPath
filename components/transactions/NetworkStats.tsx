@@ -4,7 +4,7 @@ import { useState, useEffect} from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Loader2, Gauge, Calculator } from "lucide-react"
 import axios from 'axios';
-import TransactionTable from '@/components/transactions/TransactionTable';
+import NetworkTransactionTable from '@/components/transactions/NetworkTransactionTable';
 
 interface Stats {
   transactions24h: number;
@@ -168,7 +168,7 @@ export default function TransactionExplorer() {
             </CardContent>
           </Card>
         </div>
-        <TransactionTable/>
+        <NetworkTransactionTable/>
       </div>
     </div>
   );

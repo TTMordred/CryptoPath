@@ -8,7 +8,7 @@ import ParticlesBackground from '@/components/ParticlesBackground';
 import RevenueGraph from '@/components/transactions/RevenueGraph';
 import { Skeleton } from "@/components/ui/skeleton"
 import WalletCharts from '@/components/transactions/WalletCharts';
-import TransactionTable from '@/components/transactions/TransactionTable';
+import TransactionTable from '@/components/transactions/NetworkTransactionTable';
 
 export default function TransactionExplorer() {
   return (

@@ -9,7 +9,7 @@ import { useSearchParams } from "next/navigation"
 import { Loader2 } from "lucide-react"
 
 // Preload critical components
-const FilteredTransactionTable = dynamic(() => import("@/components/transactions/FilteredTransactionTable"), {
+const FilteredTransactionTable = dynamic(() => import("@/components/ui/TransactionTable"), {
   loading: () => <LoadingCard>Loading transactions...</LoadingCard>,
   ssr: false
 })
@@ -50,7 +50,7 @@ export default function Transactions() {
       // Preload critical components immediately
       const preloadCritical = async () => {
         const [FilteredTransactionTable, WalletInfo] = await Promise.all([
-          import("@/components/transactions/FilteredTransactionTable"),
+          import("@/components/ui/TransactionTable"),
           import("@/components/WalletInfo")
         ])
       }
