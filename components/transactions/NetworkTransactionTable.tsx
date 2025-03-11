@@ -21,17 +21,10 @@ interface Transaction {
 }
 
 export default function NetworkTransactionTable() {
-  // State variables
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
-  const [totalPages] = useState(5000);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // Etherscan API configuration
-  const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
-  const API_URL = `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`;
 
   interface MethodSignatures {
     [key: string]: string;
@@ -61,26 +54,15 @@ export default function NetworkTransactionTable() {
   
   const getTransactionMethod = (input: string): string => {
     if (input === '0x') return 'Transfer';
-    
     const functionSelector = input.slice(0, 10).toLowerCase();
-    
-    if (knownMethods[functionSelector]) {
-      return knownMethods[functionSelector];
-    }
-    
-    return 'Swap';
+    return knownMethods[functionSelector] || 'Swap';
   };
 
-  // Function to get relative time
   const getRelativeTime = (timestamp: number) => {
     const now = Date.now();
     const diff = now - timestamp * 1000;
-
-    // Ensure diff is not negative
     if (diff < 0) return "Just now";
-
     const seconds = Math.floor(diff / 1000);
-
     if (seconds < 60) return `${seconds} secs ago`;
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} mins ago`;
@@ -90,33 +72,29 @@ export default function NetworkTransactionTable() {
     return `${days} days ago`;
   };
 
-  // Function to truncate addresses
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  // Fetch latest blocks and their transactions
   const fetchLatestTransactions = async () => {
-    if (!ETHERSCAN_API_KEY) {
-      console.error('Etherscan API key is not set')
-      return
-    }
-
     try {
-      setIsLoading(true)
-      const latestBlockResponse = await fetch('/api/etherscan?module=proxy&action=eth_blockNumber')
-      const latestBlockData = await latestBlockResponse.json()
-      const latestBlock = parseInt(latestBlockData.result, 16)
+      setIsLoading(true);
+      setError(null);
 
+      const latestBlockResponse = await fetch('/api/etherscan?module=proxy&action=eth_blockNumber');
+      if (!latestBlockResponse.ok) throw new Error('Failed to fetch latest block');
+      const latestBlockData = await latestBlockResponse.json();
+      
       const response = await fetch(
-        `/api/etherscan?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=true`
-      )
-      const data = await response.json()
+        `/api/etherscan?module=proxy&action=eth_getBlockByNumber&tag=${latestBlockData.result}&boolean=true`
+      );
+      if (!response.ok) throw new Error('Failed to fetch block transactions');
+      const data = await response.json();
 
       if (data.result && data.result.transactions) {
         const formattedTransactions = await Promise.all(
           data.result.transactions.slice(0, 50).map(async (tx: any) => {
-            const timestamp = parseInt(data.result.timestamp, 16)
+            const timestamp = parseInt(data.result.timestamp, 16);
             return {
               hash: tx.hash,
               method: getTransactionMethod(tx.input),
@@ -127,52 +105,61 @@ export default function NetworkTransactionTable() {
               amount: ethers.utils.formatEther(tx.value) + ' ETH',
               fee: ethers.utils.formatEther(BigInt(tx.gas) * BigInt(tx.gasPrice)),
               timestamp: timestamp
-            }
+            };
           })
-        )
-        setTransactions(formattedTransactions)
+        );
+        setTransactions(formattedTransactions);
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error)
+      console.error('Error fetching transactions:', error);
+      setError('Failed to fetch transactions');
       toast({
-        title: "Error fetching transactions",
-        description: "Failed to fetch latest transactions.",
+        title: "Error",
+        description: "Failed to fetch latest transactions. Please try again later.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchLatestTransactions()
-    const interval = setInterval(fetchLatestTransactions, 15000) // Refresh every 15 seconds
-    return () => clearInterval(interval)
-  }, [])
+    fetchLatestTransactions();
+    const interval = setInterval(fetchLatestTransactions, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      await navigator.clipboard.writeText(text);
       toast({
         title: "Copied!",
         description: "Address copied to clipboard",
-      })
+      });
     } catch (err) {
       toast({
         title: "Failed to copy",
         description: "Please try again",
         variant: "destructive",
-      })
+      });
     }
+  };
+
+  if (error) {
+    return (
+      <div className="rounded-lg border border-gray-800 bg-gray-900 p-4 text-center text-red-500">
+        {error}
+      </div>
+    );
   }
 
   return (
@@ -194,8 +181,17 @@ export default function NetworkTransactionTable() {
         <TableBody>
           {isLoading ? (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-4 bg-white text-black">
-                Loading transactions...
+              <TableCell colSpan={9} className="text-center py-4">
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#F5B056]"></div>
+                  <span>Loading transactions...</span>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : transactions.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={9} className="text-center py-4">
+                No transactions found
               </TableCell>
             </TableRow>
           ) : (
@@ -278,5 +274,5 @@ export default function NetworkTransactionTable() {
         </TableBody>
       </Table>
     </div>
-  )
+  );
 } 
