@@ -1,7 +1,7 @@
 # CryptoPath - Path Your Crypto Future
 **COS30049 - Computing Technology Innovation Project**
 
-## Installation Guide - duy deo trai
+## Installation Guide
 
 ### Prerequisites
 - Node.js 18.0 or higher
