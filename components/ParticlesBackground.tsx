@@ -20,7 +20,7 @@ const particlesConfig = {
       },
     },
     color: {
-      value: "FF0000", 
+      value: "ffc259", 
     },
     shape: {
       type: "circle",
@@ -36,7 +36,7 @@ const particlesConfig = {
     line_linked: {
       enable: true,
       distance: 150,
-      color: "#FF0000", 
+      color: "#ffcd59", 
       opacity: 0.4,
       width: 1,
     },
