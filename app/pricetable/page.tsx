@@ -1,7 +1,7 @@
 "use client";
 
 import ParticlesBackground from "@/components/ParticlesBackground";
-import HeroSection from "@/components/HeroSection";
+import HeroSection from "@/components/table/HeroSection";
 import TopMoversSection from "@/components/table/TopMoversSection";
 import CoinTable from "@/components/table/CoinTable";
 // ----------------- Main Page Component -----------------
