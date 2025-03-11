@@ -4,6 +4,7 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { formatCurrency, formatPercentage } from "@/lib/format";
 import CoinDetailModal from "./CoinDetaiModal";
 import { useState } from "react";
+import React from 'react';
 interface CoinCardProps {
   coin: {
     id: string;
