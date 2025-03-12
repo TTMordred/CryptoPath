@@ -356,44 +356,9 @@ function LoginPageContent() {
                     <div className="text-center text-sm">
                       <span className="bg-black px-2 text-gray-400">Or continue with</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid gap-2">
                       {/* Social login buttons (icons only) */}
-                      <button className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800">
-                        {/* Apple icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5 text-white"
-                        >
-                          <path
-                            d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 
-                              1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 
-                              1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857"
-                            fill="currentColor"
-                          />
-                        </svg>
-                        <span className="sr-only">Login with Apple</span>
-                      </button>
-                      <button
-                        id="google-login"
-                        className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
-                      >
-                        {/* Google icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5 text-white"
-                        >
-                          <path
-                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4
-                              -4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307
-                              C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12
-                              c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
-                            fill="currentColor"
-                          />
-                        </svg>
-                        <span className="sr-only">Login with Google</span>
-                      </button>
+
                       <button
                         id="connectButton"
                         type="button"
