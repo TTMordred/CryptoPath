@@ -39,7 +39,29 @@ const geistMono = Geist_Mono({
  * [existing comment preserved]
  */
 export const metadata: Metadata = { 
-  // [existing metadata preserved]
+  title: "CryptoPath",
+  description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
+  icons: {
+    icon: "/favicon.ico",
+  },
+  openGraph: {
+    title: "CryptoPath",
+    description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'CryptoPath - Blockchain Explorer',
+      }
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "CryptoPath",
+    description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
+    images: ['/og-image.jpg'],
+  },
 };
 
 /**
