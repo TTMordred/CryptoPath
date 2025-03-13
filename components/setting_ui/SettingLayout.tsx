@@ -24,7 +24,7 @@ const SettingLayout: React.FC<SettingLayoutProps> = ({
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white relative">
+    <div className="min-h-screen bg-transparent text-white relative">
       {/* Enhanced background gradients */}
       <div className="absolute top-0 right-0 w-1/2 h-1/2 bg-amber/5 blur-[150px] rounded-full -z-0" />
       <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-amber/5 blur-[150px] rounded-full -z-0" />
@@ -32,7 +32,7 @@ const SettingLayout: React.FC<SettingLayoutProps> = ({
       
       <div className="relative z-10 max-w-5xl mx-auto px-4 py-12">
         <h1 className="text-3xl md:text-4xl font-bold mb-10 text-center">
-          <span className="text-gradient-amber">Settings</span>
+          <span className="text-[#f6b355]">SETTINGS</span>
         </h1>
         
         {/* Enhanced tabs */}

@@ -42,10 +42,10 @@ const WalletSection: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto animate-slide-up bg-[f6b355]/70 rounded-[40px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative overflow-hidden border-2 border-[#f6b355]/60">
+    <div className="w-full max-w-3xl mx-auto animate-slide-up bg-white/5 rounded-[40px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative overflow-hidden border-2 border-[#f6b355]/60">
       <div className="glass-card rounded-xl p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
         <div className="mb-8 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-white flex items-center">
+          <h2 className="text-xl font-semibold text-[#f6b355] flex items-center">
             <CreditCard className="mr-2 h-5 w-5 text-amber" />
             Wallet Addresses
           </h2>
@@ -152,7 +152,7 @@ const WalletSection: React.FC = () => {
       </div>
       <style jsx>{`
         .neo-blur {
-          background: rgba(0, 0, 0, 0.2);
+          background: transparent;
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }

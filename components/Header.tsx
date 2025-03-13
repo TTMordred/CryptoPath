@@ -88,8 +88,10 @@ const Header = () => {
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
 
-  // Sử dụng profile.username từ SettingsProvider, fallback về currentUser.name hoặc wallet address
-  const displayName = profile.username || currentUser?.name || formatWalletAddress(currentUser?.walletAddress || '');
+  // Hiển thị username từ profile.username, nếu không có thì dùng wallet address
+  const displayName = profile.username && profile.username !== 'User' 
+    ? profile.username 
+    : formatWalletAddress(currentUser?.walletAddress || '');
 
   return (
     <>

@@ -83,11 +83,12 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       const settingsData = { profile, wallets };
       localStorage.setItem(settingsKey, JSON.stringify(settingsData));
 
-      // Cập nhật currentUser trong localStorage
+      // Cập nhật currentUser nhưng giữ nguyên walletAddress
       const currentUser = localStorage.getItem('currentUser');
       if (currentUser) {
         const userData = JSON.parse(currentUser);
-        userData.name = profile.username; // Đồng bộ username
+        userData.name = profile.username; // Chỉ cập nhật name
+        // Không ghi đè walletAddress
         localStorage.setItem('currentUser', JSON.stringify(userData));
       }
     }

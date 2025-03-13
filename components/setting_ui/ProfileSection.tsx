@@ -18,11 +18,11 @@ const ProfileSection: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto animate-slide-up bg-[f6b355]/10 rounded-[40px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative overflow-hidden border-2 border-[#f6b355]/50">
+    <div className="w-full max-w-3xl mx-auto animate-slide-up bg-white/5 rounded-[40px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative overflow-hidden border-2 border-[#f6b355]/50">
       <div className="glass-card rounded-[40px] p-6 md:p-8 shadow-[0_8px_30px_rgba(0,0,0,0.12)] relative overflow-hidden bg-transparent transition-all duration-300 hover:shadow-[0_12px_40px_rgba(0,0,0,0.2)]">
         {/* Decorative elements */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-[#f6b355]/10 blur-xl animate-pulse"></div>
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 rounded-full bg-[#f6b355]/10 blur-xl animate-pulse"></div>
+        <div className="absolute -top-24 -right-24 w-48 h-48 rounded-full bg-[#f6b355]/50 blur-xl animate-pulse"></div>
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 rounded-full bg-[#f6b355]/50 blur-xl animate-pulse"></div>
 
         <div className="relative mb-12">
           {/* Background Image */}
