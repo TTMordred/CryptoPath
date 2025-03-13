@@ -229,14 +229,15 @@ function LoginPageContent() {
         .eq('id', data.user.id)
         .single();
 
-      // Store user data for frontend usage
-      const userData = {
-        id: data.user.id,
-        email: data.user.email,
+      // Store only non-sensitive display information in localStorage
+      // Rely on Supabase session for authentication and sensitive data
+      const publicUserData = {
         name: profileData?.display_name || data.user.email?.split('@')[0],
+        isLoggedIn: true,
+        // Avoid storing email, ID or other sensitive information
       };
       
-      localStorage.setItem('currentUser', JSON.stringify(userData));
+      localStorage.setItem('userDisplayInfo', JSON.stringify(publicUserData));
       toast.success('Login successful!');
       router.push('/');
     } catch (error) {
