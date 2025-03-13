@@ -1,5 +1,4 @@
 'use client';
-import CryptoJS from 'crypto-js';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,15 +20,15 @@ import trustModule from '@web3-onboard/trust'
 import okxModule from '@web3-onboard/okx'
 import frontierModule from '@web3-onboard/frontier';
 import { useAuth } from '@/lib/context/AuthContext';
+import { hashSync, genSaltSync, compareSync } from 'bcryptjs';
 
 const dcent = dcentModule();
 
-const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 const hashPassword = (password: string) => {
-  const salt = bcrypt.genSaltSync(saltRounds);
-  const hashedPassword = bcrypt.hashSync(password, salt);
+  const salt = genSaltSync(saltRounds);
+  const hashedPassword = hashSync(password, salt);
   return hashedPassword;
 };
 const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
@@ -238,15 +237,24 @@ function LoginPageContent() {
         .single();
 
       // Store only non-sensitive display information in localStorage
-      // Rely on Supabase session for authentication and sensitive data
       const publicUserData = {
         name: profileData?.display_name || data.user.email?.split('@')[0],
         isLoggedIn: true,
-        // Avoid storing email, ID or other sensitive information
+        // No need to include password field since it's not used
       };
+
+      // Generate a separate token instead of using password
+      const userIdentifier = data.user.id || '';
+      const hashedIdentifier = hashSync(userIdentifier, 10);
+      localStorage.setItem('userAuth', hashedIdentifier);
+
+      // If you need to store some authentication token or identifier
+      const userToken = data.session?.access_token || '';
+      localStorage.setItem('userToken', userToken);
+
+      // Store the display info
+      localStorage.setItem('userDisplayInfo', JSON.stringify(publicUserData));
       
-      const encryptedUserData = hashPassword(publicUserData.password);
-      localStorage.setItem('userDisplayInfo', encryptedUserData);
       toast.success('Login successful!');
       router.push('/');
     } catch (error) {
@@ -504,3 +512,20 @@ export default function LoginPage() {
     </Web3OnboardProvider>
   );
 }
+
+// For context
+type UserContextType = {
+  user: {
+    name: any;
+    isLoggedIn: boolean;
+    password: string; // Add the password property
+  };
+  // other context properties...
+};
+
+// For reducer
+type UserState = {
+  name: any;
+  isLoggedIn: boolean;
+  password: string; // Add the password property
+};
