@@ -1,13 +1,31 @@
-// lib/api/coinApi.ts
+
 import { toast } from "sonner";
+import { supabase } from "@/src/integrations/supabase/client";
 import { Coin, CoinDetail, CoinHistory } from "@/lib/types";
 
+const CACHE_EXPIRY = 60 * 1000; // 1 minute cache expiry
+
 export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
+  const cacheKey = `coins_${page}_${perPage}`;
+  
   try {
+    // Try to get cached data
+    const { data: cachedData } = await supabase
+      .from('cached_coins')
+      .select('data, last_updated')
+      .eq('id', cacheKey)
+      .single();
+
+    // If cache is valid and not expired, return it
+    if (cachedData && Date.now() - new Date(cachedData.last_updated).getTime() < CACHE_EXPIRY) {
+      console.log('Returning cached coin data');
+      return cachedData.data as Coin[];
+    }
+
+    // Fetch fresh data from API
+    console.log(`Fetching fresh coin data for page ${page}`);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
-    
-    console.log(`Fetching coins for page ${page} with ${perPage} per page`);
     
     const response = await fetch(
       `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d&locale=en`,
@@ -23,12 +41,20 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      console.error(`API request failed with status ${response.status}: ${response.statusText}`);
       throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`Successfully fetched ${data.length} coins`);
+
+    // Update cache with new data
+    await supabase
+      .from('cached_coins')
+      .upsert({ 
+        id: cacheKey,
+        data: data,
+        last_updated: new Date().toISOString()
+      });
+
     return data;
   } catch (error) {
     console.error("Error fetching coins:", error);
@@ -44,11 +70,25 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
   }
 
   try {
+    // Try to get cached data
+    const { data: cachedData } = await supabase
+      .from('cached_coin_details')
+      .select('data, last_updated')
+      .eq('id', id)
+      .single();
+
+    // If cache is valid and not expired, return it
+    if (cachedData && Date.now() - new Date(cachedData.last_updated).getTime() < CACHE_EXPIRY) {
+      console.log('Returning cached coin detail');
+      return cachedData.data as CoinDetail;
+    }
+
+    // Fetch fresh data
+    console.log(`Fetching fresh data for coin: ${id}`);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     
     const url = `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`;
-    console.log(`Fetching data for coin with id: ${id}, URL: ${url}`);
     
     const response = await fetch(url, {
       signal: controller.signal,
@@ -62,27 +102,30 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorText = await response.text(); // Lấy chi tiết lỗi từ server
-      console.error(`API request failed with status ${response.status}: ${response.statusText} - ${errorText}`);
-      throw new Error(`API request failed with status ${response.status}: ${response.statusText} - ${errorText}`);
+      throw new Error(`API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`Successfully fetched data for coin: ${data.name}`);
+
+    // Update cache with new data
+    await supabase
+      .from('cached_coin_details')
+      .upsert({ 
+        id: id,
+        data: data,
+        last_updated: new Date().toISOString()
+      });
+
     return data;
   } catch (error) {
     if (error instanceof Error) {
-      if (error.name === "AbortError") {
-        console.error(`Fetch aborted for coin ${id} due to timeout`);
-        throw new Error("Request timed out after 30 seconds");
-      }
-      console.error(`Error fetching coin detail for ${id}: ${error.message}`);
+      console.error(`Error fetching coin detail for ${id}:`, error);
       throw error;
     }
-    console.error(`Unknown error fetching coin detail for ${id}:`, error);
     throw new Error("An unknown error occurred while fetching coin data");
   }
 };
+
 export const getCoinHistory = async (
   id: string,
   days = 7

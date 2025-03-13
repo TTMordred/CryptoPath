@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
+import { toast } from 'sonner';
+import { supabase } from '@/src/integrations/supabase/client';
 import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
 import injectedModule from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
@@ -12,22 +14,30 @@ import safeModule from '@web3-onboard/gnosis'
 import trezorModule from '@web3-onboard/trezor'
 import magicModule from '@web3-onboard/magic'
 import dcentModule from '@web3-onboard/dcent';
-
-const dcent = dcentModule();
 import sequenceModule from '@web3-onboard/sequence'
 import tahoModule from '@web3-onboard/taho'
 import trustModule from '@web3-onboard/trust'
 import okxModule from '@web3-onboard/okx'
 import frontierModule from '@web3-onboard/frontier';
+import { useAuth } from '@/lib/context/AuthContext';
+import { hashSync, genSaltSync, compareSync } from 'bcryptjs';
 
-const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129'; // Replace with your Infura key
+const dcent = dcentModule();
+
+const saltRounds = 10;
+
+const hashPassword = (password: string) => {
+  const salt = genSaltSync(saltRounds);
+  const hashedPassword = hashSync(password, salt);
+  return hashedPassword;
+};
+const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
 
 // Initialize WalletConnect with projectId
 const walletConnect = walletConnectModule({
-  projectId: 'b773e42585868b9b143bb0f1664670f1', // Replace with your WalletConnect project ID
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID, // Replace with your WalletConnect project ID
   optionalChains: [1, 137] // Optional: specify chains you want to support
 });
-
 
 const injected = injectedModule();
 const coinbase = coinbaseModule();
@@ -121,7 +131,6 @@ const chains = [
 
 const appMetadata = {
   name: 'CryptoPath',
-  //icon: '<svg><rect width="100" height="100" fill="#ff6500"/></svg>', // Replace with your actual icon
   description: 'Login to CryptoPath with your wallet',
   recommendedInjectedWallets: [
     { name: 'MetaMask', url: 'https://metamask.io' },
@@ -137,6 +146,7 @@ const web3Onboard = init({
 
 function LoginPageContent() {
   const router = useRouter();
+  const { signInWithWalletConnect, signIn } = useAuth();
 
   // Form state
   const [email, setEmail] = useState('');
@@ -144,104 +154,132 @@ function LoginPageContent() {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  
   // Wallet state
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
+
   interface Account {
     address: string;
     ens: string | null;
   }
+
   const formatWalletAddress = (walletAddress: string) => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
+  
   const [account, setAccount] = useState<Account | null>(null);
 
   // Handle wallet connection
   useEffect(() => {
-    if (wallet?.provider && !isLoggedOut) { // Chỉ đăng nhập nếu chưa logout
+    if (wallet?.provider && !isLoggedOut) {
       const { address, ens } = wallet.accounts[0];
       setAccount({
         address,
         ens: ens?.name || null,
       });
-      const userData = {
-        walletAddress: address,
-        name: ens?.name || formatWalletAddress(address), // Sử dụng ENS nếu có, nếu không thì dùng địa chỉ ví rút gọn
+      
+      // Store wallet authentication details in Supabase using our custom AuthContext method
+      const authenticateWithWallet = async () => {
+        try {
+          setIsLoading(true);
+          
+          // Use our custom auth context method to sign in with wallet
+          const { data, error } = await signInWithWalletConnect(address);
+          
+          if (error) {
+            console.error('Wallet auth error:', error);
+            toast.error(`Failed to authenticate with wallet: ${error.message}`);
+            return;
+          }
+          
+          toast.success('Successfully authenticated with wallet');
+          router.push('/');
+        } catch (error: any) {
+          console.error('Error authenticating with wallet:', error);
+          toast.error(`Authentication failed: ${error?.message || 'Unknown error'}`);
+        } finally {
+          setIsLoading(false);
+        }
       };
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      window.location.href = '/';
+      
+      authenticateWithWallet();
     }
-  }, [wallet, router, isLoggedOut]);
+  }, [wallet, router, isLoggedOut, signInWithWalletConnect]);
 
-  // Helper functions (using localStorage for demo purposes)
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email.toLowerCase());
-  };
-
-  const getUsers = () => {
-    if (typeof window !== 'undefined') {
-      const usersJSON = localStorage.getItem('users');
-      return usersJSON ? JSON.parse(usersJSON) : [];
-    }
-    return [];
-  };
-
-  const isEmailExists = (email: string) => {
-    const users = getUsers();
-    return users.some((user: { email: string }) => user.email === email);
-  };
-
-  const validatePasswordForUser = (email: string, password: string) => {
-    const users = getUsers();
-    const user = users.find(
-      (user: { email: string; password: string }) => user.email === email
-    );
-    return user && user.password === password;
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailError('');
     setPasswordError('');
+    setIsLoading(true);
 
-    let valid = true;
+    try {
+      const { data, error } = await signIn(email, password);
 
-    if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address.');
-      valid = false;
-    } else if (!isEmailExists(email)) {
-      setEmailError('Email does not exist.');
-      valid = false;
-    }
+      if (error) {
+        if (error.message.includes('email')) {
+          setEmailError(error.message);
+        } else if (error.message.includes('password')) {
+          setPasswordError(error.message);
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
 
-    if (valid && !validatePasswordForUser(email, password)) {
-      setPasswordError('Incorrect password.');
-      valid = false;
-    }
+      // Fetch user profile information
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
 
-    if (valid) {
-      // Save the current user to localStorage for use in the header
-      const users = getUsers();
-      const loggedInUser = users.find(
-        (user: { email: string; password: string }) => user.email === email
-      );
-      localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
-      window.location.href = "/";
-      window.location.reload();
+      // Store only non-sensitive display information in localStorage
+      const publicUserData = {
+        name: profileData?.display_name || data.user.email?.split('@')[0],
+        isLoggedIn: true,
+        // No need to include password field since it's not used
+      };
+
+      // Generate a separate token instead of using password
+      const userIdentifier = data.user.id || '';
+      const hashedIdentifier = hashSync(userIdentifier, 10);
+      localStorage.setItem('userAuth', hashedIdentifier);
+
+      // If you need to store some authentication token or identifier
+      const userToken = data.session?.access_token || '';
+      localStorage.setItem('userToken', userToken);
+
+      // Store the display info
+      localStorage.setItem('userDisplayInfo', JSON.stringify(publicUserData));
+      
+      toast.success('Login successful!');
+      router.push('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error('An unexpected error occurred. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleWalletConnect = () => {
+  const handleWalletConnect = async () => {
     if (!wallet) {
-      connect(); // Kết nối ví nếu chưa kết nối
+      connect(); // Connect wallet if not connected
     } else {
-      disconnect({ label: wallet.label }); // Ngắt kết nối ví
+      // Handle wallet disconnect
+      disconnect({ label: wallet.label });
       setAccount(null);
-      setIsLoggedOut(true); // Đánh dấu đã logout
+      setIsLoggedOut(true);
+      
+      // Sign out of Supabase auth
+      await supabase.auth.signOut();
+      
+      // Clear local storage
       localStorage.removeItem('currentUser');
-      router.push('/login'); // Chuyển hướng về trang login
+      router.push('/login');
     }
   };
 
@@ -274,6 +312,7 @@ function LoginPageContent() {
                         className="w-full px-3 py-2 border border-white rounded-md bg-black text-white"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
                       />
                       {emailError && <span className="text-red-500 text-sm">{emailError}</span>}
                     </div>
@@ -291,11 +330,13 @@ function LoginPageContent() {
                           className="w-full px-3 py-2 border border-white rounded-md bg-black text-white pr-10"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
+                          disabled={isLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+                          disabled={isLoading}
                         >
                           {showPassword ? (
                             <svg
@@ -349,21 +390,76 @@ function LoginPageContent() {
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200"
+                      className={`w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200 ${
+                        isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
+                      disabled={isLoading}
                     >
-                      Login
+                      {isLoading ? 'Logging in...' : 'Login'}
                     </button>
                     <div className="text-center text-sm">
                       <span className="bg-black px-2 text-gray-400">Or continue with</span>
                     </div>
-                    <div className="grid gap-2">
+                    <div className="grid grid-cols-3 gap-4">
                       {/* Social login buttons (icons only) */}
-
+                      <button className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800">
+                        {/* Apple icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5 text-white"
+                        >
+                          <path
+                            d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 
+                              1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 
+                              1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        <span className="sr-only">Login with Apple</span>
+                      </button>
+                      <button
+                        id="google-login"
+                        className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
+                        onClick={async () => {
+                          setIsLoading(true);
+                          try {
+                            const { data, error } = await supabase.auth.signInWithOAuth({
+                              provider: 'google',
+                              options: {
+                                redirectTo: `${window.location.origin}/`,
+                              },
+                            });
+                            if (error) throw error;
+                          } catch (error) {
+                            console.error('Google login error:', error);
+                            toast.error('Google login failed. Please try again.');
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        }}
+                      >
+                        {/* Google icon */}
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5 text-white"
+                        >
+                          <path
+                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4
+                              -4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307
+                              C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12
+                              c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
+                            fill="currentColor"
+                          />
+                        </svg>
+                        <span className="sr-only">Login with Google</span>
+                      </button>
                       <button
                         id="connectButton"
                         type="button"
                         onClick={handleWalletConnect}
-                        disabled={connecting}
+                        disabled={connecting || isLoading}
                         className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
                       >
                         <svg
@@ -416,3 +512,20 @@ export default function LoginPage() {
     </Web3OnboardProvider>
   );
 }
+
+// For context
+type UserContextType = {
+  user: {
+    name: any;
+    isLoggedIn: boolean;
+    password: string; // Add the password property
+  };
+  // other context properties...
+};
+
+// For reducer
+type UserState = {
+  name: any;
+  isLoggedIn: boolean;
+  password: string; // Add the password property
+};
