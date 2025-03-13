@@ -24,9 +24,13 @@ import { useAuth } from '@/lib/context/AuthContext';
 
 const dcent = dcentModule();
 
-const encryptData = (data: Record<string, any>) => {
-  const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'secret-key').toString();
-  return ciphertext;
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
+const hashPassword = (password: string) => {
+  const salt = bcrypt.genSaltSync(saltRounds);
+  const hashedPassword = bcrypt.hashSync(password, salt);
+  return hashedPassword;
 };
 const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
 
@@ -241,7 +245,7 @@ function LoginPageContent() {
         // Avoid storing email, ID or other sensitive information
       };
       
-      const encryptedUserData = encryptData(publicUserData);
+      const encryptedUserData = hashPassword(publicUserData.password);
       localStorage.setItem('userDisplayInfo', encryptedUserData);
       toast.success('Login successful!');
       router.push('/');

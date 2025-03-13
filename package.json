@@ -84,7 +84,8 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "test": "file:",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "bcrypt": "^5.1.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
