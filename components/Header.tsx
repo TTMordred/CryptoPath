@@ -70,7 +70,7 @@ const Header = () => {
     }
   };
   const handleSettingClick = () => {
-    router.push('/Settings');
+    router.push('/setting');
   };
   const clearAddress = () => {
     setAddress("");

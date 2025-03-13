@@ -42,9 +42,9 @@ const SettingLayout: React.FC<SettingLayoutProps> = ({
               <button
                 key={tab.id}
                 className={cn(
-                  "py-2.5 px-5 md:px-7 rounded-full flex items-center transition-all duration-300 font-medium",
+                  "py-2.5 px-5 md:px-7 rounded-full flex items-center transition-all duration-300 font-medium ",
                   activeTab === tab.id 
-                    ? "bg-amber text-black shadow-[0_2px_10px_rgba(246,179,85,0.3)]" 
+                    ? "bg-[#f6b355] text-white shadow-[0_2px_10px_rgba(246,179,85,0.3)]" 
                     : "text-white/80 hover:text-white hover:bg-white/10"
                 )}
                 onClick={() => setActiveTab(tab.id as Tab)}
@@ -70,6 +70,37 @@ const SettingLayout: React.FC<SettingLayoutProps> = ({
           )}
         </div>
       </div>
+      <style jsx>{`
+        text-gradient-amber {
+          background: linear-gradient(135deg, #f6b355 0%, #f7d794 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+        }
+
+        .animate-fade-in {
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .section-transition {
+          position: relative;
+        }
+      `}</style>
     </div>
   );
 };

@@ -67,11 +67,14 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Đồng bộ với localStorage chỉ khi chạy trên client
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedProfileData = localStorage.getItem('profile');
-      const savedWalletsData = localStorage.getItem('wallets');
-      
-      if (savedProfileData) setProfile(JSON.parse(savedProfileData));
-      if (savedWalletsData) setWallets(JSON.parse(savedWalletsData));
+      try {
+        const savedProfileData = localStorage.getItem('profile');
+        const savedWalletsData = localStorage.getItem('wallets');
+        if (savedProfileData) setProfile(JSON.parse(savedProfileData));
+        if (savedWalletsData) setWallets(JSON.parse(savedWalletsData));
+      } catch (error) {
+        console.error('Error loading localStorage:', error);
+      }
     }
   }, []);
 

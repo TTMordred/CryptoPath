@@ -8,7 +8,7 @@ import QueryProvider from "./QueryProvider"; // ✅ Import Client Component
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Thêm WalletProvider
-
+import { SettingsProvider } from "@/components/context/SettingsContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -55,6 +55,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <SettingsProvider> {/* ✅ Bọc bên trong Client Component */}
         <WalletProvider> {/* Bao bọc bằng WalletProvider */}
           <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
             <SplashScreen />
@@ -64,6 +65,7 @@ export default function RootLayout({
             <Footer />
           </QueryProvider>
         </WalletProvider>
+        </SettingsProvider>
       </body>
     </html>
   );
