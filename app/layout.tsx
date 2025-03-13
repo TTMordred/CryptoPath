@@ -8,6 +8,7 @@ import QueryProvider from "./QueryProvider"; // ✅ Import Client Component
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Thêm WalletProvider
+import { AuthProvider } from '@/lib/context/AuthContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,25 +46,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <WalletProvider> {/* Bao bọc bằng WalletProvider */}
-          <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
-            <SplashScreen />
-            <Header />
-            {children}
-            <Toaster position="top-center" />
-            <Footer />
-          </QueryProvider>
-        </WalletProvider>
+      <body>
+        <AuthProvider>
+          <WalletProvider>
+            <QueryProvider>
+              <SplashScreen />
+              <Header />
+              {children}
+              <Toaster position="top-center" />
+              <Footer />
+            </QueryProvider>
+          </WalletProvider>
+        </AuthProvider>
       </body>
     </html>
   );

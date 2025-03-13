@@ -36,8 +36,6 @@ SMTP_PASSWORD=your-password
 NEO4J_URI=neo4j+s://your-database-uri
 NEO4J_USERNAME=your-username
 NEO4J_PASSWORD=your-password
-NEXTAUTH_URL=https://cryptopath.vercel.app/
-NEXTAUTH_SECRET=your-secret-key
 ```
 ```bash
 # Start the development server

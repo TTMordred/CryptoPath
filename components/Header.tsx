@@ -1,3 +1,4 @@
+
 "use client"; // Ensures this runs on the client side
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -6,6 +7,8 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
+import { supabase } from "@/src/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,13 +17,29 @@ const Header = () => {
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string; id?: string; email?: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const updateCurrentUser = () => {
-      if (typeof window !== "undefined") {
+    // Check for authentication state
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is logged in with Supabase
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email,
+          name: profile?.display_name || session.user.email?.split('@')[0],
+        });
+      } else {
+        // Fallback to localStorage for wallet connections
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
           setCurrentUser(JSON.parse(storedUser));
@@ -29,19 +48,34 @@ const Header = () => {
         }
       }
     };
+    
+    checkUser();
+    
+    // Listen for authentication state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // When user signs in, update current user state
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0],
+        });
+      } else if (event === 'SIGNED_OUT') {
+        // When user signs out, clear current user state
+        setCurrentUser(null);
+      }
+    });
 
-    // Cập nhật khi component mount
-    updateCurrentUser();
-
-    // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
-    window.addEventListener("storage", updateCurrentUser);
-
-    // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
-    const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
-
+    const handleUserUpdate = (event: CustomEvent) => {
+      setCurrentUser(event.detail);
+    };
+    
+    window.addEventListener('userUpdated', handleUserUpdate as EventListener);
+    
+    // Cleanup
     return () => {
-      window.removeEventListener("storage", updateCurrentUser);
-      clearInterval(interval);
+      authListener?.subscription.unsubscribe();
+      window.removeEventListener('userUpdated', handleUserUpdate as EventListener);
     };
   }, []);
 
@@ -79,15 +113,20 @@ const Header = () => {
     router.push('/search');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    setCurrentUser(null);
-    setDropdownOpen(false);
-    router.push("/login");
-    // Thông báo cho người dùng ngắt kết nối ví thủ công (tùy chọn)
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      console.log("Please disconnect your wallet manually in MetaMask.");
-      // Hoặc hiển thị một thông báo UI nếu cần
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local storage
+      localStorage.removeItem("currentUser");
+      setCurrentUser(null);
+      setDropdownOpen(false);
+      toast.success("Logged out successfully");
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to log out. Please try again.");
     }
   };
 
@@ -95,6 +134,20 @@ const Header = () => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -204,12 +257,6 @@ const Header = () => {
                   >
                     Logout
                   </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
-                  >
-                    Setting
-                  </button>
                 </div>
               )}
             </div>
@@ -298,15 +345,9 @@ const Header = () => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition"
+                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition ml-2"
                   >
                     Logout
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
-                  >
-                    Setting
                   </button>
                 </div>
               ) : (
