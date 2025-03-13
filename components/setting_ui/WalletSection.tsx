@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState } from 'react';
 import { useSettings } from '@/components/context/SettingsContext';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Wallet, Plus, Trash2, Check, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WalletSection: React.FC = () => {
-  const { wallets, addWallet, removeWallet, setDefaultWallet } = useSettings();
+  const { wallets = [], addWallet, removeWallet, setDefaultWallet } = useSettings(); // Default to empty array
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
@@ -16,19 +17,14 @@ const WalletSection: React.FC = () => {
       toast.error("Wallet address cannot be empty");
       return;
     }
-
-    // Basic validation - could be improved for specific wallet formats
     if (newWalletAddress.length < 5) {
       toast.error("Please enter a valid wallet address");
       return;
     }
-
-    // Check for duplicates
     if (wallets.some(wallet => wallet.address === newWalletAddress)) {
       toast.error("This wallet address is already added");
       return;
     }
-
     addWallet(newWalletAddress);
     setNewWalletAddress('');
     setIsAdding(false);
@@ -64,7 +60,6 @@ const WalletSection: React.FC = () => {
           )}
         </div>
 
-        {/* Add new wallet form */}
         {isAdding && (
           <div className="neo-blur p-5 rounded-xl mb-8 animate-fade-in">
             <div className="flex flex-col space-y-4">
@@ -96,7 +91,6 @@ const WalletSection: React.FC = () => {
           </div>
         )}
 
-        {/* Wallet list */}
         <div className="space-y-4">
           {wallets.length === 0 ? (
             <div className="neo-blur rounded-xl p-8 text-center text-white/70">
@@ -157,17 +151,14 @@ const WalletSection: React.FC = () => {
         </div>
       </div>
       <style jsx>{`
-        
         .neo-blur {
           background: rgba(0, 0, 0, 0.2);
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         .animate-fade-in {
           animation: fadeIn 0.3s ease-out;
         }
-
         @keyframes fadeIn {
           from {
             opacity: 0;

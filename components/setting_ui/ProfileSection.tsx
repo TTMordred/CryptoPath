@@ -1,4 +1,5 @@
 'use client';
+
 import React from 'react';
 import { useSettings } from '@/components/context/SettingsContext';
 import ImageUploader from './ImageUploader';
@@ -11,6 +12,7 @@ const ProfileSection: React.FC = () => {
   const { profile, updateProfile, saveProfile, hasUnsavedChanges } = useSettings();
 
   const handleSave = () => {
+    console.log('Saving changes...');
     saveProfile();
     toast.success('Profile saved successfully');
   };
@@ -34,7 +36,7 @@ const ProfileSection: React.FC = () => {
           </div>
 
           {/* Profile Image */}
-          <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 rounded-[40px] shadow-[0_8px_20px_rgba(0,0,0,0.3)]  hover:border-[#f9c27a] transition-all duration-300">
+          <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 rounded-[40px] shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:border-[#f9c27a] transition-all duration-300">
             <ImageUploader
               type="profile"
               currentImage={profile.profileImage}
@@ -52,8 +54,11 @@ const ProfileSection: React.FC = () => {
               Username
             </label>
             <Input
-              value={profile.username}
-              onChange={(e) => updateProfile({ username: e.target.value })}
+              value={profile.username || ''}
+              onChange={(e) => {
+                console.log('New username:', e.target.value);
+                updateProfile({ username: e.target.value });
+              }}
               placeholder="Your username"
               className="bg-transparent border-2 border-[#f6b355]/50 text-white placeholder-[#f6b355]/50 focus:ring-2 focus:ring-[#f6b355] hover:border-[#f6b355] transition-all duration-200 rounded-[40px] py-2 px-4"
             />
@@ -81,7 +86,6 @@ const ProfileSection: React.FC = () => {
           backdrop-filter: blur(10px);
           border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
         .input-focus:focus {
           border-color: rgba(246, 179, 85, 0.5);
           box-shadow: 0 0 0 2px rgba(246, 179, 85, 0.2);

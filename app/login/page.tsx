@@ -159,21 +159,44 @@ function LoginPageContent() {
 
   // Handle wallet connection
   useEffect(() => {
-    if (wallet?.provider && !isLoggedOut) { // Chỉ đăng nhập nếu chưa logout
-      const { address, ens } = wallet.accounts[0];
-      setAccount({
-        address,
-        ens: ens?.name || null,
-      });
-      const userData = {
-        walletAddress: address,
-        name: ens?.name || formatWalletAddress(address), // Sử dụng ENS nếu có, nếu không thì dùng địa chỉ ví rút gọn
-      };
-      localStorage.setItem('currentUser', JSON.stringify(userData));
-      window.location.href = '/';
-    }
-  }, [wallet, router, isLoggedOut]);
+    if (wallet?.provider && !isLoggedOut) {
+        const { address, ens } = wallet.accounts[0];
+        setAccount({
+            address,
+            ens: ens?.name || null,
+        });
+        
+        // Tạo key unique cho mỗi wallet address
+        const userKey = `user_${address}`;
+        const settingsKey = `settings_${address}`;
+        
+        // Kiểm tra xem đã có settings chưa, nếu chưa thì tạo mới
+        const existingSettings = localStorage.getItem(settingsKey);
+        if (!existingSettings) {
+            const defaultSettings = {
+                profile: {
+                    username: ens?.name || formatWalletAddress(address),
+                    profileImage: null,
+                    backgroundImage: null
+                },
+                wallets: [{
+                    id: Date.now().toString(),
+                    address,
+                    isDefault: true
+                }]
+            };
+            localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
+        }
 
+        const userData = {
+            walletAddress: address,
+            name: ens?.name || formatWalletAddress(address),
+            settingsKey: settingsKey
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        window.location.href = '/';
+    }
+}, [wallet, router, isLoggedOut]);
   // Helper functions (using localStorage for demo purposes)
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -209,29 +232,49 @@ function LoginPageContent() {
     let valid = true;
 
     if (!validateEmail(email)) {
-      setEmailError('Please enter a valid email address.');
-      valid = false;
+        setEmailError('Please enter a valid email address.');
+        valid = false;
     } else if (!isEmailExists(email)) {
-      setEmailError('Email does not exist.');
-      valid = false;
+        setEmailError('Email does not exist.');
+        valid = false;
     }
 
     if (valid && !validatePasswordForUser(email, password)) {
-      setPasswordError('Incorrect password.');
-      valid = false;
+        setPasswordError('Incorrect password.');
+        valid = false;
     }
 
     if (valid) {
-      // Save the current user to localStorage for use in the header
-      const users = getUsers();
-      const loggedInUser = users.find(
-        (user: { email: string; password: string }) => user.email === email
-      );
-      localStorage.setItem('currentUser', JSON.stringify(loggedInUser));
-      window.location.href = "/";
-      window.location.reload();
+        const users = getUsers();
+        const loggedInUser = users.find(
+            (user: { email: string; password: string }) => user.email === email
+        );
+        
+        // Tạo key unique cho settings của email
+        const settingsKey = `settings_${email}`;
+        const existingSettings = localStorage.getItem(settingsKey);
+        if (!existingSettings) {
+            const defaultSettings = {
+                profile: {
+                    username: email.split('@')[0],
+                    profileImage: null,
+                    backgroundImage: null
+                },
+                wallets: []
+            };
+            localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
+        }
+
+        const userData = {
+            email,
+            name: loggedInUser.name || email.split('@')[0],
+            settingsKey: settingsKey
+        };
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        window.location.href = "/";
+        window.location.reload();
     }
-  };
+};
 
   const handleWalletConnect = () => {
     if (!wallet) {
@@ -366,22 +409,19 @@ function LoginPageContent() {
                         disabled={connecting}
                         className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
                       >
-                      <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-5 h-5 text-white"
-                    >
-                      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"></path>
-                      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"></path>
-                    </svg>
-
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          className="w-5 h-5 text-white"
+                        >
+                          <path
+                            d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12
+                              m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9
+                              m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25
+                              A2.25 2.25 0 0 0 3 6v3"
+                            fill="currentColor"
+                          />
+                        </svg>
                         <span className="sr-only">Login with Wallet</span>
                       </button>
                     </div>

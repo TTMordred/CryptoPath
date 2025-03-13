@@ -1,17 +1,17 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-// Types
-type Wallet = {
-  id: string;
-  address: string;
-  isDefault: boolean;
-};
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type ProfileSettings = {
   username: string;
   profileImage: string | null;
   backgroundImage: string | null;
+};
+
+type Wallet = {
+  id: string;
+  address: string;
+  isDefault: boolean;
 };
 
 type SettingsContextType = {
@@ -25,79 +25,74 @@ type SettingsContextType = {
   hasUnsavedChanges: boolean;
 };
 
-// Default values
 const defaultProfile: ProfileSettings = {
   username: 'User',
   profileImage: null,
   backgroundImage: null,
 };
 
-// Create context
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
-// Provider component
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Khởi tạo trạng thái mà không truy cập localStorage trực tiếp
-  const [profile, setProfile] = useState<ProfileSettings>(() => {
+  const getCurrentUserSettingsKey = () => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profile');
-      return saved ? JSON.parse(saved) : defaultProfile;
-    }
-    return defaultProfile; // Giá trị mặc định trên server
-  });
-
-  const [wallets, setWallets] = useState<Wallet[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('wallets');
-      return saved ? JSON.parse(saved) : [];
-    }
-    return []; // Giá trị mặc định trên server
-  });
-
-  const [savedProfile, setSavedProfile] = useState<ProfileSettings>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('profile');
-      return saved ? JSON.parse(saved) : defaultProfile;
-    }
-    return defaultProfile; // Giá trị mặc định trên server
-  });
-
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-
-  // Đồng bộ với localStorage chỉ khi chạy trên client
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedProfileData = localStorage.getItem('profile');
-        const savedWalletsData = localStorage.getItem('wallets');
-        if (savedProfileData) setProfile(JSON.parse(savedProfileData));
-        if (savedWalletsData) setWallets(JSON.parse(savedWalletsData));
-      } catch (error) {
-        console.error('Error loading localStorage:', error);
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const userData = JSON.parse(currentUser);
+        return userData.settingsKey;
       }
     }
-  }, []);
+    return null;
+  };
 
-  // Check for unsaved changes
+  const [settingsKey] = useState<string | null>(getCurrentUserSettingsKey());
+
+  const getInitialProfile = () => {
+    if (typeof window !== 'undefined' && settingsKey) {
+      const saved = localStorage.getItem(settingsKey);
+      return saved ? JSON.parse(saved).profile || defaultProfile : defaultProfile;
+    }
+    return defaultProfile;
+  };
+
+  const getInitialWallets = () => {
+    if (typeof window !== 'undefined' && settingsKey) {
+      const saved = localStorage.getItem(settingsKey);
+      return saved ? JSON.parse(saved).wallets || [] : [];
+    }
+    return [];
+  };
+
+  const [profile, setProfile] = useState<ProfileSettings>(getInitialProfile());
+  const [savedProfile, setSavedProfile] = useState<ProfileSettings>(getInitialProfile());
+  const [wallets, setWallets] = useState<Wallet[]>(getInitialWallets());
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
   useEffect(() => {
     const isChanged = JSON.stringify(profile) !== JSON.stringify(savedProfile);
     setHasUnsavedChanges(isChanged);
   }, [profile, savedProfile]);
 
-  // Save profile changes
-  const saveProfile = () => {
-    setSavedProfile(profile);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('profile', JSON.stringify(profile));
-    }
-  };
-
-  // Update profile
   const updateProfile = (updates: Partial<ProfileSettings>) => {
     setProfile(prev => ({ ...prev, ...updates }));
   };
 
-  // Wallet functions
+  const saveProfile = () => {
+    if (settingsKey && typeof window !== 'undefined') {
+      setSavedProfile(profile);
+      const settingsData = { profile, wallets };
+      localStorage.setItem(settingsKey, JSON.stringify(settingsData));
+
+      // Cập nhật currentUser trong localStorage
+      const currentUser = localStorage.getItem('currentUser');
+      if (currentUser) {
+        const userData = JSON.parse(currentUser);
+        userData.name = profile.username; // Đồng bộ username
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+      }
+    }
+  };
+
   const addWallet = (address: string) => {
     const newWallet: Wallet = {
       id: Date.now().toString(),
@@ -106,22 +101,22 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     };
     const updatedWallets = [...wallets, newWallet];
     setWallets(updatedWallets);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('wallets', JSON.stringify(updatedWallets));
+    if (settingsKey) {
+      const settingsData = { profile, wallets: updatedWallets };
+      localStorage.setItem(settingsKey, JSON.stringify(settingsData));
     }
   };
 
   const removeWallet = (id: string) => {
     const walletToRemove = wallets.find(w => w.id === id);
     const remainingWallets = wallets.filter(w => w.id !== id);
-    
     if (walletToRemove?.isDefault && remainingWallets.length > 0) {
       remainingWallets[0].isDefault = true;
     }
-    
     setWallets(remainingWallets);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('wallets', JSON.stringify(remainingWallets));
+    if (settingsKey) {
+      const settingsData = { profile, wallets: remainingWallets };
+      localStorage.setItem(settingsKey, JSON.stringify(settingsData));
     }
   };
 
@@ -131,8 +126,9 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       isDefault: wallet.id === id,
     }));
     setWallets(updatedWallets);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('wallets', JSON.stringify(updatedWallets));
+    if (settingsKey) {
+      const settingsData = { profile, wallets: updatedWallets };
+      localStorage.setItem(settingsKey, JSON.stringify(settingsData));
     }
   };
 
@@ -150,7 +146,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 };
 
-// Hook for using the context
 export const useSettings = () => {
   const context = useContext(SettingsContext);
   if (context === undefined) {

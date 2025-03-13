@@ -1,14 +1,17 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
 import { SplashScreen } from '@/components/SplashScreen';
-import QueryProvider from "./QueryProvider"; // ✅ Import Client Component
+import QueryProvider from "./QueryProvider";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
-import { WalletProvider } from '@/components/Faucet/walletcontext'; // Thêm WalletProvider
+import { WalletProvider } from '@/components/Faucet/walletcontext';
 import { SettingsProvider } from "@/components/context/SettingsContext";
+import ClientLayout from "@/components/ClientLayout"; // Import Client Component mới
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -52,19 +55,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <SettingsProvider> {/* ✅ Bọc bên trong Client Component */}
-        <WalletProvider> {/* Bao bọc bằng WalletProvider */}
-          <QueryProvider> {/* ✅ Bọc bên trong Client Component */}
-            <SplashScreen />
-            <Header />
-            {children}
-            <Toaster position="top-center" />
-            <Footer />
-          </QueryProvider>
-        </WalletProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <SettingsProvider>
+          <WalletProvider>
+            <QueryProvider>
+              <ClientLayout> {/* Sử dụng Client Component */}
+                <SplashScreen />
+                <Header />
+                {children}
+                <Toaster position="top-center" />
+                <Footer />
+              </ClientLayout>
+            </QueryProvider>
+          </WalletProvider>
         </SettingsProvider>
       </body>
     </html>

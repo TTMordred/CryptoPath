@@ -1,4 +1,5 @@
-'use client'; // Đánh dấu đây là Client Component trong Next.js
+// app/settings/page.tsx (hoặc bất kỳ đường dẫn nào bạn đang dùng cho Settings)
+'use client';
 
 import React from 'react';
 import { SettingsProvider } from '@/components/context/SettingsContext';
@@ -6,16 +7,19 @@ import SettingLayout from '@/components/setting_ui/SettingLayout';
 import ProfileSection from '@/components/setting_ui/ProfileSection';
 import WalletSection from '@/components/setting_ui/WalletSection';
 import ParticlesBackground from '@/components/ParticlesBackground';
-// Component Settings không nhận props
+import ClientLayout from '@/components/ClientLayout'; // Import từ ClientLayout
+
 const Settings = () => {
   return (
     <div className="settings-container">
-      <ParticlesBackground /> {/* Render as a sibling */}
+      <ParticlesBackground />
       <SettingsProvider>
-        <SettingLayout
-          profileSection={<ProfileSection />}
-          walletSection={<WalletSection />}
-        />
+        <ClientLayout>
+          <SettingLayout
+            profileSection={<ProfileSection />}
+            walletSection={<WalletSection />}
+          />
+        </ClientLayout>
       </SettingsProvider>
     </div>
   );

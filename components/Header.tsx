@@ -1,22 +1,24 @@
-"use client"; // Ensures this runs on the client side
+"use client";
+
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, Search } from "lucide-react"; // Icons
+import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
+import { useSettings } from "@/components/context/SettingsContext";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
-
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { profile } = useSettings(); // Lấy profile từ SettingsProvider
 
   useEffect(() => {
     const updateCurrentUser = () => {
@@ -30,14 +32,9 @@ const Header = () => {
       }
     };
 
-    // Cập nhật khi component mount
     updateCurrentUser();
-
-    // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
     window.addEventListener("storage", updateCurrentUser);
-
-    // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
-    const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
+    const interval = setInterval(updateCurrentUser, 1000);
 
     return () => {
       window.removeEventListener("storage", updateCurrentUser);
@@ -49,14 +46,8 @@ const Header = () => {
     event.preventDefault();
     if (!address.trim()) return;
 
-    if (address) {
-      router.push(`/search/?address=${address}`);
-    }
-
     setIsLoading(true);
-
     try {
-      // Simulate loading time (can be replaced with actual API call)
       await new Promise(resolve => setTimeout(resolve, 2500));
       if (searchType === "onchain") {
         router.push(`/search/?address=${encodeURIComponent(address)}`);
@@ -69,14 +60,15 @@ const Header = () => {
       setIsLoading(false);
     }
   };
+
   const handleSettingClick = () => {
     router.push('/setting');
   };
+
   const clearAddress = () => {
     setAddress("");
   };
 
-  // Navigate to search page when clicking the search icon
   const handleSearchIconClick = () => {
     router.push('/search');
   };
@@ -86,10 +78,8 @@ const Header = () => {
     setCurrentUser(null);
     setDropdownOpen(false);
     router.push("/login");
-    // Thông báo cho người dùng ngắt kết nối ví thủ công (tùy chọn)
     if (typeof window !== "undefined" && (window as any).ethereum) {
       console.log("Please disconnect your wallet manually in MetaMask.");
-      // Hoặc hiển thị một thông báo UI nếu cần
     }
   };
 
@@ -97,6 +87,9 @@ const Header = () => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
+
+  // Sử dụng profile.username từ SettingsProvider, fallback về currentUser.name hoặc wallet address
+  const displayName = profile.username || currentUser?.name || formatWalletAddress(currentUser?.walletAddress || '');
 
   return (
     <>
@@ -112,7 +105,7 @@ const Header = () => {
                 height={75}
                 className="inline-block mr-2"
               />
-              Crypto<span className="text-[#F5B056]">Path<sub>&copy;</sub></span>
+              Crypto<span className="text-[#F5B056]">Path<sub>©</sub></span>
             </Link>
           </h1>
         </div>
@@ -122,9 +115,9 @@ const Header = () => {
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
-          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
-                PriceTable
-            </Link>
+          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">
+            PriceTable
+          </Link>
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
           </Link>
@@ -135,10 +128,8 @@ const Header = () => {
             Support
           </a>
 
-          {/* Improved Search Form without button */}
+          {/* Search Form */}
           <form onSubmit={handleSearch} className="relative flex items-center">
-
-            {/* Search icon that navigates to search page on click */}
             <button
               type="button"
               onClick={handleSearchIconClick}
@@ -146,7 +137,6 @@ const Header = () => {
             >
               <Search size={16} />
             </button>
-
             <Input
               type="text"
               placeholder="Search wallet..."
@@ -154,7 +144,6 @@ const Header = () => {
               onChange={(e) => setAddress(e.target.value)}
               className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
             />
-
             {address.length > 0 && (
               <button
                 type="button"
@@ -165,14 +154,13 @@ const Header = () => {
                 <X size={12} />
               </button>
             )}
-
             <select
-                value={searchType}
-                onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
-              >
-                <option value="onchain">On-Chain</option>
-                <option value="offchain">Off-Chain</option>
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+              className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+            >
+              <option value="onchain">On-Chain</option>
+              <option value="offchain">Off-Chain</option>
             </select>
           </form>
 
@@ -182,7 +170,7 @@ const Header = () => {
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center text-white text-xs uppercase hover:text-[#F5B056] transition"
               >
-                 {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
+                {displayName}
                 <svg
                   className="w-4 h-4 ml-1"
                   fill="currentColor"
@@ -203,14 +191,12 @@ const Header = () => {
                   >
                     Logout
                   </button>
-                  
                   <button
-                   onClick={handleSettingClick}
+                    onClick={handleSettingClick}
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Setting
                   </button>
-                  
                 </div>
               )}
             </div>
@@ -248,19 +234,16 @@ const Header = () => {
               <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>
                 Support
               </a>
-              
 
-              {/* Improved Mobile Search Form without button */}
+              {/* Mobile Search Form */}
               <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
-                {/* Search icon that navigates to search page on click */}
-                <button 
-                  type="button" 
-                  onClick={handleSearchIconClick} 
+                <button
+                  type="button"
+                  onClick={handleSearchIconClick}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
                 >
                   <Search size={18} />
                 </button>
-                
                 <Input
                   type="text"
                   placeholder="Search wallet..."
@@ -268,7 +251,6 @@ const Header = () => {
                   onChange={(e) => setAddress(e.target.value)}
                   className="pl-10 pr-10 py-2 w-full text-black transition-all duration-200 focus:border-amber-500"
                 />
-                
                 {address.length > 0 && (
                   <button
                     type="button"
@@ -288,11 +270,11 @@ const Header = () => {
                   <option value="offchain">Off-Chain</option>
                 </select>
               </form>
-              
+
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
                   <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
-                    {currentUser.name || formatWalletAddress(currentUser.walletAddress || '')}
+                    {displayName}
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -317,7 +299,6 @@ const Header = () => {
         )}
       </header>
 
-      {/* Loading Screen */}
       <LoadingScreen isLoading={isLoading} />
     </>
   );
