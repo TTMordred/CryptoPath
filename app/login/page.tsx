@@ -1,5 +1,6 @@
 
 'use client';
+import CryptoJS from 'crypto-js';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -24,6 +25,10 @@ import { useAuth } from '@/lib/context/AuthContext';
 
 const dcent = dcentModule();
 
+const encryptData = (data) => {
+  const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'secret-key').toString();
+  return ciphertext;
+};
 const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
 
 // Initialize WalletConnect with projectId
@@ -237,7 +242,8 @@ function LoginPageContent() {
         // Avoid storing email, ID or other sensitive information
       };
       
-      localStorage.setItem('userDisplayInfo', JSON.stringify(publicUserData));
+      const encryptedUserData = encryptData(publicUserData);
+      localStorage.setItem('userDisplayInfo', encryptedUserData);
       toast.success('Login successful!');
       router.push('/');
     } catch (error) {

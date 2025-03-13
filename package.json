@@ -83,7 +83,8 @@
     "tailwind-merge": "^3.0.1",
     "tailwindcss-animate": "^1.0.7",
     "test": "file:",
-    "vaul": "^1.1.2"
+    "vaul": "^1.1.2",
+    "crypto-js": "^4.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
