@@ -24,11 +24,11 @@ import { useAuth } from '@/lib/context/AuthContext';
 
 const dcent = dcentModule();
 
-const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129'; // Replace with your Infura key
+const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
 
 // Initialize WalletConnect with projectId
 const walletConnect = walletConnectModule({
-  projectId: 'b773e42585868b9b143bb0f1664670f1', // Replace with your WalletConnect project ID
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID, // Replace with your WalletConnect project ID
   optionalChains: [1, 137] // Optional: specify chains you want to support
 });
 
