@@ -1,4 +1,3 @@
-
 'use client';
 import CryptoJS from 'crypto-js';
 import Link from 'next/link';
@@ -25,7 +24,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 
 const dcent = dcentModule();
 
-const encryptData = (data) => {
+const encryptData = (data: Record<string, any>) => {
   const ciphertext = CryptoJS.AES.encrypt(JSON.stringify(data), 'secret-key').toString();
   return ciphertext;
 };
