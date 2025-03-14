@@ -1,7 +1,7 @@
 
 import { NextResponse } from "next/server";
 
-const INFURA_API_KEY = "7a23b99fe6a24d838217039bb067305e"; // Will be moved to env process later
+const INFURA_API_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Will be moved to env process later
 
 const networkUrls: { mainnet: string; optimism: string; arbitrum: string; } = {
   mainnet: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
