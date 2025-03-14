@@ -119,12 +119,12 @@ export default function WalletCharts() {
             <div className="absolute top-2 left-0 right-0 flex items-center justify-center gap-2">
               <Blocks className="w-4 h-4 text-[#F5B056]" />
               <span className="text-sm text-gray-400">Last Block</span>
-            </div>
+              </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <span className="text-3xl font-bold text-white">
                 #{formatBlockNumber(blockchainMetrics.lastBlock)}
               </span>
-            </div>
+                </div>
           </CardContent>
         </Card>
 
@@ -237,13 +237,13 @@ export default function WalletCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Database className="w-4 h-4 text-[#22c55e]" />
                 <CardTitle className="text-sm text-gray-400">Active Coins</CardTitle>
-              </div>
-            </CardHeader>
+            </div>
+          </CardHeader>
             <CardContent>
               <p className="text-3xl text-center font-bold text-white">
                 {globalMetrics.active_cryptocurrencies.toLocaleString()}
@@ -256,14 +256,14 @@ export default function WalletCharts() {
               <div className="flex items-center justify-center gap-2">
                 <Cpu className="w-4 h-4 text-[#a855f7]" />
                 <CardTitle className="text-sm text-gray-400">Markets</CardTitle>
-              </div>
+            </div>
             </CardHeader>
             <CardContent>
               <p className="text-3xl text-center font-bold text-white">
                 {globalMetrics.markets.toLocaleString()}
               </p>
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
         </div>
       </div>
     </div>

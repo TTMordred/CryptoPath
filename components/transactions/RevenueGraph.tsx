@@ -246,18 +246,18 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                       value={coin.id}
                       className="text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 focus:text-white transition-colors duration-200"
                     >
-                      <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
                         <span className="text-[#F5B056]">{coin.symbol}</span>
                         <span className="text-gray-400">-</span>
                         <span>{coin.name}</span>
                       </div>
                     </SelectItem>
                   ))}
-                </div>
+            </div>
               </SelectContent>
             </Select>
-          </div>
-        </CardHeader>
+        </div>
+      </CardHeader>
         <CardContent className="p-6 pt-0">
           <AnimatePresence mode="wait">
             {loading ? (
@@ -274,9 +274,9 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                 className="h-[350px]"
               >
                 <Chart width="100%" height="100%">
-                  <LineChart data={data}>
+            <LineChart data={data}>
                     {chartConfig.gradients}
-                    <XAxis
+              <XAxis 
                       dataKey="date"
                       stroke="#666"
                       tickLine={false}
@@ -286,22 +286,22 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                     />
                     <YAxis
                       yAxisId="left"
-                      stroke="#666"
-                      tickLine={false}
-                      axisLine={false}
+                stroke="#666" 
+                tickLine={false}
+                axisLine={false}
                       tickFormatter={(value) => `$${value.toLocaleString()}`}
                       tick={{ fill: '#9ca3af' }}
-                    />
-                    <YAxis
+              />
+              <YAxis 
                       yAxisId="right"
                       orientation="right"
-                      stroke="#666"
-                      tickLine={false}
-                      axisLine={false}
+                stroke="#666"
+                tickLine={false}
+                axisLine={false}
                       tickFormatter={(value) => `${value.toFixed(0)}M`}
                       tick={{ fill: '#9ca3af' }}
-                    />
-                    <Tooltip 
+              />
+              <Tooltip 
                       contentStyle={chartConfig.tooltipStyle}
                       formatter={(value: number, name: string) => [
                         name === 'price' ? `$${value.toLocaleString()}` : `${value.toFixed(0)}M`,
@@ -309,34 +309,34 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                       ]}
                       labelStyle={{ color: '#9ca3af' }}
                       itemStyle={{ color: '#fff', fontWeight: 500 }}
-                    />
-                    <Line
+              />
+              <Line
                       yAxisId="left"
-                      type="monotone"
+                type="monotone"
                       dataKey="price"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
+                stroke="#3b82f6"
+                strokeWidth={2}
                       dot={false}
                       activeDot={{ r: 8, strokeWidth: 2 }}
                       name="price"
-                    />
-                    <Line
+              />
+              <Line
                       yAxisId="right"
-                      type="monotone"
+                type="monotone"
                       dataKey="volume"
-                      stroke="#22d3ee"
-                      strokeWidth={2}
+                stroke="#22d3ee"
+                strokeWidth={2}
                       dot={false}
                       activeDot={{ r: 8, strokeWidth: 2 }}
                       name="volume"
-                    />
-                  </LineChart>
+              />
+            </LineChart>
                 </Chart>
               </motion.div>
             )}
           </AnimatePresence>
-        </CardContent>
-      </Card>
+      </CardContent>
+    </Card>
 
       <AnimatePresence>
         {selectedCoin && (
