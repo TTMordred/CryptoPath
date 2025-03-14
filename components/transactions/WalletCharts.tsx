@@ -4,16 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart, PieChart, Pie, Cell, RadialBarChart, RadialBar } from "recharts";
 import { Blocks, Activity, Gauge, Wallet, TrendingUp, Clock, Database, Cpu, Shield, CheckCircle } from "lucide-react";
-import { fetchBlockchainMetrics, fetchGlobalMetrics, BlockchainMetrics } from "@/services/cryptoService";
-import { Loader2 } from "lucide-react";
-
-interface GlobalMetrics {
-  total_market_cap: { usd: number };
-  total_volume: { usd: number };
-  market_cap_percentage: { [key: string]: number };
-  active_cryptocurrencies: number;
-  markets: number;
-}
+import { BlockchainMetrics, GlobalMetrics, fetchBlockchainMetrics, fetchGlobalMetrics } from "@/services/cryptoService";
+import { Loader2, AlertCircle } from "lucide-react";
 
 const COLORS = {
   primary: '#F5B056',
@@ -34,23 +26,24 @@ export default function WalletCharts() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [blockchain, global] = await Promise.all([
+        setError(null);
+        const [blockData, globalData] = await Promise.all([
           fetchBlockchainMetrics(),
           fetchGlobalMetrics()
         ]);
-        setBlockchainMetrics(blockchain);
-        setGlobalMetrics(global);
+        setBlockchainMetrics(blockData);
+        setGlobalMetrics(globalData);
       } catch (err) {
-        setError('Failed to fetch metrics');
         console.error('Error fetching metrics:', err);
+        setError('Failed to fetch metrics');
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(fetchData, 30000); // Update every 30 seconds
+
     return () => clearInterval(interval);
   }, []);
 
@@ -142,14 +135,9 @@ export default function WalletCharts() {
               <span className="text-sm text-gray-400">Safe Block</span>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex flex-col items-center">
-                <span className="text-3xl font-bold text-white">
-                  #{formatBlockNumber(blockchainMetrics.safeBlock)}
-                </span>
-                <span className="text-[10px] text-gray-500 mt-1">
-                  {formatBlocksBehind(blockchainMetrics.lastBlock, blockchainMetrics.safeBlock)} blocks behind
-                </span>
-              </div>
+              <span className="text-3xl font-bold text-white">
+                #{formatBlockNumber(blockchainMetrics.safeBlock)}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -161,14 +149,9 @@ export default function WalletCharts() {
               <span className="text-sm text-gray-400">Finalized Block</span>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="flex flex-col items-center">
-                <span className="text-3xl font-bold text-white">
-                  #{formatBlockNumber(blockchainMetrics.finalizedBlock)}
-                </span>
-                <span className="text-[10px] text-gray-500 mt-1">
-                  {formatBlocksBehind(blockchainMetrics.lastBlock, blockchainMetrics.finalizedBlock)} blocks behind
-                </span>
-              </div>
+              <span className="text-3xl font-bold text-white">
+                #{formatBlockNumber(blockchainMetrics.finalizedBlock)}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -207,6 +190,8 @@ export default function WalletCharts() {
                       color: '#fff'
                     }}
                     formatter={(value: number) => [`${value.toFixed(2)}%`]}
+                    labelStyle={{ color: '#fff' }}
+                    itemStyle={{ color: '#fff' }}
                   />
                 </PieChart>
               </ResponsiveContainer>

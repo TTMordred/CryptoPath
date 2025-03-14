@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Clock, Loader2, Gauge, Calculator } from "lucide-react"
 import { toast } from "@/components/ui/use-toast"
-import NetworkTransactionTable from '@/components/transactions/NetworkTransactionTable';
 
 interface Stats {
   transactions24h: number;
@@ -173,11 +172,6 @@ export default function NetworkStats() {
               </p>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Transaction Table */}
-        <div className="mt-6">
-          <NetworkTransactionTable key={updateKey} />
         </div>
       </div>
     </div>

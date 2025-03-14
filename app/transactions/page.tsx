@@ -5,6 +5,7 @@ import NetworkStats from '@/components/transactions/NetworkStats';
 import ParticlesBackground from '@/components/ParticlesBackground';
 import RevenueGraph from '@/components/transactions/RevenueGraph';
 import WalletCharts from '@/components/transactions/WalletCharts';
+import TransactionSection from '@/components/transactions/TransactionSection';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 
@@ -48,10 +49,19 @@ export default function TransactionExplorer() {
             </Suspense>
           </div>
 
-          {/* Network Stats and Transaction Table */}
-          <Suspense fallback={<LoadingCard>Loading network stats...</LoadingCard>}>
-            <NetworkStats />
-          </Suspense>
+          {/* Network Stats */}
+          <div className="mb-6">
+            <Suspense fallback={<LoadingCard>Loading network stats...</LoadingCard>}>
+              <NetworkStats />
+            </Suspense>
+          </div>
+
+          {/* Transaction Section - At the very end */}
+          <div>
+            <Suspense fallback={<LoadingCard>Loading transactions...</LoadingCard>}>
+              <TransactionSection />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

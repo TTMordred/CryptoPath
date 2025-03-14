@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { fetchHistoricalData, fetchAvailableCoins, CryptoMarketData, CoinOption } from "@/services/cryptoService";
-import { Loader2, AlertCircle, RefreshCcw } from "lucide-react";
+import { fetchHistoricalData, fetchAvailableCoins, CryptoMarketData, CoinOption, TOKEN_CONTRACTS } from "@/services/cryptoService";
+import { Loader2, AlertCircle, RefreshCcw, TrendingUp, ChevronDown } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -13,6 +13,19 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import CoinAnalytics from './CoinAnalytics';
+import { motion, AnimatePresence } from "framer-motion";
+import dynamic from 'next/dynamic';
+
+// Optimize chart loading with proper SSR handling and caching
+const Chart = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[350px] flex items-center justify-center bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-xl backdrop-blur-sm">
+      <Loader2 className="h-8 w-8 animate-spin text-[#F5B056]" />
+    </div>
+  )
+});
 
 interface ChartData {
   date: string;
@@ -20,202 +33,318 @@ interface ChartData {
   volume: number;
 }
 
+// Memoized components
+const LoadingState = memo(({ coinName }: { coinName?: string }) => (
+  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-xl backdrop-blur-sm">
+    <motion.div
+      animate={{ rotate: 360 }}
+      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+    >
+      <Loader2 className="h-8 w-8 text-[#F5B056]" />
+    </motion.div>
+    <p className="text-gray-400 font-medium">Loading {coinName || 'Loading...'} data...</p>
+  </div>
+));
+
+const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => void }) => (
+  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-red-900/20 to-gray-800/50 rounded-xl backdrop-blur-sm">
+    <motion.div
+      initial={{ scale: 0 }}
+      animate={{ scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+    >
+      <AlertCircle className="h-8 w-8 text-red-500" />
+    </motion.div>
+    <p className="text-red-500 font-medium">{error}</p>
+    <Button
+      variant="outline"
+      onClick={onRetry}
+      className="bg-gray-800/50 border-gray-700 text-gray-300 hover:bg-gray-700/50 hover:text-white transition-all duration-200 backdrop-blur-sm"
+    >
+      <RefreshCcw className="mr-2 h-4 w-4" />
+      Retry
+    </Button>
+  </div>
+));
+
 export default function RevenueGraph() {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [selectedCoin, setSelectedCoin] = useState<CoinOption>({
-    id: 'ethereum',
-    symbol: 'ETH',
-    name: 'Ethereum'
-  });
+  const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
   const [availableCoins, setAvailableCoins] = useState<CoinOption[]>([]);
   const [loadingCoins, setLoadingCoins] = useState(true);
 
+  // Memoize handlers
+  const handleRetry = useCallback(() => {
+    setRetryCount(prev => prev + 1);
+  }, []);
+
+  const handleCoinChange = useCallback((coinId: string) => {
+    const coin = availableCoins.find(c => c.id === coinId);
+    if (coin) {
+      setSelectedCoin(coin);
+      setError(null);
+    }
+  }, [availableCoins]);
+
   // Fetch available coins
   useEffect(() => {
+    let mounted = true;
     const fetchCoins = async () => {
       try {
         setLoadingCoins(true);
         const coins = await fetchAvailableCoins();
-        setAvailableCoins(coins);
+        if (!mounted) return;
+        
+        // Filter coins to only those with contract addresses
+        const supportedCoins = coins.filter(coin => TOKEN_CONTRACTS[coin.id]);
+        setAvailableCoins(supportedCoins);
+        
+        if (!selectedCoin && supportedCoins.length > 0) {
+          const ethereum = supportedCoins.find(c => c.id === 'ethereum') || supportedCoins[0];
+          setSelectedCoin(ethereum);
+        }
       } catch (err) {
         console.error('Error fetching available coins:', err);
       } finally {
-        setLoadingCoins(false);
+        if (mounted) {
+          setLoadingCoins(false);
+        }
       }
     };
 
     fetchCoins();
+    return () => { mounted = false; };
   }, []);
 
-  // Fetch data for selected coin
+  // Optimize data fetching with proper cleanup and error handling
   useEffect(() => {
+    let mounted = true;
+    let retryAttempt = 0;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds
+
     const fetchData = async () => {
+      if (!selectedCoin) return;
+
       try {
         setLoading(true);
         setError(null);
+
         const coinData = await fetchHistoricalData(selectedCoin.id, 30);
         
-        // Process the data
+        if (!mounted) return;
+
+        if (!coinData.prices || !coinData.total_volumes || 
+            coinData.prices.length === 0 || coinData.total_volumes.length === 0) {
+          throw new Error('No data available for this coin');
+        }
+
         const chartData: ChartData[] = coinData.prices.map((price, index) => {
           const date = new Date(price[0]);
           return {
             date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            price: price[1],
-            volume: coinData.total_volumes[index][1] / 1000000 // Convert to millions
+            price: Number(price[1].toFixed(2)),
+            volume: Number((coinData.total_volumes[index][1] / 1000000).toFixed(2))
           };
         });
 
         setData(chartData);
-      } catch (err) {
-        setError('Failed to fetch data. Please try again.');
-        console.error('Error fetching data:', err);
-      } finally {
         setLoading(false);
+        retryAttempt = 0; // Reset retry counter on success
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        if (mounted) {
+          if (retryAttempt < maxRetries) {
+            retryAttempt++;
+            console.log(`Retrying (${retryAttempt}/${maxRetries})...`);
+            setTimeout(fetchData, retryDelay);
+          } else {
+            setError(err instanceof Error ? err.message : 'Failed to fetch data');
+            setLoading(false);
+          }
+        }
       }
     };
 
-    fetchData();
-  }, [selectedCoin, retryCount]);
+    // Add a small delay before fetching to prevent rate limiting
+    const timeoutId = setTimeout(fetchData, 100);
 
-  const handleCoinChange = (coinId: string) => {
-    const coin = availableCoins.find(c => c.id === coinId);
-    if (coin) {
-      setSelectedCoin(coin);
+    return () => {
+      mounted = false;
+      clearTimeout(timeoutId);
+    };
+  }, [selectedCoin?.id]);
+
+  // Memoize chart data
+  const chartConfig = useMemo(() => ({
+    gradients: (
+      <defs>
+        <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+        </linearGradient>
+        <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3}/>
+          <stop offset="95%" stopColor="#22d3ee" stopOpacity={0}/>
+        </linearGradient>
+      </defs>
+    ),
+    tooltipStyle: {
+      backgroundColor: 'rgba(17, 24, 39, 0.95)',
+      border: '1px solid rgba(75, 85, 99, 0.3)',
+      borderRadius: '12px',
+      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+      backdropFilter: 'blur(8px)',
     }
-  };
-
-  const handleRetry = () => {
-    setRetryCount(prev => prev + 1);
-  };
-
-  const LoadingState = () => (
-    <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
-      <Loader2 className="h-8 w-8 animate-spin text-[#F5B056]" />
-      <p className="text-gray-400">Loading {selectedCoin.name} data...</p>
-    </div>
-  );
-
-  const ErrorState = () => (
-    <div className="flex flex-col items-center justify-center h-[400px] space-y-4">
-      <AlertCircle className="h-8 w-8 text-red-500" />
-      <p className="text-red-500">{error}</p>
-      <Button
-        variant="outline"
-        onClick={handleRetry}
-        className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
-      >
-        <RefreshCcw className="mr-2 h-4 w-4" />
-        Retry
-      </Button>
-    </div>
-  );
+  }), []);
 
   return (
-    <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
-      <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-xl text-gray-300">
-            {selectedCoin.name} Price & Volume
-          </CardTitle>
-          <Select
-            value={selectedCoin.id}
-            onValueChange={handleCoinChange}
-            disabled={loadingCoins}
-          >
-            <SelectTrigger className="w-[180px] bg-gray-800 border-gray-700 text-gray-300">
-              {loadingCoins ? (
-                <div className="flex items-center">
-                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Loading...
+    <div className="space-y-6">
+      <Card className="bg-gradient-to-br from-gray-900 to-gray-800/95 border-gray-800/50 rounded-2xl shadow-xl backdrop-blur-sm transition-all duration-300 hover:shadow-2xl hover:shadow-[#F5B056]/5">
+        <CardHeader className="p-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-br from-[#F5B056] to-[#E09346] p-2 rounded-xl">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <CardTitle className="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+                {selectedCoin?.name || 'Loading...'} Price & Volume
+              </CardTitle>
+            </div>
+            <Select
+              value={selectedCoin?.id}
+              onValueChange={handleCoinChange}
+              disabled={loadingCoins}
+            >
+              <SelectTrigger className="w-[200px] bg-gray-800/50 border-gray-700/50 text-gray-300 hover:bg-gray-700/50 transition-colors duration-200 backdrop-blur-sm">
+                {loadingCoins ? (
+                  <div className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Loading...
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <SelectValue placeholder="Select a coin" />
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </div>
+                )}
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800/95 border-gray-700/50 backdrop-blur-md">
+                <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {availableCoins.map((coin) => (
+                    <SelectItem
+                      key={coin.id}
+                      value={coin.id}
+                      className="text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 focus:text-white transition-colors duration-200"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#F5B056]">{coin.symbol}</span>
+                        <span className="text-gray-400">-</span>
+                        <span>{coin.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </div>
-              ) : (
-                <SelectValue placeholder="Select a coin" />
-              )}
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
-              {availableCoins.map((coin) => (
-                <SelectItem
-                  key={coin.id}
-                  value={coin.id}
-                  className="text-gray-300 hover:bg-gray-700 focus:bg-gray-700 focus:text-gray-300"
-                >
-                  {coin.symbol} - {coin.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <LoadingState />
-        ) : error ? (
-          <ErrorState />
-        ) : (
-          <div className="h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
-                <XAxis
-                  dataKey="date"
-                  stroke="#666"
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  yAxisId="left"
-                  stroke="#666"
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `$${value.toLocaleString()}`}
-                />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="#666"
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `${value.toFixed(0)}M`}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: '#1f2937',
-                    border: 'none',
-                    borderRadius: '8px',
-                    color: '#fff'
-                  }}
-                  formatter={(value: number, name: string) => [
-                    name === 'price' ? `$${value.toLocaleString()}` : `${value.toFixed(0)}M`,
-                    name === 'price' ? 'Price' : 'Volume'
-                  ]}
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="price"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                  name="price"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="volume"
-                  stroke="#22d3ee"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 6 }}
-                  name="volume"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+              </SelectContent>
+            </Select>
           </div>
+        </CardHeader>
+        <CardContent className="p-6 pt-0">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <LoadingState coinName={selectedCoin?.name} />
+            ) : error ? (
+              <ErrorState error={error} onRetry={handleRetry} />
+            ) : (
+              <motion.div
+                key="chart"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5 }}
+                className="h-[350px]"
+              >
+                <Chart width="100%" height="100%">
+                  <LineChart data={data}>
+                    {chartConfig.gradients}
+                    <XAxis
+                      dataKey="date"
+                      stroke="#666"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={{ fill: '#9ca3af' }}
+                      dy={10}
+                    />
+                    <YAxis
+                      yAxisId="left"
+                      stroke="#666"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `$${value.toLocaleString()}`}
+                      tick={{ fill: '#9ca3af' }}
+                    />
+                    <YAxis
+                      yAxisId="right"
+                      orientation="right"
+                      stroke="#666"
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(value) => `${value.toFixed(0)}M`}
+                      tick={{ fill: '#9ca3af' }}
+                    />
+                    <Tooltip 
+                      contentStyle={chartConfig.tooltipStyle}
+                      formatter={(value: number, name: string) => [
+                        name === 'price' ? `$${value.toLocaleString()}` : `${value.toFixed(0)}M`,
+                        name === 'price' ? 'Price' : 'Volume'
+                      ]}
+                      labelStyle={{ color: '#9ca3af' }}
+                      itemStyle={{ color: '#fff', fontWeight: 500 }}
+                    />
+                    <Line
+                      yAxisId="left"
+                      type="monotone"
+                      dataKey="price"
+                      stroke="#3b82f6"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 8, strokeWidth: 2 }}
+                      name="price"
+                    />
+                    <Line
+                      yAxisId="right"
+                      type="monotone"
+                      dataKey="volume"
+                      stroke="#22d3ee"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 8, strokeWidth: 2 }}
+                      name="volume"
+                    />
+                  </LineChart>
+                </Chart>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </CardContent>
+      </Card>
+
+      <AnimatePresence>
+        {selectedCoin && (
+          <motion.div
+            key="analytics"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <CoinAnalytics selectedCoin={selectedCoin} />
+          </motion.div>
         )}
-      </CardContent>
-    </Card>
+      </AnimatePresence>
+    </div>
   );
 } 
