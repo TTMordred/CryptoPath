@@ -1,4 +1,4 @@
-"use client"; // Ensures this runs on the client side
+"use client";
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -10,7 +10,7 @@ import { LoadingScreen } from "@/components/loading-screen";
 import { useSettings } from "@/components/context/SettingsContext";
 import { supabase } from "@/src/integrations/supabase/client";
 import { toast } from "sonner";
-import { AuthChangeEvent, Session } from "@supabase/supabase-js"; // Import types từ Supabase
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,78 +18,65 @@ const Header = () => {
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string; id?: string; email?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    id?: string;
+    email?: string;
+    name?: string;
+  } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { profile } = useSettings();
 
+  // Fetch and sync user state with Supabase Auth
   useEffect(() => {
-    const checkUser = async () => {
+    const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (session) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
+        const user = session.user;
         setCurrentUser({
-          id: session.user.id,
-          email: session.user.email,
-          name: profileData?.full_name || session.user.email?.split('@')[0],
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split("@")[0], // Use full_name from metadata
         });
       } else {
-        const storedUser = localStorage.getItem("userDisplayInfo");
-        if (storedUser) {
-          setCurrentUser(JSON.parse(storedUser));
-        } else {
-          setCurrentUser(null);
-        }
+        setCurrentUser(null);
       }
     };
-    
-    checkUser();
-    
+
+    fetchUser();
+
+    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
-        if (event === 'SIGNED_IN' && session) {
+        if (event === "SIGNED_IN" && session) {
+          const user = session.user;
           setCurrentUser({
-            id: session.user.id,
-            email: session.user.email,
-            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.email?.split("@")[0],
           });
-        } else if (event === 'SIGNED_OUT') {
+        } else if (event === "SIGNED_OUT") {
           setCurrentUser(null);
-          localStorage.removeItem("userDisplayInfo");
+          localStorage.removeItem("currentUser"); // Clean up if used elsewhere
         }
       }
     );
 
-    const handleUserUpdate = (event: CustomEvent) => {
-      setCurrentUser(event.detail);
-    };
-    
-    window.addEventListener('userUpdated', handleUserUpdate as EventListener);
-    
     return () => {
       authListener?.subscription.unsubscribe();
-      window.removeEventListener('userUpdated', handleUserUpdate as EventListener);
     };
   }, []);
 
-  // Đóng dropdown khi click ngoài
+  // Handle dropdown click outside
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDropdownOpen(false);
       }
-    }
-    
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
     };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSearch = async (event: React.FormEvent) => {
@@ -98,7 +85,7 @@ const Header = () => {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulated delay
       if (searchType === "onchain") {
         router.push(`/search/?address=${encodeURIComponent(address)}`);
       } else {
@@ -112,22 +99,19 @@ const Header = () => {
   };
 
   const handleSettingClick = () => {
-    router.push('/setting');
+    router.push("/setting");
+    setDropdownOpen(false);
   };
 
-  const clearAddress = () => {
-    setAddress("");
-  };
+  const clearAddress = () => setAddress("");
 
-  const handleSearchIconClick = () => {
-    router.push('/search');
-  };
+  const handleSearchIconClick = () => router.push("/search");
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      localStorage.removeItem("userDisplayInfo");
-      localStorage.removeItem("userToken");
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      localStorage.removeItem("currentUser"); // Clean up if used
       setCurrentUser(null);
       setDropdownOpen(false);
       toast.success("Logged out successfully");
@@ -141,14 +125,10 @@ const Header = () => {
     }
   };
 
-  const formatWalletAddress = (walletAddress: string) => {
-    if (!walletAddress) return "";
-    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
-  };
-
-  const displayName = profile?.username && profile.username !== 'User' 
-    ? profile.username 
-    : currentUser?.name || formatWalletAddress(currentUser?.walletAddress || '');
+  const displayName =
+    profile?.username && profile.username !== "User"
+      ? profile.username
+      : currentUser?.name || currentUser?.email?.split("@")[0] || "";
 
   return (
     <>
@@ -163,17 +143,29 @@ const Header = () => {
                 height={75}
                 className="inline-block mr-2"
               />
-              Crypto<span className="text-[#F5B056]">Path<sub>©</sub></span>
+              Crypto<span className="text-[#F5B056]">
+                Path<sub>©</sub>
+              </span>
             </Link>
           </h1>
         </div>
 
         <nav className="hidden md:flex justify-center items-center space-x-6">
-          <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">Home</Link>
-          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">PriceTable</Link>
-          <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">Transactions</Link>
-          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">Faucet</Link>
-          <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">Support</a>
+          <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
+            Home
+          </Link>
+          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">
+            PriceTable
+          </Link>
+          <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
+            Transactions
+          </Link>
+          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
+            Faucet
+          </Link>
+          <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
+            Support
+          </a>
 
           <form onSubmit={handleSearch} className="relative flex items-center">
             <button
@@ -220,7 +212,11 @@ const Header = () => {
               >
                 {displayName}
                 <svg className="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
               {dropdownOpen && (
@@ -241,7 +237,9 @@ const Header = () => {
               )}
             </div>
           ) : (
-            <Link href="/login" className="text-white text-sm hover:text-[#F5B056] transition">Login</Link>
+            <Link href="/login" className="text-white text-sm hover:text-[#F5B056] transition">
+              Login
+            </Link>
           )}
         </nav>
 
@@ -255,13 +253,46 @@ const Header = () => {
         {isOpen && (
           <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 shadow-lg md:hidden z-50 w-screen">
             <nav className="flex flex-col space-y-4 text-center text-xl">
-              <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Home</Link>
-              <Link href="/pricetable" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Pricetable</Link>
-              <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Transactions</Link>
-              <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Faucet</Link>
-              <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Support</a>
+              <Link
+                href="/"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Home
+              </Link>
+              <Link
+                href="/pricetable"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Pricetable
+              </Link>
+              <Link
+                href="/transactions"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Transactions
+              </Link>
+              <Link
+                href="/Faucet"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Faucet
+              </Link>
+              <a
+                href="mailto:cryptopath@gmail.com"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Support
+              </a>
 
-              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
+              <form
+                onSubmit={handleSearch}
+                className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center"
+              >
                 <button
                   type="button"
                   onClick={handleSearchIconClick}
@@ -298,7 +329,9 @@ const Header = () => {
 
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
-                  <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">{displayName}</Link>
+                  <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
+                    {displayName}
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded-[5px] transition ml-2"
@@ -313,7 +346,9 @@ const Header = () => {
                   </button>
                 </div>
               ) : (
-                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">Login</Link>
+                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">
+                  Login
+                </Link>
               )}
             </nav>
           </div>
