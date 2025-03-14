@@ -19,6 +19,15 @@ const nextConfig: NextConfig = {
   env: {
     ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        crypto: require.resolve('crypto-browserify')
+      };
+    }
+    return config;
+  }
 };
 
 export default nextConfig;

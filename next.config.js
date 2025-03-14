@@ -1,5 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "api.opensea.io",
+        pathname: "/api/v1/asset/**",
+      },
+      {
+        protocol: "https",
+        hostname: "gateway.pinata.cloud",
+        pathname: "/ipfs/**",
+      }
+    ],
+  },
+  env: {
+    ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       // Client-side polyfills
@@ -28,4 +45,4 @@ const nextConfig = {
   },
 }
 
-module.exports = nextConfig 
+module.exports = nextConfig

@@ -6,6 +6,14 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
+import { supabase } from "@/src/integrations/supabase/client";
+import { toast } from "sonner";
+
+// Add this helper function at the top of your component or in a utils file
+const shortenAddress = (address: string): string => {
+  if (!address) return '';
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+};
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,13 +22,29 @@ const Header = () => {
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ walletAddress?: string; name?: string; id?: string; email?: string } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const updateCurrentUser = () => {
-      if (typeof window !== "undefined") {
+    // Check for authentication state
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // User is logged in with Supabase
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email,
+          name: profile?.display_name || session.user.email?.split('@')[0],
+        });
+      } else {
+        // Fallback to localStorage for wallet connections
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
           setCurrentUser(JSON.parse(storedUser));
@@ -29,19 +53,38 @@ const Header = () => {
         }
       }
     };
-
-    // Cập nhật khi component mount
-    updateCurrentUser();
-
-    // Lắng nghe sự kiện storage (khi localStorage thay đổi ở tab khác)
-    window.addEventListener("storage", updateCurrentUser);
-
-    // Tùy chọn: Lắng nghe thay đổi trong cùng tab (nếu cần)
-    const interval = setInterval(updateCurrentUser, 1000); // Kiểm tra mỗi 1s
-
+    
+    checkUser();
+    
+    // Listen for authentication state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        // Check if the name looks like a wallet address
+        const userDisplayName = session.user.user_metadata.full_name || session.user.email?.split('@')[0];
+        
+        // If it starts with "wallet_", it's likely a wallet address that needs shortening
+        let displayName = userDisplayName;
+        if (userDisplayName && userDisplayName.startsWith('wallet_')) {
+          // Extract the actual address part after "wallet_"
+          const walletAddress = userDisplayName.substring(7);
+          displayName = `wallet_${shortenAddress(walletAddress)}`;
+        }
+        
+        // When user signs in, update current user state with shortened name if needed
+        setCurrentUser({
+          id: session.user.id,
+          email: session.user.email,
+          name: displayName,
+        });
+      } else if (event === 'SIGNED_OUT') {
+        // When user signs out, clear current user state
+        setCurrentUser(null);
+      }
+    });
+    
+    // Cleanup
     return () => {
-      window.removeEventListener("storage", updateCurrentUser);
-      clearInterval(interval);
+      authListener?.subscription.unsubscribe();
     };
   }, []);
 
@@ -79,15 +122,20 @@ const Header = () => {
     router.push('/search');
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("currentUser");
-    setCurrentUser(null);
-    setDropdownOpen(false);
-    router.push("/login");
-    // Thông báo cho người dùng ngắt kết nối ví thủ công (tùy chọn)
-    if (typeof window !== "undefined" && (window as any).ethereum) {
-      console.log("Please disconnect your wallet manually in MetaMask.");
-      // Hoặc hiển thị một thông báo UI nếu cần
+  const handleLogout = async () => {
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clear local storage
+      localStorage.removeItem("currentUser");
+      setCurrentUser(null);
+      setDropdownOpen(false);
+      toast.success("Logged out successfully");
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Failed to log out. Please try again.");
     }
   };
 
@@ -95,6 +143,20 @@ const Header = () => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
     <>
@@ -147,30 +209,30 @@ const Header = () => {
             >
               <Search size={16} />
             </button>
+            <div className="relative w-64">
+              <Input
+                type="text"
+                placeholder="Search wallet..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500 rounded-[5px]"
+              />
 
-            <Input
-              type="text"
-              placeholder="Search wallet..."
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
-            />
-
-            {address.length > 0 && (
-              <button
-                type="button"
-                onClick={clearAddress}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-transparent p-1 rounded-full transition-colors duration-200"
-                aria-label="Clear input"
-              >
-                <X size={12} />
-              </button>
-            )}
-
+              {address.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAddress}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-transparent p-1 rounded-[10px] transition-colors duration-200"
+                  aria-label="Clear input"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
             <select
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
               >
                 <option value="onchain">On-Chain</option>
                 <option value="offchain">Off-Chain</option>
@@ -197,18 +259,12 @@ const Header = () => {
                 </svg>
               </button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-20">
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-[5px] shadow-lg z-20">
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Logout
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
-                  >
-                    Setting
                   </button>
                 </div>
               )}
@@ -284,7 +340,7 @@ const Header = () => {
                 <select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
                 >
                   <option value="onchain">On-Chain</option>
                   <option value="offchain">Off-Chain</option>
@@ -298,15 +354,9 @@ const Header = () => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition"
+                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded-[5px] transition ml-2"
                   >
                     Logout
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
-                  >
-                    Setting
                   </button>
                 </div>
               ) : (

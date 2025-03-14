@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface Transaction {
   id: string
@@ -18,9 +19,186 @@ interface Transaction {
   type: "transfer" | "swap" | "inflow" | "outflow"
 }
 
+export function SimpleTransactionTable() {
+  const searchParams = useSearchParams();
+  const address = searchParams.get("address");
+  const network = searchParams.get("network") || "mainnet";
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  useEffect(() => {
+    if (!address) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    const fetchTransactions = async () => {
+      try {
+        const baseUrl = typeof window !== 'undefined' 
+          ? window.location.origin 
+          : process.env.NEXT_PUBLIC_URL || '';
+        
+        const response = await fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&page=1&offset=20`);
+        const data = await response.json();
+        
+        if (data.error) {
+          setError(data.error);
+          setTransactions([]);
+        } else {
+          setTransactions(data.transactions || []);
+          if (data.transactions.length === 0) {
+            setError(`No transactions found on ${network} for this address.`);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching transactions:", err);
+        setError("Failed to load transactions");
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchTransactions();
+  }, [address, network]);
+  
+  // Render loading state
+  if (loading) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Transactions</h2>
+        <div className="bg-gray-800 rounded-lg p-4">
+          <Skeleton className="h-8 w-full mb-4" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+      </div>
+    );
+  }
+  
+  // Render error state
+  if (error) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Transactions</h2>
+        <div className="bg-gray-800 rounded-lg p-6 text-center">
+          <p className="text-amber-400">{error}</p>
+          <p className="mt-2 text-gray-400">
+            Try checking the address or switching to another network.
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render empty state
+  if (transactions.length === 0) {
+    return (
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Transactions</h2>
+        <div className="bg-gray-800 rounded-lg p-6 text-center">
+          <p>No transactions found on {network}</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Render transactions table
+  return (
+    <div className="mt-8">
+      <h2 className="text-xl font-semibold mb-4">Transactions</h2>
+      <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-900">
+            <tr>
+              <th className="px-4 py-3 text-left">Hash</th>
+              <th className="px-4 py-3 text-left">Time</th>
+              <th className="px-4 py-3 text-left">From</th>
+              <th className="px-4 py-3 text-left">To</th>
+              <th className="px-4 py-3 text-right">Value (ETH)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((tx) => (
+              <tr key={tx.hash} className="border-t border-gray-700">
+                <td className="px-4 py-3">
+                  <a 
+                    href={getBlockExplorerUrl(network, tx.hash)} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[#F5B056] hover:underline truncate block max-w-[120px]"
+                  >
+                    {shortenHash(tx.hash)}
+                  </a>
+                </td>
+                <td className="px-4 py-3 text-gray-300">
+                  {formatDate(tx.timeStamp)}
+                </td>
+                <td className="px-4 py-3">
+                  <a 
+                    href={`/search?address=${tx.from}&network=${network}`}
+                    className="text-[#F5B056] hover:underline truncate block max-w-[120px]"
+                  >
+                    {shortenAddress(tx.from)}
+                  </a>
+                </td>
+                <td className="px-4 py-3">
+                  {tx.to ? (
+                    <a 
+                      href={`/search?address=${tx.to}&network=${network}`}
+                      className="text-[#F5B056] hover:underline truncate block max-w-[120px]"
+                    >
+                      {shortenAddress(tx.to)}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">Contract Creation</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  {formatEther(tx.value)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Helper functions
+function shortenHash(hash: string): string {
+  return `${hash.substring(0, 6)}...${hash.substring(hash.length - 4)}`;
+}
+
+function shortenAddress(address: string): string {
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+}
+
+function formatDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toLocaleString();
+}
+
+function formatEther(wei: string): string {
+  return (parseInt(wei) / 1e18).toFixed(6);
+}
+
+function getBlockExplorerUrl(network: string, hash: string): string {
+  const explorers: {[key: string]: string} = {
+    mainnet: 'https://etherscan.io/tx/',
+    goerli: 'https://goerli.etherscan.io/tx/',
+    sepolia: 'https://sepolia.etherscan.io/tx/',
+    optimism: 'https://optimistic.etherscan.io/tx/',
+    arbitrum: 'https://arbiscan.io/tx/'
+  };
+  
+  return (explorers[network] || explorers.mainnet) + hash;
+}
+
 export default function TransactionTable() {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
+  const network = searchParams.get("network") || "mainnet"
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,7 +208,13 @@ export default function TransactionTable() {
     if (address) {
       setLoading(true)
       setError(null)
-      fetch(`/api/transactions?address=${address}&page=${page}&offset=20`)
+      
+      // Get the base URL dynamically
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_URL || ''
+        
+      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&page=${page}&offset=20`)
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
@@ -49,7 +233,7 @@ export default function TransactionTable() {
         })
         .finally(() => setLoading(false))
     }
-  }, [address, page])
+  }, [address, network, page])
 
   const categorizeTransaction = (tx: Transaction, userAddress: string): Transaction["type"] => {
     if (tx.from === userAddress && tx.to === userAddress) return "swap"
@@ -70,11 +254,16 @@ export default function TransactionTable() {
 
   if (error) {
     return (
-      <Alert variant="destructive" className="mt-4">
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    )
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Transactions</h2>
+        <div className="bg-gray-800 rounded-lg p-6 text-center">
+          <p className="text-amber-400">{error}</p>
+          <p className="mt-2 text-gray-400">
+            Try checking the address or switching to another network.
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (transactions.length === 0) {
@@ -93,6 +282,7 @@ export default function TransactionTable() {
           <TableHead>To</TableHead>
           <TableHead>Value</TableHead>
           <TableHead>Timestamp</TableHead>
+          <TableHead>Network</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -106,6 +296,7 @@ export default function TransactionTable() {
             </TableCell>
             <TableCell>{tx.value}</TableCell>
             <TableCell>{new Date(tx.timestamp).toLocaleString()}</TableCell>
+            <TableCell>{network}</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -203,4 +394,3 @@ export default function TransactionTable() {
     </Card>
   )
 }
-

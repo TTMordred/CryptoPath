@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useSearchParams } from "next/navigation"
@@ -10,11 +11,13 @@ interface WalletData {
   address: string
   balance: string
   transactionCount: number
+  network?: string
 }
 
 export default function WalletInfo() {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
+  const network = searchParams.get("network") || "mainnet"
   const [walletData, setWalletData] = useState<WalletData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,9 +28,19 @@ export default function WalletInfo() {
       setLoading(true)
       setError(null)
 
+      // Get the base URL dynamically
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_URL || ''
+
+      // Choose API based on the network
+      const apiEndpoint = network === 'mainnet' 
+        ? `${baseUrl}/api/wallet?address=${address}&network=${network}` 
+        : `${baseUrl}/api/wallet?address=${address}&network=${network}`
+
       Promise.all([
-        fetch(`/api/wallet?address=${address}`).then((res) => res.json()),
-        fetch("/api/eth-usd-rate").then((res) => res.json()),
+        fetch(apiEndpoint).then((res) => res.json()),
+        fetch(`${baseUrl}/api/eth-usd-rate`).then((res) => res.json()),
       ])
         .then(([walletData, rateData]) => {
           if (walletData.error) throw new Error(walletData.error)
@@ -43,7 +56,7 @@ export default function WalletInfo() {
         })
         .finally(() => setLoading(false))
     }
-  }, [address])
+  }, [address, network])
 
   if (loading) {
     return (
@@ -79,6 +92,36 @@ export default function WalletInfo() {
             <p>
               <strong>Address:</strong>{" "}
               <span className="text-[#F5B056]">{walletData.address}</span>
+              {network === 'mainnet' && (
+                <a
+                  href={`https://etherscan.io/address/${walletData.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-xs text-blue-400 hover:underline"
+                >
+                  View on Etherscan
+                </a>
+              )}
+              {network === 'optimism' && (
+                <a
+                  href={`https://optimistic.etherscan.io/address/${walletData.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-xs text-blue-400 hover:underline"
+                >
+                  View on Optimism Explorer
+                </a>
+              )}
+              {network === 'arbitrum' && (
+                <a
+                  href={`https://arbiscan.io/address/${walletData.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-xs text-blue-400 hover:underline"
+                >
+                  View on Arbiscan
+                </a>
+              )}
             </p>
           </div>
 
@@ -98,6 +141,13 @@ export default function WalletInfo() {
             <ListOrdered className="w-6 h-6 text-blue-500" />
             <p><strong>Transaction Count:</strong> {walletData.transactionCount}</p>
           </div>
+          
+          {walletData.network && (
+            <div className="flex items-center gap-3 p-1 rounded-lg hover:bg-gray-800/50 transition-colors">
+              <ListOrdered className="w-6 h-6 text-purple-500" />
+              <p><strong>Network:</strong> {walletData.network}</p>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

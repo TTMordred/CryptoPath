@@ -52,6 +52,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
 
   const truncateAddress = (address: string) => {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+
   };
 
   const getRelativeTime = (timestamp: number | string) => {
@@ -96,6 +97,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
         }
 
         const data = await response.json();
+
 
         if (data.error) {
           throw new Error(data.error);

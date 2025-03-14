@@ -40,7 +40,7 @@ export default function TransactionExplorer() {
   interface MethodSignatures {
     [key: string]: string;
   }
-  
+
   const knownMethods: MethodSignatures = {
     '0xa9059cbb': 'Transfer',
     '0x23b872dd': 'TransferFrom',
@@ -62,16 +62,16 @@ export default function TransactionExplorer() {
     '0x6a627842': 'Mint',
     '0xa0712d68': 'Mint',
   };
-  
+
   const getTransactionMethod = (input: string): string => {
     if (input === '0x') return 'Transfer';
-    
+
     const functionSelector = input.slice(0, 10).toLowerCase();
-    
+
     if (knownMethods[functionSelector]) {
       return knownMethods[functionSelector];
     }
-    
+
     return 'Swap';
   };
 
@@ -103,32 +103,32 @@ export default function TransactionExplorer() {
   const fetchLatestTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
-      
+
       // First, get the latest block number
       const blockNumberResponse = await fetch(
         `https://api.etherscan.io/api?module=proxy&action=eth_blockNumber&apikey=${ETHERSCAN_API_KEY}`
       );
-      
+
       if (!blockNumberResponse.ok) {
         throw new Error('Failed to fetch latest block number');
       }
-      
+
       const blockNumberData = await blockNumberResponse.json();
       if (blockNumberData.error) {
         throw new Error(blockNumberData.error.message);
       }
-      
+
       const latestBlock = parseInt(blockNumberData.result, 16);
-      
+
       // Then, get the transactions from the latest block
       const response = await fetch(
         `https://api.etherscan.io/api?module=proxy&action=eth_getBlockByNumber&tag=latest&boolean=true&apikey=${ETHERSCAN_API_KEY}`
       );
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch block transactions');
       }
-      
+
       const data = await response.json();
       if (data.error) {
         throw new Error(data.error.message);

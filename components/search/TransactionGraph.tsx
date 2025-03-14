@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2} from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 // Dynamically import ForceGraph2D (without generic type arguments)
 const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
@@ -55,6 +56,7 @@ export default function TransactionGraph() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const address = searchParams.get("address");
+  const network = searchParams.get("network") || "mainnet";
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,7 +65,13 @@ export default function TransactionGraph() {
     if (address) {
       setLoading(true);
       setError(null);
-      fetch(`/api/transactions?address=${address}&offset=50`)
+      
+      // Get the base URL dynamically
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_URL || '';
+        
+      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&offset=50`)
         .then((res) => res.json())
         .then((data: unknown) => {
           if (!Array.isArray(data)) {
@@ -110,15 +118,15 @@ export default function TransactionGraph() {
         })
         .finally(() => setLoading(false));
     }
-  }, [address]);
+  }, [address, network]);
 
   // Update onNodeClick to accept both the node and the MouseEvent.
   const handleNodeClick = useCallback(
     (node: { [others: string]: any }, event: MouseEvent) => {
       const n = node as GraphNode;
-      router.push(`/search/?address=${n.id}`);
+      router.push(`/search/?address=${n.id}&network=${network}`);
     },
-    [router]
+    [router, network]
   );
 
   // Update nodes to reflect their transaction type ("both" if a node has both incoming and outgoing links)
