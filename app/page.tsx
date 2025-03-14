@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaFacebookF, FaGithub, FaLinkedinIn } from 'react-icons/fa';
 import ParticlesBackground from '@/components/ParticlesBackground';
+import EthPriceLine from '@/components/EthPriceLine';
 import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -236,7 +237,7 @@ const HomePage = () => {
   return (
     <div className="relative font-sans">
       <ParticlesBackground />
-
+      <EthPriceLine/>
       <div className="relative z-10 bg-transparent">
         {/* Description Section */}
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
@@ -257,7 +258,7 @@ const HomePage = () => {
                       value={email}
                       onChange={handleEmailChange}
                       disabled={isSubmitting}
-                      className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${
+                      className={`px-4 py-3 w-full md:w-64 rounded-[5px] bg-gray-900 border ${
                         emailError ? 'border-red-500' : isSuccess ? 'border-green-500' : 'border-gray-700'
                       } text-white focus:outline-none transition-colors`}
                     />
@@ -297,9 +298,9 @@ const HomePage = () => {
             </p>
             <div className="flex justify-center">
               <div className="video-container relative">
-                <div className="absolute -inset-1 bg-[#F5B056]/20 rounded-lg blur"></div>
+                <div className="absolute -inset-1 bg-[#F5B056]/20 rounded-[10px] blur"></div>
                 <video 
-                  className="w-full rounded-lg border-4 border-black relative" 
+                  className="w-full rounded-[10px] border-4 border-black relative" 
                   autoPlay 
                   loop 
                   muted
@@ -308,7 +309,7 @@ const HomePage = () => {
                   <source src="/Img/Videos/video.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-                <div className="absolute inset-0 rounded-lg border border-white"></div>
+                <div className="absolute inset-0 rounded-[10px] border border-white"></div>
               </div>
             </div>
           </div>
@@ -332,7 +333,7 @@ const HomePage = () => {
               </p>
               <div className="flex justify-center md:justify-start space-x-4">
                 <button
-                  className={`px-4 py-2 rounded-md font-semibold ${
+                  className={`px-4 py-2 rounded-[5px] font-semibold ${
                     activeTab === 'sgd' ? 'bg-[#F5B056] hover:bg-[#ff6500] text-black' : 'bg-black text-white'
                   }`}
                   onClick={() => switchContent('sgd')}
@@ -340,7 +341,7 @@ const HomePage = () => {
                   {t.exchange}
                 </button>
                 <button
-                  className={`px-4 py-2 rounded-md font-semibold ${
+                  className={`px-4 py-2 rounded-[5px] font-semibold ${
                     activeTab === 'web3' ? 'bg-[#F5B056] text-black' : 'bg-black text-white'
                   }`}
                   onClick={() => switchContent('web3')}
@@ -362,8 +363,8 @@ const HomePage = () => {
           </p>
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute -inset-1 bg-[#ff6500]/20 rounded-lg blur"></div>
-              <video className="max-w-full relative rounded-lg" autoPlay loop muted playsInline>
+              <div className="absolute -inset-1 bg-[#ff6500]/20 rounded-[10px] blur"></div>
+              <video className="max-w-full relative rounded-[10px]" autoPlay loop muted playsInline>
                 <source src="/Img/Videos/Evolution.webm" type="video/webm" />
                 <source src="/Img/Videos/Evolution.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
@@ -386,10 +387,10 @@ const HomePage = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
               {teamMembers.map((member) => (
-                <div key={member.name} className="group flex flex-col items-center bg-black/30 p-6 rounded-lg border border-transparent transition duration-300">
+                <div key={member.name} className="group flex flex-col items-center bg-black/30 p-6 rounded-[10px] border border-transparent transition duration-300">
   
                 {/* Profile Image */}
-                <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#F5B056] transition duration-300">
+                <div className="w-36 h-36 rounded-[10px] overflow-hidden border-2 border-transparent group-hover:border-[#F5B056] transition duration-300">
                   <Image
                     src={member.image}
                     alt={`${member.name}'s profile`}
@@ -457,14 +458,14 @@ const HomePage = () => {
             </p>
             <button
               id="btn-learnmore"
-              className="bg-[#F5B056] text-black px-6 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition"
+              className="bg-[#F5B056] text-black px-6 py-3 rounded-[10px] font-semibold hover:bg-opacity-80 transition"
             >
               {t.learnMore}
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             {/* Video 1: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-right">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-right">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/erzVdnTaBKk"
@@ -480,7 +481,7 @@ const HomePage = () => {
             </div>
 
             {/* Video 2: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-up">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-up">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/oD98Jshj1QE"
@@ -496,7 +497,7 @@ const HomePage = () => {
             </div>
 
             {/* Video 3: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-left">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-left">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/sTFZras-1Lo"
@@ -568,7 +569,7 @@ const HomePage = () => {
               <img
                 src="/minhduy.png"
                 alt="Minh Duy Nguyen"
-                className="w-32 h-32 rounded-full mx-auto border-2 border-[#F5B056]"
+                className="w-32 h-32 rounded-[10px] mx-auto border-2 border-[#F5B056]"
               />
             </div>
             <div className="text-center md:text-left">
@@ -583,16 +584,16 @@ const HomePage = () => {
 
         {/* CTA Section (New) */}
         <div className="container mx-auto px-4 py-12" data-aos="fade-up">
-          <div className="bg-gradient-to-r from-[#F5B056]/20 to-black rounded-lg p-8 text-center max-w-4xl mx-auto border border-black">
+          <div className="bg-gradient-to-r from-[#F5B056]/20 to-black rounded-[10px] p-8 text-center max-w-4xl mx-auto border border-black">
             <h2 className="text-3xl font-bold mb-4">{t.readyToStart}</h2>
             <p className="text-lg mb-8">
               {t.joinThousands}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="bg-[#F5B056] text-black px-8 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition">
+              <button className="bg-[#F5B056] text-black px-8 py-3 rounded-[10px] font-semibold hover:bg-opacity-80 transition">
                 {t.downloadNow}
               </button>
-              <button className="bg-transparent border border-[#F5B056] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#F5B056]/10 transition">
+              <button className="bg-transparent border border-[#F5B056] text-white px-8 py-3 rounded-[10px] font-semibold hover:bg-[#F5B056]/10 transition">
                 {t.learnMore}
               </button>
             </div>

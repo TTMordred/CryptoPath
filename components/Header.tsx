@@ -200,30 +200,30 @@ const Header = () => {
             >
               <Search size={16} />
             </button>
+            <div className="relative w-64">
+              <Input
+                type="text"
+                placeholder="Search wallet..."
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500 rounded-[5px]"
+              />
 
-            <Input
-              type="text"
-              placeholder="Search wallet..."
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500"
-            />
-
-            {address.length > 0 && (
-              <button
-                type="button"
-                onClick={clearAddress}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-transparent p-1 rounded-full transition-colors duration-200"
-                aria-label="Clear input"
-              >
-                <X size={12} />
-              </button>
-            )}
-
+              {address.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAddress}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-transparent p-1 rounded-[10px] transition-colors duration-200"
+                  aria-label="Clear input"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
             <select
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
               >
                 <option value="onchain">On-Chain</option>
                 <option value="offchain">Off-Chain</option>
@@ -250,7 +250,7 @@ const Header = () => {
                 </svg>
               </button>
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg z-20">
+                <div className="absolute right-0 mt-2 w-32 bg-white rounded-[5px] shadow-lg z-20">
                   <button
                     onClick={handleLogout}
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
@@ -331,7 +331,7 @@ const Header = () => {
                 <select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
                 >
                   <option value="onchain">On-Chain</option>
                   <option value="offchain">Off-Chain</option>
@@ -345,7 +345,7 @@ const Header = () => {
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded transition ml-2"
+                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded-[5px] transition ml-2"
                   >
                     Logout
                   </button>
