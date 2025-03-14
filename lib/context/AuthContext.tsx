@@ -34,6 +34,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         setSession(data.session);
         setUser(data.session?.user || null);
+        
+        // Update localStorage if user is logged in
+        if (data.session?.user) {
+          const currentUser = {
+            id: data.session.user.id,
+            email: data.session.user.email,
+            name: data.session.user.user_metadata?.full_name || data.session.user.email?.split('@')[0],
+            isLoggedIn: true,
+            settingsKey: `settings_${data.session.user.email}`
+          };
+          localStorage.setItem('currentUser', JSON.stringify(currentUser));
+        }
       } catch (error) {
         console.error('Error checking auth session:', error);
       } finally {
@@ -47,6 +59,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user || null);
+      
+      // Update localStorage based on session state
+      if (session?.user) {
+        const currentUser = {
+          id: session.user.id,
+          email: session.user.email,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+          isLoggedIn: true,
+          settingsKey: `settings_${session.user.email}`
+        };
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('currentUser');
+      }
+      
       setIsLoading(false);
     });
 

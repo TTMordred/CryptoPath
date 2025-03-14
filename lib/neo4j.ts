@@ -1,5 +1,4 @@
-
-import neo4j, { Driver, Session } from 'neo4j-driver'
+import neo4j, { Driver } from 'neo4j-driver'
 
 let driver: Driver | null = null
 
@@ -34,55 +33,25 @@ export async function closeDriver(): Promise<void> {
   }
 }
 
-// Helper function to run queries with error handling and more detailed logging
+// Helper function to run queries
 export async function runQuery(cypher: string, params = {}) {
-  let session: Session | null = null;
-  
+  const session = getDriver().session()
   try {
-    session = getDriver().session();
-    console.log(`Executing Neo4j query: ${cypher.substring(0, 100)}...`);
-    console.log(`With parameters: ${JSON.stringify(params)}`);
-    
-    const startTime = Date.now();
-    const result = await session.run(cypher, params);
-    const endTime = Date.now();
-    
-    console.log(`Query executed in ${endTime - startTime}ms, returned ${result.records.length} records`);
-    
-    return result.records;
-  } catch (error) {
-    console.error('Neo4j query execution failed:', error);
-    
-    // Check for specific Neo4j error types
-    if (error instanceof Error) {
-      if (error.message.includes('Neo.ClientError.Schema')) {
-        throw new Error(`Database schema error: ${error.message}`);
-      } else if (error.message.includes('Neo.ClientError.Procedure')) {
-        throw new Error(`Procedure call error: ${error.message}`);
-      } else if (error.message.includes('Neo.ClientError.Security')) {
-        throw new Error('Database authentication or authorization error');
-      } else if (error.message.includes('Neo.ClientError.Transaction')) {
-        throw new Error(`Transaction error: ${error.message}`);
-      }
-    }
-    
-    // Re-throw the original error if it wasn't handled specifically
-    throw error;
+    const result = await session.run(cypher, params)
+    return result.records
   } finally {
-    if (session) {
-      await session.close();
-    }
+    await session.close()
   }
 }
 
 // Initialize driver when the app starts
 export async function initializeDriver(): Promise<void> {
   try {
-    const driver = getDriver();
-    await driver.verifyConnectivity();
-    console.log('Neo4j connection established successfully');
+    const driver = getDriver()
+    await driver.verifyConnectivity()
+    console.log('Neo4j connection established successfully')
   } catch (error) {
-    console.error('Failed to establish Neo4j connection:', error);
-    throw error;
+    console.error('Failed to establish Neo4j connection:', error)
+    throw error
   }
 }

@@ -1,22 +1,11 @@
-
 "use client"
 
 import { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
-import { Search, X, Globe } from "lucide-react"
+import { Search, X } from "lucide-react"
 import { LoadingScreen } from "@/components/loading-screen";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue, 
-} from "@/components/ui/select"
-import { toast } from "sonner"
-
-export type NetworkType = "mainnet" | "optimism" | "arbitrum";
 
 export default function SearchBar() {
   const [address, setAddress] = useState("")
@@ -24,7 +13,6 @@ export default function SearchBar() {
   const router = useRouter()
 
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
-  const [network, setNetwork] = useState<NetworkType>("mainnet");
   
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,16 +21,15 @@ export default function SearchBar() {
     setIsLoading(true);
     
     try {
-      // Simulate loading time
+      // Giả lập thời gian tải (có thể thay bằng API call thực tế)
       await new Promise(resolve => setTimeout(resolve, 2500));
       if (searchType === "onchain") {
-        router.push(`/search/?address=${encodeURIComponent(address)}&network=${network}`);
+        router.push(`/search/?address=${encodeURIComponent(address)}`);
       } else {
         router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
       }
     } catch (error) {
       console.error("Search error:", error);
-      toast.error("An error occurred during search. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -54,7 +41,7 @@ export default function SearchBar() {
 
   return (
     <>
-      <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2 w-full">
+      <form onSubmit={handleSearch} className="flex gap-2 w-full">
         <div className="relative flex-grow">
           <Search 
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 transition-colors duration-200" 
@@ -80,46 +67,22 @@ export default function SearchBar() {
             </button>
           )}
         </div>
-
-        <div className="flex gap-2">
-          <Select
-            value={network}
-            onValueChange={(value) => setNetwork(value as NetworkType)}
-          >
-            <SelectTrigger className="w-[140px] bg-black border border-gray-700">
-              <div className="flex items-center gap-2">
-                <Globe size={16} />
-                <SelectValue placeholder="Network" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-black border border-gray-700 text-white z-50">
-              <SelectItem value="mainnet">Ethereum</SelectItem>
-              <SelectItem value="optimism">Optimism</SelectItem>
-              <SelectItem value="arbitrum">Arbitrum</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Select
-            value={searchType}
-            onValueChange={(value) => setSearchType(value as "onchain" | "offchain")}
-          >
-            <SelectTrigger className="w-[140px] bg-black border border-gray-700">
-              <SelectValue placeholder="Search Type" />
-            </SelectTrigger>
-            <SelectContent className="bg-black border border-gray-700 text-white z-50">
-              <SelectItem value="onchain">On-Chain</SelectItem>
-              <SelectItem value="offchain">Off-Chain</SelectItem>
-            </SelectContent>
-          </Select>
-          
-          <Button 
-            type="submit" 
-            className="bg-amber-500 hover:bg-amber-400 text-black font-medium shadow-md transition-colors duration-200"
-            disabled={!address.trim() || isLoading}
-          >
-            Search
-          </Button>
-        </div>
+        
+        <Button 
+          type="submit" 
+          className="bg-amber-500 hover:bg-amber-400 text-black font-medium shadow-md transition-colors duration-200"
+          disabled={!address.trim() || isLoading}
+        >
+          Search
+        </Button>
+        <select
+                value={searchType}
+                onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
+                className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-md focus:outline-none hover:bg-gray-800 transition-colors"
+              >
+                <option value="onchain">On-Chain</option>
+                <option value="offchain">Off-Chain</option>
+        </select>
       </form>
       
       <LoadingScreen isLoading={isLoading} />

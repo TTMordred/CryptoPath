@@ -67,9 +67,11 @@ export type Database = {
         Row: {
           auth_provider: string | null
           avatar_url: string | null
+          background_image: string | null
           created_at: string
           display_name: string | null
           id: string
+          profile_image: string | null
           updated_at: string
           username: string | null
           wallet_address: string | null
@@ -77,9 +79,11 @@ export type Database = {
         Insert: {
           auth_provider?: string | null
           avatar_url?: string | null
+          background_image?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          profile_image?: string | null
           updated_at?: string
           username?: string | null
           wallet_address?: string | null
@@ -87,12 +91,38 @@ export type Database = {
         Update: {
           auth_provider?: string | null
           avatar_url?: string | null
+          background_image?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          profile_image?: string | null
           updated_at?: string
           username?: string | null
           wallet_address?: string | null
+        }
+        Relationships: []
+      }
+      user_wallets: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          user_id: string
+          wallet_address: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          user_id: string
+          wallet_address: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          user_id?: string
+          wallet_address?: string
         }
         Relationships: []
       }
