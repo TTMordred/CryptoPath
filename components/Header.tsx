@@ -65,17 +65,10 @@ const Header = () => {
         setCurrentUser(null);
       }
     });
-
-    const handleUserUpdate = (event: CustomEvent) => {
-      setCurrentUser(event.detail);
-    };
-    
-    window.addEventListener('userUpdated', handleUserUpdate as EventListener);
     
     // Cleanup
     return () => {
       authListener?.subscription.unsubscribe();
-      window.removeEventListener('userUpdated', handleUserUpdate as EventListener);
     };
   }, []);
 
