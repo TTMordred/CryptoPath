@@ -159,38 +159,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const displayName = `Wallet ${address.slice(0, 6)}...${address.slice(-4)}`;
             
             await supabase
-                    .from('profiles')
-                    .update({ 
-                    wallet_address: address,
-                    auth_provider: 'wallet',
-                    display_name: displayName // Add this line to set the display name
-                    })
-                    .eq('id', signInData.user.id);
-                    
-                  // Store user data for frontend usage
-                  const userData = {
-                    id: signInData.user.id,
-                    email: validEmail,
-                    name: displayName, // Use the shortened display name
-                    walletAddress: address
-                  };
-                  
-                  localStorage.setItem('currentUser', JSON.stringify(userData));
-                  
-                  // Create currentUser object for event
-                  const currentUser = {
-                    id: signInData.user.id,
-                    email: validEmail,
-                    name: displayName
-                  };
-                  
-                  // Emit an event to notify components about the user change
-                  window.dispatchEvent(new CustomEvent('userUpdated', { detail: currentUser }));
-                  }
-                  
-                  return signInData;
-                }
-                
+              .from('profiles')
+              .update({ 
+                wallet_address: address,
+                auth_provider: 'wallet',
+                display_name: displayName // Add this line to set the display name
+              })
+              .eq('id', signInData.user.id);
+              
+            // Store user data for frontend usage
+            const userData = {
+              id: signInData.user.id,
+              email: validEmail,
+              name: displayName, // Use the shortened display name
+              walletAddress: address
+            };
+            
+            localStorage.setItem('currentUser', JSON.stringify(userData));
+          }
+          
+          return signInData;
+        }
+        
         console.log("Sign in failed, creating new user", signInError);
       } catch (signInErr) {
         console.error("Error during wallet sign in attempt:", signInErr);

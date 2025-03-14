@@ -1,4 +1,3 @@
-
 "use client"; // Ensures this runs on the client side
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
@@ -9,6 +8,12 @@ import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
 import { supabase } from "@/src/integrations/supabase/client";
 import { toast } from "sonner";
+
+// Add this helper function at the top of your component or in a utils file
+const shortenAddress = (address: string): string => {
+  if (!address) return '';
+  return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+};
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -54,28 +59,32 @@ const Header = () => {
     // Listen for authentication state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // When user signs in, update current user state
+        // Check if the name looks like a wallet address
+        const userDisplayName = session.user.user_metadata.full_name || session.user.email?.split('@')[0];
+        
+        // If it starts with "wallet_", it's likely a wallet address that needs shortening
+        let displayName = userDisplayName;
+        if (userDisplayName && userDisplayName.startsWith('wallet_')) {
+          // Extract the actual address part after "wallet_"
+          const walletAddress = userDisplayName.substring(7);
+          displayName = `wallet_${shortenAddress(walletAddress)}`;
+        }
+        
+        // When user signs in, update current user state with shortened name if needed
         setCurrentUser({
           id: session.user.id,
           email: session.user.email,
-          name: session.user.user_metadata.full_name || session.user.email?.split('@')[0],
+          name: displayName,
         });
       } else if (event === 'SIGNED_OUT') {
         // When user signs out, clear current user state
         setCurrentUser(null);
       }
     });
-
-    const handleUserUpdate = (event: CustomEvent) => {
-      setCurrentUser(event.detail);
-    };
-    
-    window.addEventListener('userUpdated', handleUserUpdate as EventListener);
     
     // Cleanup
     return () => {
       authListener?.subscription.unsubscribe();
-      window.removeEventListener('userUpdated', handleUserUpdate as EventListener);
     };
   }, []);
 
