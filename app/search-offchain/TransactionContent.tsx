@@ -1,11 +1,11 @@
 'use client'
 
-import WalletInfo from "@/components/WalletInfo"
-import TransactionGraphOffChain from "@/components/TransactionGraphOffChain"
-import TransactionTableOffChain from "@/components/TransactionTableOffChain"
-import Portfolio from "@/components/Portfolio"
+import WalletInfo from "@/components/search/WalletInfo"
+import TransactionGraphOffChain from "@/components/search-offchain/TransactionGraphOffChain"
+import TransactionTableOffChain from "@/components/search-offchain/TransactionTableOffChain"
+import Portfolio from "@/components/search/Portfolio"
 import { useSearchParams } from "next/navigation"
-import SearchBarOffChain from "@/components/SearchBarOffChain"
+import SearchBarOffChain from "@/components/search-offchain/SearchBarOffChain"
 
 
 export default function Transactions() {
