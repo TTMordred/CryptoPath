@@ -1,11 +1,11 @@
 'use client'
 
-import SearchBar from "@/components/SearchBar"
-import WalletInfo from "@/components/WalletInfo"
-import TransactionGraph from "@/components/TransactionGraph"
-import TransactionTable from "@/components/TransactionTable"
-import Portfolio from "@/components/Portfolio"
-import NFTGallery from "@/components/NFTGallery"
+import SearchBar from "@/components/search/SearchBar"
+import WalletInfo from "@/components/search/WalletInfo"
+import TransactionGraph from "@/components/search/TransactionGraph"
+import TransactionTable from "@/components/search/TransactionTable"
+import Portfolio from "@/components/search/Portfolio"
+import NFTGallery from "@/components/search/NFTGallery"
 import { useSearchParams } from "next/navigation"
 
 
