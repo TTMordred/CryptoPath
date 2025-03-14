@@ -67,7 +67,11 @@ const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => voi
   </div>
 ));
 
-export default function RevenueGraph() {
+interface RevenueGraphProps {
+  onCoinChange: (coin: CoinOption | null) => void;
+}
+
+export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,9 +89,10 @@ export default function RevenueGraph() {
     const coin = availableCoins.find(c => c.id === coinId);
     if (coin) {
       setSelectedCoin(coin);
+      onCoinChange(coin);
       setError(null);
     }
-  }, [availableCoins]);
+  }, [availableCoins, onCoinChange]);
 
   // Fetch available coins
   useEffect(() => {
@@ -102,12 +107,13 @@ export default function RevenueGraph() {
         const supportedCoins = coins.filter(coin => TOKEN_CONTRACTS[coin.id]);
         setAvailableCoins(supportedCoins);
         
-        if (!selectedCoin && supportedCoins.length > 0) {
+        if (supportedCoins.length > 0) {
           const ethereum = supportedCoins.find(c => c.id === 'ethereum') || supportedCoins[0];
           setSelectedCoin(ethereum);
+          onCoinChange(ethereum);
         }
       } catch (err) {
-        console.error('Error fetching available coins:', err);
+        console.error('Error fetching coins:', err);
       } finally {
         if (mounted) {
           setLoadingCoins(false);
@@ -117,7 +123,7 @@ export default function RevenueGraph() {
 
     fetchCoins();
     return () => { mounted = false; };
-  }, []);
+  }, [onCoinChange]);
 
   // Optimize data fetching with proper cleanup and error handling
   useEffect(() => {
@@ -219,14 +225,14 @@ export default function RevenueGraph() {
               onValueChange={handleCoinChange}
               disabled={loadingCoins}
             >
-              <SelectTrigger className="w-[200px] bg-gray-800/50 border-gray-700/50 text-gray-300 hover:bg-gray-700/50 transition-colors duration-200 backdrop-blur-sm">
+              <SelectTrigger className="w-[200px] bg-gray-800/50 border-gray-700/50 text-gray-300 hover:bg-gray-700/50 transition-colors duration-200 backdrop-blur-sm [&>svg]:hidden">
                 {loadingCoins ? (
                   <div className="flex items-center">
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                     Loading...
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between w-full">
                     <SelectValue placeholder="Select a coin" />
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </div>
