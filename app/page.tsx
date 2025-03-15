@@ -75,7 +75,7 @@ const translations = {
     emailPlaceholder: "Địa chỉ Email của bạn...",
     signUpSuccess: "Đăng ký thành công!",
     processing: "Đang xử lý...",
-    tryCryptoPath: "Dùng thử CryptoPath",
+    tryCryptoPath: "Thử CryptoPath",
     tradeLikePro: "Theo dõi giao dịch ",
     aPro: "theo cách mới",
     getLowestFees: "Giám sát giao dịch thời gian thực, phân tích toàn diện và công cụ trực quan mạnh mẽ",
