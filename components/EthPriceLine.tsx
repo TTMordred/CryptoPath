@@ -57,7 +57,7 @@ const EthPriceLine = () => {
     const content = contentRef.current;
     const scrollWidth = content.offsetWidth;
     let scrollPosition = 0;
-    const scrollSpeed = 0.5; // Adjust for faster/slower scrolling
+    const scrollSpeed = 1; // Adjust for faster/slower scrolling
     
     const scroll = () => {
       scrollPosition += scrollSpeed;

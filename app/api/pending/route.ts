@@ -1,64 +1,26 @@
-
 import { NextResponse } from "next/server"
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const network = searchParams.get("network") || "mainnet"
-  
+const ETHERSCAN_API_URL = "https://api.etherscan.io/api"
+
+export async function GET() {
   try {
-    // Use window.location.origin as fallback when process.env.NEXT_PUBLIC_URL is undefined
-    const baseUrl = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : process.env.NEXT_PUBLIC_URL || ''
-    
-    // For Ethereum mainnet, use Etherscan API
-    if (network === 'mainnet') {
-      const etherscanResponse = await fetch(
-        `${baseUrl}/api/etherscan?module=proxy&action=eth_getBlockTransactionCountByNumber&tag=pending`
-      );
-      
-      if (!etherscanResponse.ok) {
-        throw new Error(`HTTP error! status: ${etherscanResponse.status}`)
-      }
-      
-      const etherscanData = await etherscanResponse.json();
-      
-      if (etherscanData.error) {
-        throw new Error(etherscanData.error || "Etherscan API returned an error")
-      }
-      
-      const pendingTxCount = parseInt(etherscanData.result, 16);
-      
-      return NextResponse.json({ pendingTransactions: pendingTxCount, network });
-    } 
-    // For other networks, use Infura API
-    else {
-      const response = await fetch(`${baseUrl}/api/infura`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          method: "eth_getBlockTransactionCountByNumber",
-          params: ["pending"],
-          network
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+    const response = await fetch(
+      `${ETHERSCAN_API_URL}?module=proxy&action=eth_getBlockTransactionCountByNumber&tag=pending&apikey=${process.env.ETHERSCAN_API_KEY}`
+    )
 
-      const data = await response.json()
-
-      if (data.error) {
-        throw new Error(data.error.message || "Infura API returned an error")
-      }
-
-      const pendingTxCount = parseInt(data.result, 16)
-
-      return NextResponse.json({ pendingTransactions: pendingTxCount, network })
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
+
+    const data = await response.json()
+
+    if (data.status !== "1" && !data.result) {
+      throw new Error(data.message || "Etherscan API returned an error")
+    }
+
+    const pendingTxCount = parseInt(data.result, 16)
+
+    return NextResponse.json({ pendingTransactions: pendingTxCount })
   } catch (error) {
     console.error("Error fetching pending transactions:", error)
     return NextResponse.json(
@@ -66,4 +28,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-}
+} 

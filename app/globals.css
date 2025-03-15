@@ -224,7 +224,13 @@
     animation: appear 2s forwards;
   }
   
-
+  nav a::after {
+    @apply content-[""] h-[3px] w-0 bg-white absolute left-0 bottom-0 transition-all duration-500;
+  }
+  
+  nav a:hover::after {
+    @apply w-full;
+  }
   
   /* ======================================
    * Mobile Menu

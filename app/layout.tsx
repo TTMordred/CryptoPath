@@ -15,14 +15,16 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
+import { SettingsProvider } from "@/components/context/SettingsContext"; // Settings context
+import ClientLayout from "@/components/ClientLayout"; // Client Component
 
 /**
  * Geist Sans font configuration
  * A modern, minimalist sans-serif typeface for primary text content
  */
 const geistSans = Geist({
-  variable: "--font-geist-sans", // CSS variable name for font-family access
-  subsets: ["latin"],           // Character subset for optimization
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
 });
 
 /**
@@ -30,13 +32,12 @@ const geistSans = Geist({
  * A monospace variant for code blocks and technical content
  */
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono", // CSS variable name for font-family access
-  subsets: ["latin"],            // Character subset for optimization
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
 });
 
 /**
- * Metadata configuration for the CryptoPath application.
- * [existing comment preserved]
+ * Metadata configuration for the CryptoPath application
  */
 export const metadata: Metadata = { 
   title: "CryptoPath",
@@ -73,21 +74,21 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>
-        {/* AuthProvider - Manages user authentication state */}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <AuthProvider>
-          {/* WalletProvider - Manages blockchain wallet connections and state */}
-          <WalletProvider>
-            {/* QueryProvider - Handles data fetching and caching */}
-            <QueryProvider>
-              {/* Application UI components */}
-              <SplashScreen /> {/* Initial loading screen */}
-              <Header /> {/* Global navigation */}
-              {children} {/* Page-specific content */}
-              <Toaster position="top-center" /> {/* Toast notification container */}
-              <Footer /> {/* Global footer */}
-            </QueryProvider>
-          </WalletProvider>
+          <SettingsProvider>
+            <WalletProvider>
+              <QueryProvider>
+                <ClientLayout>
+                  <SplashScreen />
+                  <Header />
+                  {children}
+                  <Toaster position="top-center" />
+                  <Footer />
+                </ClientLayout>
+              </QueryProvider>
+            </WalletProvider>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>
