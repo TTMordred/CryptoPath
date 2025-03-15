@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useSearchParams } from "next/navigation"
@@ -8,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "sonner"
 
 interface Transaction {
   id: string
@@ -15,12 +17,19 @@ interface Transaction {
   to: string
   value: string
   timestamp: string
-  type: "transfer" | "swap" | "inflow" | "outflow"
+  network?: string
+  gas?: number
+  gasPrice?: number
+  blockNumber?: number
+  nonce?: number
+  type?: "transfer" | "swap" | "inflow" | "outflow"
 }
 
 export default function TransactionTable() {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
+  const network = searchParams.get("network") || "mainnet"
+  const provider = searchParams.get("provider") || "etherscan"
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -30,8 +39,22 @@ export default function TransactionTable() {
     if (address) {
       setLoading(true)
       setError(null)
-      fetch(`/api/transactions?address=${address}&page=${page}&offset=20`)
-        .then((res) => res.json())
+      
+      const baseUrl = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_URL || ''
+        
+      const apiEndpoint = `${baseUrl}/api/transactions?address=${address}&page=${page}&offset=20&network=${network}&provider=${provider}`
+      
+      console.log("Fetching transactions from:", apiEndpoint);
+      
+      fetch(apiEndpoint)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`API responded with status: ${res.status}`);
+          }
+          return res.json();
+        })
         .then((data) => {
           if (data.error) {
             throw new Error(data.error)
@@ -41,20 +64,28 @@ export default function TransactionTable() {
             ...tx,
             type: categorizeTransaction(tx, address),
           }))
+          console.log("Received transactions:", categorizedData.length);
           setTransactions(categorizedData)
         })
         .catch((err) => {
           console.error("Error fetching transactions:", err)
           setError(err.message || "Failed to fetch transactions")
+          toast.error(`Transaction error: ${err.message || "Unknown error"}`)
         })
         .finally(() => setLoading(false))
     }
-  }, [address, page])
+  }, [address, page, network, provider])
 
   const categorizeTransaction = (tx: Transaction, userAddress: string): Transaction["type"] => {
-    if (tx.from === userAddress && tx.to === userAddress) return "swap"
-    if (tx.from === userAddress) return "outflow"
-    if (tx.to === userAddress) return "inflow"
+    if (!tx.from || !tx.to) return "transfer";
+    
+    const userAddressLower = userAddress.toLowerCase();
+    const fromLower = typeof tx.from === 'string' ? tx.from.toLowerCase() : '';
+    const toLower = typeof tx.to === 'string' ? tx.to.toLowerCase() : '';
+    
+    if (fromLower === userAddressLower && toLower === userAddressLower) return "swap"
+    if (fromLower === userAddressLower) return "outflow"
+    if (toLower === userAddressLower) return "inflow"
     return "transfer"
   }
 
@@ -93,19 +124,25 @@ export default function TransactionTable() {
           <TableHead>To</TableHead>
           <TableHead>Value</TableHead>
           <TableHead>Timestamp</TableHead>
+          {provider === 'bitquery' && <TableHead>Network</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
         {transactions.map((tx) => (
           <TableRow key={tx.id}>
             <TableCell className="font-mono text-[#F5B056]">
-              {tx.from.slice(0, 6)}...{tx.from.slice(-4)}
+              {tx.from && typeof tx.from === 'string' 
+                ? `${tx.from.slice(0, 6)}...${tx.from.slice(-4)}`
+                : "Unknown"}
             </TableCell>
             <TableCell className="font-mono text-[#F5B056]">
-              {tx.to.slice(0, 6)}...{tx.to.slice(-4)}
+              {tx.to && typeof tx.to === 'string'
+                ? `${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`
+                : "Unknown"}
             </TableCell>
             <TableCell>{tx.value}</TableCell>
             <TableCell>{new Date(tx.timestamp).toLocaleString()}</TableCell>
+            {provider === 'bitquery' && <TableCell>{tx.network}</TableCell>}
           </TableRow>
         ))}
       </TableBody>
@@ -176,9 +213,9 @@ export default function TransactionTable() {
           </TabsContent>
         </Tabs>
         <div className="flex items-center justify-between py-4 px-4">
-          <Button
-            variant="outline"
-            size="sm"
+            <Button
+              variant="outline"
+              size="sm"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
@@ -186,10 +223,10 @@ export default function TransactionTable() {
               disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
           >
             Previous
-          </Button>
-          <Button
-            variant="outline" 
-            size="sm"
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
             onClick={() => setPage((p) => p + 1)}
             disabled={transactions.length < 20}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
@@ -197,10 +234,9 @@ export default function TransactionTable() {
               disabled:bg-gray-400 disabled:text-gray-600 disabled:cursor-not-allowed"
           >
             Next
-          </Button>
+            </Button>
         </div>
       </CardContent>
     </Card>
   )
 }
-

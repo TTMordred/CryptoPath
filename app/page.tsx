@@ -4,6 +4,10 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaFacebookF, FaGithub, FaLinkedinIn } from 'react-icons/fa';
 import ParticlesBackground from '@/components/ParticlesBackground';
+import EthPriceLine from '@/components/home/EthPriceLine';
+import CryptoPathExplorer from '@/components/home/CryptoExplorer';
+import TrendingProjects from '@/components/home/TrendingProjects';
+import TrendingNFTCollections from '@/components/home/TrendingNFTs';
 import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -18,94 +22,94 @@ type Language = 'en' | 'vi';
 // Translation object
 const translations = {
   en: {
-    vietnamPremierCrypto: "Vietnam's Premier Crypto Platform",
-    joinAllInOne: "Join the all-in-one crypto ",
-    appInVietnam: "app in Vietnam",
+    vietnamPremierCrypto: "Vietnam's Premier Blockchain Explorer",
+    joinAllInOne: "Your all-in-one crypto ",
+    appInVietnam: "transaction explorer",
     emailPlaceholder: "Your Email Address...",
     signUpSuccess: "Sign Up Successfully!",
     processing: "Processing...",
     tryCryptoPath: "Try CryptoPath",
-    tradeLikePro: "Trade like ",
-    aPro: "a pro",
-    getLowestFees: "Get the lowest fees, fastest transactions, powerful APIs, and more",
-    oneApplication: "One Application. ",
-    infinitePotential: "Infinite Potential",
-    exploreNFTMarketplace: "Explore the world's best NFT marketplace, DEX, and wallets supporting all your favorite chains.",
-    exploreDecentralized: "Explore decentralized applications and experience cutting-edge blockchain technology.",
-    exchange: "Exchange",
-    web3: "Web3",
-    accompanyingYou: "Accompanying You ",
-    everyStep: "Every Step of the Way",
-    fromCryptoTransactions: "From cryptocurrency transactions to your first NFT purchase, CryptoPath will guide you through the entire process.",
-    believeInYourself: "Believe in yourself and never stop learning.",
+    tradeLikePro: "Track transactions ",
+    aPro: "like never before",
+    getLowestFees: "Real-time transaction monitoring, comprehensive analytics, and powerful visualization tools",
+    oneApplication: "One Platform. ",
+    infinitePotential: "Complete Insights",
+    exploreNFTMarketplace: "Track real-time cryptocurrency transactions, monitor market trends, and analyze blockchain metrics with our comprehensive dashboard.",
+    exploreDecentralized: "Explore detailed transaction histories, wallet analytics, and network statistics with our powerful blockchain explorer.",
+    exchange: "Analytics",
+    web3: "Explorer",
+    accompanyingYou: "Your Gateway to ",
+    everyStep: "Blockchain Data",
+    fromCryptoTransactions: "From real-time transaction tracking to comprehensive market analysis, CryptoPath provides you with all the tools you need to understand blockchain activity.",
+    believeInYourself: "Make informed decisions with data-driven insights.",
     meetTheTeam: "Meet the ",
     team: "Team",
-    willingToListen: "We are always willing to listen to everyone!",
-    whatIsCryptoPath: "What is ",
+    willingToListen: "Dedicated to building the best blockchain explorer!",
+    whatIsCryptoPath: "Why ",
     cryptoPath: "CryptoPath?",
-    hearFromTopIndustry: "Hear from top industry leaders to understand",
-    whyCryptoPathIsFavorite: "why CryptoPath is everyone's favorite application.",
+    hearFromTopIndustry: "A powerful blockchain explorer that helps you",
+    whyCryptoPathIsFavorite: "track, analyze, and understand cryptocurrency transactions.",
     learnMore: "Learn More",
-    whatIsCryptocurrency: "What is Cryptocurrency?",
-    explainingNewCurrency: "Explaining the \"new currency of the world\"",
-    redefiningSystem: "Redefining the system",
-    welcomeToWeb3: "Welcome to Web3",
-    whatIsBlockchain: "What is Blockchain?",
-    understandBlockchain: "Understand how Blockchain works",
+    whatIsCryptocurrency: "Real-Time Analytics",
+    explainingNewCurrency: "Track market trends and transaction flows",
+    redefiningSystem: "Transaction Explorer",
+    welcomeToWeb3: "Monitor blockchain activity in real-time",
+    whatIsBlockchain: "Network Statistics",
+    understandBlockchain: "Comprehensive blockchain metrics and insights",
     trustedBy: "Trusted",
-    industryLeaders: "by industry leaders",
-    testimonialText: "\"CryptoPath is an amazing platform for tracking transactions. I can't even picture what the world would be like without it\"",
+    industryLeaders: "by crypto enthusiasts",
+    testimonialText: "\"CryptoPath provides the most comprehensive and user-friendly blockchain explorer I've ever used. The real-time analytics and transaction tracking are invaluable.\"",
     founderOf: "Founder of CryptoPath",
-    readyToStart: "Ready to start your crypto journey?",
-    joinThousands: "Join thousands of Vietnamese users who are already trading, investing, and earning with CryptoPath.",
-    downloadNow: "Download Now",
+    readyToStart: "Ready to explore the blockchain?",
+    joinThousands: "Join thousands of users who are already using CryptoPath to track and analyze cryptocurrency transactions.",
+    downloadNow: "Start Exploring",
     pleaseEnterEmail: "Please enter your email address",
     pleaseEnterValidEmail: "Please enter a valid email address",
     errorOccurred: "An error occurred while registering!",
     registrationSuccessful: "Registration successful! Please check your email."
   },
   vi: {
-    vietnamPremierCrypto: "Nền tảng Crypto hàng đầu Việt Nam",
-    joinAllInOne: "Tham gia ứng dụng crypto ",
-    appInVietnam: "tất cả trong một ở Việt Nam",
+    vietnamPremierCrypto: "Nền Tảng Khám Phá Blockchain Hàng Đầu Việt Nam",
+    joinAllInOne: "Nền tảng theo dõi giao dịch ",
+    appInVietnam: "tiền điện tử toàn diện",
     emailPlaceholder: "Địa chỉ Email của bạn...",
     signUpSuccess: "Đăng ký thành công!",
     processing: "Đang xử lý...",
-    tryCryptoPath: "Dùng thử CryptoPath",
-    tradeLikePro: "Giao dịch như ",
-    aPro: "chuyên gia",
-    getLowestFees: "Nhận phí thấp nhất, giao dịch nhanh nhất, API mạnh mẽ và nhiều hơn nữa",
-    oneApplication: "Một ứng dụng. ",
-    infinitePotential: "Tiềm năng vô hạn",
-    exploreNFTMarketplace: "Khám phá thị trường NFT, DEX tốt nhất thế giới và ví hỗ trợ tất cả các chuỗi yêu thích của bạn.",
-    exploreDecentralized: "Khám phá các ứng dụng phi tập trung và trải nghiệm công nghệ blockchain tiên tiến.",
-    exchange: "Sàn giao dịch",
-    web3: "Web3",
-    accompanyingYou: "Đồng hành cùng bạn ",
-    everyStep: "trong từng bước đi",
-    fromCryptoTransactions: "Từ giao dịch tiền điện tử đến việc mua NFT đầu tiên, CryptoPath sẽ hướng dẫn bạn qua toàn bộ quá trình.",
-    believeInYourself: "Hãy tin vào chính mình và không ngừng học hỏi.",
+    tryCryptoPath: "Thử CryptoPath",
+    tradeLikePro: "Theo dõi giao dịch ",
+    aPro: "theo cách mới",
+    getLowestFees: "Giám sát giao dịch thời gian thực, phân tích toàn diện và công cụ trực quan mạnh mẽ",
+    oneApplication: "Một nền tảng. ",
+    infinitePotential: "Thông tin đầy đủ",
+    exploreNFTMarketplace: "Theo dõi giao dịch tiền điện tử thời gian thực, giám sát xu hướng thị trường và phân tích các chỉ số blockchain với bảng điều khiển toàn diện của chúng tôi.",
+    exploreDecentralized: "Khám phá lịch sử giao dịch chi tiết, phân tích ví và thống kê mạng lưới với công cụ khám phá blockchain mạnh mẽ của chúng tôi.",
+    exchange: "Phân tích",
+    web3: "Khám phá",
+    accompanyingYou: "Cổng thông tin ",
+    everyStep: "Blockchain của bạn",
+    fromCryptoTransactions: "Từ theo dõi giao dịch thời gian thực đến phân tích thị trường toàn diện, CryptoPath cung cấp cho bạn tất cả các công cụ cần thiết để hiểu hoạt động blockchain.",
+    believeInYourself: "Đưa ra quyết định dựa trên dữ liệu thực tế.",
     meetTheTeam: "Gặp gỡ ",
     team: "Đội ngũ",
-    willingToListen: "Chúng tôi luôn sẵn sàng lắng nghe mọi người!",
-    whatIsCryptoPath: "CryptoPath ",
-    cryptoPath: "là gì?",
-    hearFromTopIndustry: "Lắng nghe từ các nhà lãnh đạo hàng đầu trong ngành để hiểu",
-    whyCryptoPathIsFavorite: "tại sao CryptoPath là ứng dụng yêu thích của mọi người.",
+    willingToListen: "Luôn nỗ lực xây dựng nền tảng khám phá blockchain tốt nhất!",
+    whatIsCryptoPath: "Tại sao chọn ",
+    cryptoPath: "CryptoPath?",
+    hearFromTopIndustry: "Một công cụ khám phá blockchain mạnh mẽ giúp bạn",
+    whyCryptoPathIsFavorite: "theo dõi, phân tích và hiểu các giao dịch tiền điện tử.",
     learnMore: "Tìm hiểu thêm",
-    whatIsCryptocurrency: "Tiền điện tử là gì?",
-    explainingNewCurrency: "Giải thích về \"đồng tiền mới của thế giới\"",
-    redefiningSystem: "Định nghĩa lại hệ thống",
-    welcomeToWeb3: "Chào mừng đến với Web3",
-    whatIsBlockchain: "Blockchain là gì?",
-    understandBlockchain: "Hiểu cách Blockchain hoạt động",
+    whatIsCryptocurrency: "Phân tích thời gian thực",
+    explainingNewCurrency: "Theo dõi xu hướng thị trường và luồng giao dịch",
+    redefiningSystem: "Khám phá giao dịch",
+    welcomeToWeb3: "Giám sát hoạt động blockchain theo thời gian thực",
+    whatIsBlockchain: "Thống kê mạng lưới",
+    understandBlockchain: "Số liệu và thông tin blockchain toàn diện",
     trustedBy: "Được tin dùng",
-    industryLeaders: "bởi các nhà lãnh đạo ngành",
-    testimonialText: "\"CryptoPath là một nền tảng tuyệt vời để theo dõi giao dịch. Tôi thậm chí không thể tưởng tượng thế giới sẽ như thế nào nếu không có nó\"",
+    industryLeaders: "bởi cộng đồng crypto",
+    testimonialText: "\"CryptoPath cung cấp công cụ khám phá blockchain toàn diện và thân thiện nhất mà tôi từng sử dụng. Phân tích thời gian thực và theo dõi giao dịch là vô giá.\"",
     founderOf: "Nhà sáng lập CryptoPath",
-    readyToStart: "Sẵn sàng bắt đầu hành trình tiền điện tử của bạn?",
-    joinThousands: "Tham gia cùng hàng nghìn người dùng Việt Nam đang giao dịch, đầu tư và kiếm tiền với CryptoPath.",
-    downloadNow: "Tải xuống ngay",
+    readyToStart: "Sẵn sàng khám phá blockchain?",
+    joinThousands: "Tham gia cùng hàng nghìn người dùng đang sử dụng CryptoPath để theo dõi và phân tích giao dịch tiền điện tử.",
+    downloadNow: "Bắt đầu khám phá",
     pleaseEnterEmail: "Vui lòng nhập địa chỉ email của bạn",
     pleaseEnterValidEmail: "Vui lòng nhập địa chỉ email hợp lệ",
     errorOccurred: "Đã xảy ra lỗi khi đăng ký!",
@@ -236,7 +240,8 @@ const HomePage = () => {
   return (
     <div className="relative font-sans">
       <ParticlesBackground />
-
+      <EthPriceLine/>
+      <CryptoPathExplorer language={language}/>
       <div className="relative z-10 bg-transparent">
         {/* Description Section */}
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
@@ -257,7 +262,7 @@ const HomePage = () => {
                       value={email}
                       onChange={handleEmailChange}
                       disabled={isSubmitting}
-                      className={`px-4 py-3 w-full md:w-64 rounded-md bg-gray-900 border ${
+                      className={`px-4 py-3 w-full md:w-64 rounded-[5px] bg-gray-900 border ${
                         emailError ? 'border-red-500' : isSuccess ? 'border-green-500' : 'border-gray-700'
                       } text-white focus:outline-none transition-colors`}
                     />
@@ -287,7 +292,7 @@ const HomePage = () => {
         </div>
 
         <PartnerBar />
-
+        <TrendingProjects />
         {/* Trade Like a Pro Section */}
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
           <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
@@ -297,9 +302,9 @@ const HomePage = () => {
             </p>
             <div className="flex justify-center">
               <div className="video-container relative">
-                <div className="absolute -inset-1 bg-[#F5B056]/20 rounded-lg blur"></div>
+                <div className="absolute -inset-1 bg-[#F5B056]/20 rounded-[10px] blur"></div>
                 <video 
-                  className="w-full rounded-lg border-4 border-black relative" 
+                  className="w-full rounded-[10px] border-4 border-black relative" 
                   autoPlay 
                   loop 
                   muted
@@ -308,7 +313,7 @@ const HomePage = () => {
                   <source src="/Img/Videos/video.mp4" type="video/mp4" />
                   Your browser does not support the video tag.
                 </video>
-                <div className="absolute inset-0 rounded-lg border border-white"></div>
+                <div className="absolute inset-0 rounded-[10px] border border-white"></div>
               </div>
             </div>
           </div>
@@ -332,7 +337,7 @@ const HomePage = () => {
               </p>
               <div className="flex justify-center md:justify-start space-x-4">
                 <button
-                  className={`px-4 py-2 rounded-md font-semibold ${
+                  className={`px-4 py-2 rounded-[5px] font-semibold ${
                     activeTab === 'sgd' ? 'bg-[#F5B056] hover:bg-[#ff6500] text-black' : 'bg-black text-white'
                   }`}
                   onClick={() => switchContent('sgd')}
@@ -340,7 +345,7 @@ const HomePage = () => {
                   {t.exchange}
                 </button>
                 <button
-                  className={`px-4 py-2 rounded-md font-semibold ${
+                  className={`px-4 py-2 rounded-[5px] font-semibold ${
                     activeTab === 'web3' ? 'bg-[#F5B056] text-black' : 'bg-black text-white'
                   }`}
                   onClick={() => switchContent('web3')}
@@ -351,7 +356,7 @@ const HomePage = () => {
             </div>
           </div>
         </div>
-
+        <TrendingNFTCollections />
         {/* Evolution Illustration Section */}
         <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
           <h1 className="text-4xl font-bold mb-4">{t.accompanyingYou}<span className="text-[#F5B056]">{t.everyStep}</span></h1>
@@ -362,8 +367,8 @@ const HomePage = () => {
           </p>
           <div className="flex justify-center">
             <div className="relative">
-              <div className="absolute -inset-1 bg-[#ff6500]/20 rounded-lg blur"></div>
-              <video className="max-w-full relative rounded-lg" autoPlay loop muted playsInline>
+              <div className="absolute -inset-1 bg-[#ff6500]/20 rounded-[10px] blur"></div>
+              <video className="max-w-full relative rounded-[10px]" autoPlay loop muted playsInline>
                 <source src="/Img/Videos/Evolution.webm" type="video/webm" />
                 <source src="/Img/Videos/Evolution.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
@@ -386,10 +391,10 @@ const HomePage = () => {
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
               {teamMembers.map((member) => (
-                <div key={member.name} className="group flex flex-col items-center bg-black/30 p-6 rounded-lg border border-transparent transition duration-300">
+                <div key={member.name} className="group flex flex-col items-center bg-black/30 p-6 rounded-[10px] border border-transparent transition duration-300">
   
                 {/* Profile Image */}
-                <div className="w-36 h-36 rounded-full overflow-hidden border-2 border-transparent group-hover:border-[#F5B056] transition duration-300">
+                <div className="w-36 h-36 rounded-[10px] overflow-hidden border-2 border-transparent group-hover:border-[#F5B056] transition duration-300">
                   <Image
                     src={member.image}
                     alt={`${member.name}'s profile`}
@@ -457,14 +462,14 @@ const HomePage = () => {
             </p>
             <button
               id="btn-learnmore"
-              className="bg-[#F5B056] text-black px-6 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition"
+              className="bg-[#F5B056] text-black px-6 py-3 rounded-[10px] font-semibold hover:bg-opacity-80 transition"
             >
               {t.learnMore}
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
             {/* Video 1: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-right">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-right">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/erzVdnTaBKk"
@@ -480,7 +485,7 @@ const HomePage = () => {
             </div>
 
             {/* Video 2: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-up">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-up">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/oD98Jshj1QE"
@@ -496,7 +501,7 @@ const HomePage = () => {
             </div>
 
             {/* Video 3: YouTube Embed */}
-            <div className="bg-black/30 rounded-lg overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-left">
+            <div className="bg-black/30 rounded-[10px] overflow-hidden border border-gray-800 hover:border-[#F5B056] transition duration-300" data-aos="fade-left">
               <iframe
                 className="w-full aspect-video"
                 src="https://www.youtube.com/embed/sTFZras-1Lo"
@@ -568,7 +573,7 @@ const HomePage = () => {
               <img
                 src="/minhduy.png"
                 alt="Minh Duy Nguyen"
-                className="w-32 h-32 rounded-full mx-auto border-2 border-[#F5B056]"
+                className="w-32 h-32 rounded-[10px] mx-auto border-2 border-[#F5B056]"
               />
             </div>
             <div className="text-center md:text-left">
@@ -583,16 +588,16 @@ const HomePage = () => {
 
         {/* CTA Section (New) */}
         <div className="container mx-auto px-4 py-12" data-aos="fade-up">
-          <div className="bg-gradient-to-r from-[#F5B056]/20 to-black rounded-lg p-8 text-center max-w-4xl mx-auto border border-black">
+          <div className="bg-gradient-to-r from-[#F5B056]/20 to-black rounded-[10px] p-8 text-center max-w-4xl mx-auto border border-black">
             <h2 className="text-3xl font-bold mb-4">{t.readyToStart}</h2>
             <p className="text-lg mb-8">
               {t.joinThousands}
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="bg-[#F5B056] text-black px-8 py-3 rounded-lg font-semibold hover:bg-opacity-80 transition">
+              <button className="bg-[#F5B056] text-black px-8 py-3 rounded-[10px] font-semibold hover:bg-opacity-80 transition">
                 {t.downloadNow}
               </button>
-              <button className="bg-transparent border border-[#F5B056] text-white px-8 py-3 rounded-lg font-semibold hover:bg-[#F5B056]/10 transition">
+              <button className="bg-transparent border border-[#F5B056] text-white px-8 py-3 rounded-[10px] font-semibold hover:bg-[#F5B056]/10 transition">
                 {t.learnMore}
               </button>
             </div>

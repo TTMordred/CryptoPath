@@ -13,14 +13,14 @@ declare global {
 const particlesConfig = {
   particles: {
     number: {
-      value: 100,
+      value: 35,
       density: {
         enable: true,
         value_area: 800,
       },
     },
     color: {
-      value: "FF0000", 
+      value: "#f5b056", 
     },
     shape: {
       type: "circle",
@@ -36,7 +36,7 @@ const particlesConfig = {
     line_linked: {
       enable: true,
       distance: 150,
-      color: "#FF0000", 
+      color: "#ffc259", 
       opacity: 0.4,
       width: 1,
     },
@@ -57,7 +57,7 @@ const particlesConfig = {
         mode: "grab",
       },
       onclick: {
-        enable: true,
+        enable: false,
         mode: "push",
       },
     },
