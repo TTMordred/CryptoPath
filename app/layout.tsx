@@ -15,7 +15,11 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
-import { SettingsProvider } from "@/components/context/SettingsContext";
+import { DebugBadge } from "@/components/ui/debug-badge";
+import { SettingsProvider } from "@/components/context/SettingsContext"; // Add this import
+
+export const dynamic = 'force-dynamic';
+
 /**
  * Geist Sans font configuration
  * A modern, minimalist sans-serif typeface for primary text content
@@ -72,25 +76,28 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         {/* AuthProvider - Manages user authentication state */}
         <AuthProvider>
-          {/* WalletProvider - Manages blockchain wallet connections and state */}
-          <WalletProvider>
-            {/* QueryProvider - Handles data fetching and caching */}
-            <QueryProvider>
-              {/* SettingsProvider - Manages user settings and profile */}
-              <SettingsProvider>
+          {/* Add SettingsProvider here */}
+          <SettingsProvider>
+            {/* WalletProvider - Manages blockchain wallet connections and state */}
+            <WalletProvider>
+              {/* QueryProvider - Handles data fetching and caching */}
+              <QueryProvider>
                 {/* Application UI components */}
                 <SplashScreen /> {/* Initial loading screen */}
                 <Header /> {/* Global navigation */}
                 {children} {/* Page-specific content */}
                 <Toaster position="top-center" /> {/* Toast notification container */}
                 <Footer /> {/* Global footer */}
-              </SettingsProvider>
-            </QueryProvider>
-          </WalletProvider>
+                
+                {/* Debug Badge - Only shows in development when needed */}
+                <DebugBadge position="bottom-right" />
+              </QueryProvider>
+            </WalletProvider>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>
