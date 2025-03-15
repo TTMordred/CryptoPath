@@ -21,14 +21,28 @@ import trustModule from "@web3-onboard/trust";
 import okxModule from "@web3-onboard/okx";
 import frontierModule from "@web3-onboard/frontier";
 import { useAuth } from "@/lib/context/AuthContext";
-
 import { useSettings } from "@/components/context/SettingsContext";
-const dcent = dcentModule();
+import CryptoJS from "crypto-js"; // Import crypto-js
 
-const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129';
+// Khóa bí mật cho mã hóa (nên lưu trong biến môi trường trong thực tế)
+const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "my-secret-key-1234567890";
+
+// Hàm mã hóa dữ liệu
+const encryptData = (data: string): string => {
+  return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+};
+
+// Hàm giải mã dữ liệu
+const decryptData = (encryptedData: string): string => {
+  const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
+  return bytes.toString(CryptoJS.enc.Utf8);
+};
+
+const dcent = dcentModule();
+const INFURA_KEY = "7d389678fba04ceb9510b2be4fff5129";
 
 const walletConnect = walletConnectModule({
-  projectId: 'b773e42585868b9b143bb0f1664670f1',
+  projectId: "b773e42585868b9b143bb0f1664670f1",
   optionalChains: [1, 137],
 });
 
@@ -61,14 +75,14 @@ const wallets = [
 
 const chains = [
   { id: "0x1", token: "ETH", label: "Ethereum Mainnet", rpcUrl: `https://mainnet.infura.io/v3/${INFURA_KEY}` },
-  { id: 11155111, token: "ETH", label: "Sepolia", rpcUrl: "https://rpc.sepolia.org/" },
+  { id: "11155111", token: "ETH", label: "Sepolia", rpcUrl: "https://rpc.sepolia.org/" },
   { id: "0x13881", token: "MATIC", label: "Polygon - Mumbai", rpcUrl: "https://matic-mumbai.chainstacklabs.com" },
   { id: "0x38", token: "BNB", label: "Binance", rpcUrl: "https://bsc-dataseed.binance.org/" },
   { id: "0xA", token: "OETH", label: "OP Mainnet", rpcUrl: "https://mainnet.optimism.io" },
   { id: "0xA4B1", token: "ARB-ETH", label: "Arbitrum", rpcUrl: "https://rpc.ankr.com/arbitrum" },
   { id: "0xa4ec", token: "ETH", label: "Celo", rpcUrl: "https://1rpc.io/celo" },
-  { id: 666666666, token: "DEGEN", label: "Degen", rpcUrl: "https://rpc.degen.tips" },
-  { id: 2192, token: "SNAX", label: "SNAX Chain", rpcUrl: "https://mainnet.snaxchain.io" },
+  { id: "666666666", token: "DEGEN", label: "Degen", rpcUrl: "https://rpc.degen.tips" },
+  { id: "2192", token: "SNAX", label: "SNAX Chain", rpcUrl: "https://mainnet.snaxchain.io" },
 ];
 
 const appMetadata = {
@@ -85,7 +99,7 @@ const web3Onboard = init({ wallets, chains, appMetadata });
 function LoginPageContent() {
   const router = useRouter();
   const { signInWithWalletConnect, signIn } = useAuth();
-  const { updateProfile, addWallet, syncWithSupabase } = useSettings(); // Thêm hook useSettings
+  const { updateProfile, addWallet, syncWithSupabase } = useSettings();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -113,13 +127,12 @@ function LoginPageContent() {
     const checkExistingSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        router.push('/');
+        router.push("/");
       }
     };
     checkExistingSession();
   }, [router]);
 
-  // Handle wallet connection with Supabase
   useEffect(() => {
     if (wallet?.provider && !isLoggedOut) {
       const { address, ens } = wallet.accounts[0];
@@ -135,22 +148,22 @@ function LoginPageContent() {
             return;
           }
 
-          // Cập nhật profile và wallet thông qua SettingsProvider thay vì localStorage
           updateProfile({
             username: ens?.name || formatWalletAddress(address),
             profileImage: null,
             backgroundImage: null,
           });
           addWallet(address);
-          await syncWithSupabase(); // Đồng bộ với Supabase
+          await syncWithSupabase();
 
           const publicUserData = {
             walletAddress: address,
             name: ens?.name || formatWalletAddress(address),
             isLoggedIn: true,
           };
-          localStorage.setItem("userDisplayInfo", JSON.stringify(publicUserData));
-          localStorage.setItem("userToken", data.session?.access_token || "");
+          // Mã hóa trước khi lưu vào localStorage
+          localStorage.setItem("userDisplayInfo", encryptData(JSON.stringify(publicUserData)));
+          localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
 
           toast.success("Successfully authenticated with wallet");
           router.push("/");
@@ -166,7 +179,6 @@ function LoginPageContent() {
     }
   }, [wallet, router, isLoggedOut, signInWithWalletConnect, updateProfile, addWallet, syncWithSupabase]);
 
-  // Handle email/password login with Supabase
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailError("");
@@ -189,20 +201,18 @@ function LoginPageContent() {
         return;
       }
 
-      // Get the user profile data
       const { data: profileData } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", data.user.id)
         .single();
 
-      // Cập nhật profile thông qua SettingsProvider
       updateProfile({
         username: profileData?.display_name || email.split("@")[0],
         profileImage: profileData?.profile_image || null,
         backgroundImage: profileData?.background_image || null,
       });
-      await syncWithSupabase(); // Đồng bộ với Supabase
+      await syncWithSupabase();
 
       const publicUserData = {
         id: data.user.id,
@@ -210,8 +220,9 @@ function LoginPageContent() {
         email,
         isLoggedIn: true,
       };
-      localStorage.setItem("currentUser", JSON.stringify(publicUserData));
-      localStorage.setItem("userToken", data.session?.access_token || "");
+      // Mã hóa trước khi lưu vào localStorage
+      localStorage.setItem("currentUser", encryptData(JSON.stringify(publicUserData)));
+      localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
 
       toast.success("Login successful!");
       router.push("/");
@@ -223,7 +234,6 @@ function LoginPageContent() {
     }
   };
 
-  // Handle wallet connect/disconnect
   const handleWalletConnect = async () => {
     if (!wallet) {
       connect();
@@ -309,13 +319,12 @@ function LoginPageContent() {
                       className={`w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200 ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
                       disabled={isLoading}
                     >
-                     Login
+                      Login
                     </button>
                     <div className="text-center text-sm">
                       <span className="bg-black px-2 text-gray-400">Or continue with</span>
                     </div>
                     <div className="grid gap-2">
-                      
                       <button
                         id="google-login"
                         className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
