@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 
 const INFURA_API_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Will be moved to env process later
@@ -14,9 +13,9 @@ type Network = 'mainnet' | 'optimism' | 'arbitrum';
 
 // Simple in-memory cache
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5000; // 5 seconds cache
+const CACHE_DURATION = 10000; // 10 seconds cache (increased from 5s)
 let lastCallTimestamp = 0;
-const RATE_LIMIT_WINDOW = 200; // 200ms between calls (5 calls per second)
+const RATE_LIMIT_WINDOW = 300; // 300ms between calls (reduced from 5 calls to 3-4 calls per second)
 
 export async function POST(request: Request) {
   try {
@@ -35,7 +34,8 @@ export async function POST(request: Request) {
     // Rate limiting
     const now = Date.now();
     if (now - lastCallTimestamp < RATE_LIMIT_WINDOW) {
-      await new Promise(resolve => setTimeout(resolve, RATE_LIMIT_WINDOW));
+      const waitTime = RATE_LIMIT_WINDOW - (now - lastCallTimestamp);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
     }
     lastCallTimestamp = Date.now();
 
@@ -50,34 +50,57 @@ export async function POST(request: Request) {
       params
     };
 
-    // Call Infura API
-    const response = await fetch(networkUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(rpcRequest),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Infura API responded with status: ${response.status}`);
+    // Call Infura API with NO timeout - let the browser or network naturally timeout
+    console.log(`Making Infura request: ${method} to ${network}`);
+    
+    try {
+      const response = await fetch(networkUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(rpcRequest)
+      });
+  
+      if (!response.ok) {
+        throw new Error(`Infura API responded with status: ${response.status}`);
+      }
+  
+      // First check if the response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Infura API returned a non-JSON response");
+      }
+  
+      const data = await response.json();
+      
+      // Verify that the data is valid JSON-RPC
+      if (!data || typeof data !== 'object' || (!data.result && !data.error)) {
+        throw new Error("Invalid JSON-RPC response from Infura");
+      }
+      
+      // Cache the successful response
+      cache.set(cacheKey, { data, timestamp: Date.now() });
+      
+      console.log(`Infura request successful: ${method}`);
+      return NextResponse.json(data);
+    } catch (error) {
+      console.error(`Infura request error for ${method}:`, error);
+      throw error;
     }
-
-    const data = await response.json();
-    
-    // Cache the successful response
-    cache.set(cacheKey, { data, timestamp: Date.now() });
-    
-    return NextResponse.json(data);
   } catch (error) {
     console.error('Infura API error:', error);
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : "Failed to fetch from Infura";
+    
     return NextResponse.json(
       { 
         jsonrpc: "2.0",
         id: 1,
         error: {
           code: -32603,
-          message: error instanceof Error ? error.message : "Failed to fetch from Infura"
+          message: errorMessage
         }
       }, 
       { status: 500 }
