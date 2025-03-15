@@ -15,7 +15,7 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
-
+import { SettingsProvider } from "@/components/context/SettingsContext";
 /**
  * Geist Sans font configuration
  * A modern, minimalist sans-serif typeface for primary text content
@@ -80,12 +80,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <WalletProvider>
             {/* QueryProvider - Handles data fetching and caching */}
             <QueryProvider>
-              {/* Application UI components */}
-              <SplashScreen /> {/* Initial loading screen */}
-              <Header /> {/* Global navigation */}
-              {children} {/* Page-specific content */}
-              <Toaster position="top-center" /> {/* Toast notification container */}
-              <Footer /> {/* Global footer */}
+              {/* SettingsProvider - Manages user settings and profile */}
+              <SettingsProvider>
+                {/* Application UI components */}
+                <SplashScreen /> {/* Initial loading screen */}
+                <Header /> {/* Global navigation */}
+                {children} {/* Page-specific content */}
+                <Toaster position="top-center" /> {/* Toast notification container */}
+                <Footer /> {/* Global footer */}
+              </SettingsProvider>
             </QueryProvider>
           </WalletProvider>
         </AuthProvider>
