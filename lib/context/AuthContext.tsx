@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/src/integrations/supabase/client';
 import bcrypt from 'bcryptjs'; // Import bcryptjs
+import crypto from 'crypto'; // Import crypto module
 
 type AuthContextType = {
   user: User | null;
@@ -207,7 +208,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               walletAddress: address,
             };
 
-            localStorage.setItem('currentUser', JSON.stringify(userData));
+            const encryptedUserData = encryptData(JSON.stringify(userData));
+            localStorage.setItem('currentUser', encryptedUserData);
 
             const currentUser = {
               id: signInData.user.id,
@@ -316,6 +318,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+
+  function encryptData(data) {
+    const algorithm = 'aes-256-ctr';
+    const secretKey = process.env.REACT_APP_SECRET_KEY;
+    const iv = crypto.randomBytes(16);
+
+    const cipher = crypto.createCipheriv(algorithm, secretKey, iv);
+    const encrypted = Buffer.concat([cipher.update(data), cipher.final()]);
+
+    return iv.toString('hex') + ':' + encrypted.toString('hex');
+  }
+
+  function decryptData(data) {
+    const algorithm = 'aes-256-ctr';
+    const secretKey = process.env.REACT_APP_SECRET_KEY;
+    const [iv, encryptedData] = data.split(':');
+
+    const decipher = crypto.createDecipheriv(algorithm, secretKey, Buffer.from(iv, 'hex'));
+    const decrypted = Buffer.concat([decipher.update(Buffer.from(encryptedData, 'hex')), decipher.final()]);
+
+    return decrypted.toString();
+  }
 }
 
 export const useAuth = () => {
