@@ -69,7 +69,7 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
     fetchData();
   }, []);
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!searchValue.trim()) return;
 
