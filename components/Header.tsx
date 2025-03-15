@@ -158,8 +158,8 @@ const Header = () => {
   return (
     <>
       <header className="flex items-center bg-black h-16 px-4">
-        <div className="text-white mr-auto ml-4 text-3xl font-bold">
-          <h1 className="ml-8">
+        <div className="text-white mr-auto ml-4 text-2xl xl:text-3xl font-bold">
+          <h1 className="ml-0 xl:ml-8">
             <Link href="/">
               <Image
                 src="/Img/logo/logo2.png"
@@ -175,7 +175,7 @@ const Header = () => {
           </h1>
         </div>
 
-        <nav className="hidden md:flex justify-center items-center space-x-6">
+        <nav className="hidden xl:flex justify-center items-center space-x-6">
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
@@ -188,11 +188,16 @@ const Header = () => {
           <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
             Faucet
           </Link>
+          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">
+            NFTs
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
-
-          <form onSubmit={handleSearch} className="relative flex items-center">
+          <Link href="/search" className="text-white text-sm hover:text-[#F5B056] transition">
+            Search
+          </Link>
+          {/* <form onSubmit={handleSearch} className="relative flex items-center">
             <button
               type="button"
               onClick={handleSearchIconClick}
@@ -227,7 +232,7 @@ const Header = () => {
               <option value="onchain">On-Chain</option>
               <option value="offchain">Off-Chain</option>
             </select>
-          </form>
+          </form> */}
 
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
@@ -269,15 +274,15 @@ const Header = () => {
         </nav>
 
         <button
-          className="md:hidden text-white focus:outline-none"
+          className="xl:hidden text-white focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
 
         {isOpen && (
-          <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 shadow-lg md:hidden z-50 w-screen">
-            <nav className="flex flex-col space-y-4 text-center text-xl">
+          <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 mt-[50px] shadow-lg z-50 w-screen">
+            <nav className="flex flex-col text-center text-xl">
               <Link
                 href="/"
                 className="text-sm uppercase hover:text-[#F5B056] transition"
@@ -306,6 +311,13 @@ const Header = () => {
               >
                 Faucet
               </Link>
+              <Link
+                href="/NFT"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                NFTs
+              </Link>
               <a
                 href="mailto:cryptopath@gmail.com"
                 className="text-sm uppercase hover:text-[#F5B056] transition"
@@ -313,8 +325,14 @@ const Header = () => {
               >
                 Support
               </a>
-
-              <form
+              <Link
+                href="/search"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Search
+              </Link>
+              {/* <form
                 onSubmit={handleSearch}
                 className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center"
               >
@@ -350,7 +368,7 @@ const Header = () => {
                   <option value="onchain">On-Chain</option>
                   <option value="offchain">Off-Chain</option>
                 </select>
-              </form>
+              </form> */}
 
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
