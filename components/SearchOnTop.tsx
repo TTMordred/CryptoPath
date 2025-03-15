@@ -1,15 +1,20 @@
 'use client';
 import React, { useState } from 'react';
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname  } from "next/navigation";
 import { FaSearch, FaMapPin, FaSun, FaEthereum } from 'react-icons/fa';
 import { LoadingScreen } from "@/components/loading-screen";
 
 const SearchOnTop = () => {
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
   const router = useRouter();
 
+  if (pathname === "/") {
+    return null;
+  }
+  
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!searchQuery.trim()) return;
