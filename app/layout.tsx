@@ -16,6 +16,7 @@ import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
 import { DebugBadge } from "@/components/ui/debug-badge";
+import { SettingsProvider } from "@/components/context/SettingsContext"; // Add this import
 
 export const dynamic = 'force-dynamic';
 
@@ -75,25 +76,28 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body>
         {/* AuthProvider - Manages user authentication state */}
         <AuthProvider>
-          {/* WalletProvider - Manages blockchain wallet connections and state */}
-          <WalletProvider>
-            {/* QueryProvider - Handles data fetching and caching */}
-            <QueryProvider>
-              {/* Application UI components */}
-              <SplashScreen /> {/* Initial loading screen */}
-              <Header /> {/* Global navigation */}
-              {children} {/* Page-specific content */}
-              <Toaster position="top-center" /> {/* Toast notification container */}
-              <Footer /> {/* Global footer */}
-              
-              {/* Debug Badge - Only shows in development when needed */}
-              <DebugBadge position="bottom-right" />
-            </QueryProvider>
-          </WalletProvider>
+          {/* Add SettingsProvider here */}
+          <SettingsProvider>
+            {/* WalletProvider - Manages blockchain wallet connections and state */}
+            <WalletProvider>
+              {/* QueryProvider - Handles data fetching and caching */}
+              <QueryProvider>
+                {/* Application UI components */}
+                <SplashScreen /> {/* Initial loading screen */}
+                <Header /> {/* Global navigation */}
+                {children} {/* Page-specific content */}
+                <Toaster position="top-center" /> {/* Toast notification container */}
+                <Footer /> {/* Global footer */}
+                
+                {/* Debug Badge - Only shows in development when needed */}
+                <DebugBadge position="bottom-right" />
+              </QueryProvider>
+            </WalletProvider>
+          </SettingsProvider>
         </AuthProvider>
       </body>
     </html>
