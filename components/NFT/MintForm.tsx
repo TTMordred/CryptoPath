@@ -1,15 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { utils } from 'ethers';
 import { Loader2, CloudUpload, Wallet } from 'lucide-react';
 
 interface MintFormProps {
   onSubmit: (recipient: string, tokenURI: string) => void;
   processing?: boolean;
+  checkWhitelist: (address: string) => Promise<boolean>;
 }
 
-export default function MintForm({ onSubmit, processing }: MintFormProps) {
+export default function MintForm({ 
+  onSubmit, 
+  processing,
+  checkWhitelist 
+}: MintFormProps) {
   const [tokenURI, setTokenURI] = useState('');
   const [recipient, setRecipient] = useState('');
+  const [isWhitelisted, setIsWhitelisted] = useState(false);
 
   // Validate Ethereum address
   const isValidAddress = (address: string) => utils.isAddress(address);
@@ -17,17 +23,38 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
   // Validate IPFS/HTTP URI
   const isValidURI = (uri: string) => uri.startsWith('ipfs://') || uri.startsWith('https://');
 
+  // Check whitelist status when recipient changes
+  useEffect(() => {
+    const verifyWhitelist = async () => {
+      if (isValidAddress(recipient)) {
+        const status = await checkWhitelist(recipient);
+        setIsWhitelisted(status);
+      } else {
+        setIsWhitelisted(false);
+      }
+    };
+    verifyWhitelist();
+  }, [recipient, checkWhitelist]);
+
+  // Combined disable conditions
+  const isDisabled = processing || 
+                    !isValidAddress(recipient) || 
+                    !isValidURI(tokenURI);
+
   return (
     <div className="space-y-6 p-8 bg-gray-900/80 rounded-xl border-2 border-orange-400/30 shadow-xl">
       {/* Header Section */}
       <div className="text-center space-y-2">
         <div className="inline-flex items-center gap-2 text-orange-400">
           <CloudUpload className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Mint NFT</h2>
+          <h2 className="text-2xl font-bold">Mint</h2>
         </div>
+        <p className="text-sm text-gray-400">
+          Only whitelisted addresses can mint NFTs
+        </p>
       </div>
 
-      {/* IPFS Guidance Section - Fixed Version */}
+      {/* IPFS Guidance Section */}
       <div className="space-y-3">
         <div className="text-sm text-gray-400 space-y-2">
           <p>1. Upload your metadata to IPFS using:</p>
@@ -88,9 +115,9 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
           />
           {!isValidAddress(recipient) && recipient !== '' && (
             <p className="text-red-400 text-sm flex items-center gap-1">
-              ⚠ Invalid Ethereum address
+              ⚠ Invalid BSC address
             </p>
-          )}
+            )}  
         </div>
 
         {/* Metadata URI Input */}
@@ -116,10 +143,10 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
       {/* Mint Button */}
       <button
         onClick={() => onSubmit(recipient, tokenURI)}
-        disabled={processing || !isValidAddress(recipient) || !isValidURI(tokenURI)}
+        disabled={isDisabled}
         className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all
           ${
-            processing || !isValidAddress(recipient) || !isValidURI(tokenURI)
+            isDisabled
               ? 'bg-gray-700 cursor-not-allowed text-gray-400'
               : 'bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white shadow-lg hover:shadow-orange-400/20'
           }`}

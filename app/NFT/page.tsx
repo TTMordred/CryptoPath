@@ -5,16 +5,17 @@ import NFTCard from '@/components/NFT/NFTCard';
 import NFTTabs from '@/components/NFT/NFTTabs';
 import Pagination from '@/components/NFT/Pagination';
 import MintForm from '@/components/NFT/MintForm';
+import WhitelistForm from '@/components/NFT/WhitelistForm';
 import { useWallet } from '@/components/Faucet/walletcontext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ParticlesBackground from '@/components/ParticlesBackground';
 
 // Contract addresses
-const NFT_CONTRACT_ADDRESS = "0x279Bd9304152E0349427c4B7F35FffFD439edcFa";
+const NFT_CONTRACT_ADDRESS = "0xdf5d4038723f6605A3eCd7776FFe25f3b1Be39a0";
 const PATH_TOKEN_ADDRESS = "0xc3e9Cf26237c9002c0C04305D637AEa3d9A4A1DE";
 const ITEMS_PER_PAGE = 8;
 
-// Updated ABI with mint function and owner check
+// Updated ABI with whitelist functions
 const NFT_ABI = [
   "function totalSupply() view returns (uint256)",
   "function ownerOf(uint256 tokenId) view returns (address)",
@@ -25,7 +26,9 @@ const NFT_ABI = [
   "function listNFT(uint256 tokenId, uint256 price) external",
   "function unlistNFT(uint256 tokenId) external",
   "function mintNFT(address to, string memory tokenURI) external",
-  "function owner() view returns (address)"
+  "function owner() view returns (address)",
+  "function updateWhitelist(address _account, bool _status) external",
+  "function whitelist(address) view returns (bool)"
 ];
 
 const TOKEN_ABI = [
@@ -43,19 +46,21 @@ declare global {
     };
   }
 }
-  interface NFTData {
-    market: any[];
-    owned: any[];
-    listings: any[];
-    mint?: never; // Thêm trường này để fix type
-  }
+
+interface NFTData {
+  market: any[];
+  owned: any[];
+  listings: any[];
+}
+
 export default function NFTMarketplace() {
   const { account, connectWallet } = useWallet();
-  const [activeTab, setActiveTab] = useState<'market' | 'owned' | 'listings' | 'mint'>('market');
+  const [activeTab, setActiveTab] = useState<'market' | 'owned' | 'listings' | 'mint' | 'whitelist'>('market');
   const [processing, setProcessing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pathBalance, setPathBalance] = useState<string>('0.0000');
   const [ownerAddress, setOwnerAddress] = useState<string>('');
+  const [isWhitelisted, setIsWhitelisted] = useState(false);
   const [nftData, setNftData] = useState<NFTData>({ 
     market: [], 
     owned: [], 
@@ -89,6 +94,28 @@ export default function NFTMarketplace() {
     };
     fetchOwner();
   }, []);
+
+  // Check whitelist status
+  const checkWhitelistStatus = useCallback(async (address: string) => {
+    try {
+      const provider = getProvider();
+      const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
+      return await contract.whitelist(address);
+    } catch (error) {
+      console.error("Error checking whitelist:", error);
+      return false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkUserWhitelist = async () => {
+      if (account) {
+        const status = await checkWhitelistStatus(account);
+        setIsWhitelisted(status);
+      }
+    };
+    checkUserWhitelist();
+  }, [account, checkWhitelistStatus]);
 
   // Fetch PATH balance
   const fetchPathBalance = useCallback(async (account: string) => {
@@ -200,14 +227,14 @@ export default function NFTMarketplace() {
 
   // Pagination
   const paginatedData = useMemo(() => {
-    if (activeTab === 'mint') return []; // Trả về mảng rỗng nếu là tab mint
+    if (activeTab === 'mint' || activeTab === 'whitelist') return [];
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     const end = start + ITEMS_PER_PAGE;
     return nftData[activeTab].slice(start, end);
   }, [nftData, activeTab, currentPage]);
   
   const totalPages = useMemo(() => {
-    if (activeTab === 'mint') return 0; // Trả về 0 trang nếu là tab mint
+    if (activeTab === 'mint' || activeTab === 'whitelist') return 0;
     return Math.ceil(nftData[activeTab].length / ITEMS_PER_PAGE);
   }, [nftData, activeTab]);
 
@@ -224,8 +251,9 @@ export default function NFTMarketplace() {
   // Handle mint NFT
   const handleMintNFT = async (recipient: string, tokenURI: string) => {
     if (!account || !isOwner) return;
-  
+
     setProcessing(true);
+
     try {
       const provider = getProvider();
       const signer = provider.getSigner();
@@ -346,10 +374,32 @@ export default function NFTMarketplace() {
     }
   };
 
+  // Handle update whitelist
+  const handleUpdateWhitelist = async (address: string, status: boolean) => {
+    if (!account || !isOwner) return;
+
+    try {
+      setProcessing(true);
+      const provider = getProvider();
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+      
+      const tx = await contract.updateWhitelist(address, status);
+      await tx.wait();
+      alert('Whitelist updated successfully!');
+    } catch (error) {
+      console.error("Whitelist update failed:", error);
+      alert(error instanceof Error ? error.message : "Update failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return (
     <div className="relative min-h-screen bg-transparent text-white font-exo2">
       <ParticlesBackground />
       <div className="container mx-auto p-4 relative z-10">
+        {/* Header section */}
         <header className="relative p-4 bg-black rounded-md shadow-md">
           <h1 className="text-center text-3xl lg:text-4xl font-bold tracking-tight text-orange-400">
             NFT Marketplace
@@ -389,7 +439,8 @@ export default function NFTMarketplace() {
             owned: nftData.owned.length,
             listings: nftData.listings.length
           }}
-          showMintTab={isOwner}
+          showMintTab={isWhitelisted || isOwner}
+          showWhitelistTab={isOwner}
         />
 
         {!account ? (
@@ -412,10 +463,26 @@ export default function NFTMarketplace() {
                 {activeTab === 'mint' ? (
                   <Card className="bg-black/50 border border-orange-400/20 mt-6">
                     <CardHeader>
-                      <CardTitle className="text-orange-400">Mint New NFT</CardTitle>
+                      <CardTitle className="text-orange-400">Mint</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <MintForm onSubmit={handleMintNFT} />
+                      <MintForm 
+                        onSubmit={handleMintNFT}
+                        processing={processing}
+                        checkWhitelist={checkWhitelistStatus}
+                      />
+                    </CardContent>
+                  </Card>
+                ) : activeTab === 'whitelist' ? (
+                  <Card className="bg-black/50 border border-orange-400/20 mt-6">
+                    <CardHeader>
+                      <CardTitle className="text-orange-400">Whitelist Management</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <WhitelistForm 
+                        onSubmit={handleUpdateWhitelist} 
+                        isOwner={isOwner}
+                      />
                     </CardContent>
                   </Card>
                 ) : (
