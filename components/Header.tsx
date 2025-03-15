@@ -11,7 +11,7 @@ import { useSettings } from "@/components/context/SettingsContext";
 import { supabase } from "@/src/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
-
+import PortfolioPage from "@/app/portfolio/page";
 // Add this helper function at the top of your component or in a utils file
 const shortenAddress = (address: string): string => {
   if (!address) return '';
@@ -125,6 +125,10 @@ const Header = () => {
 
   const handleSettingClick = () => {
     router.push("/setting");
+    setDropdownOpen(false);
+  };
+  const handlePortfolioClick = () => {
+    router.push("/portfolio");
     setDropdownOpen(false);
   };
 
@@ -258,6 +262,12 @@ const Header = () => {
                   >
                     Setting
                   </button>
+                  <button
+                    onClick={handlePortfolioClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Portfolio
+                  </button>
                 </div>
               )}
             </div>
@@ -368,6 +378,12 @@ const Header = () => {
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Setting
+                  </button> 
+                  <button
+                    onClick={handlePortfolioClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Portfolio
                   </button>
                 </div>
               ) : (
