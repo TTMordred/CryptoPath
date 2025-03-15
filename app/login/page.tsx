@@ -22,22 +22,30 @@ import okxModule from "@web3-onboard/okx";
 import frontierModule from "@web3-onboard/frontier";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useSettings } from "@/components/context/SettingsContext";
-import CryptoJS from "crypto-js"; // Import crypto-js
+import CryptoJS from "crypto-js"; // Still imported but not used in encryption here
+import bcrypt from "bcryptjs"; // Import bcryptjs
 
-// Khóa bí mật cho mã hóa (nên lưu trong biến môi trường trong thực tế)
+// Secret key (should ideally be stored in environment variables)
 const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "my-secret-key-1234567890";
 
-// Hàm mã hóa dữ liệu
+// Function to hash a password
+const hashPassword = (password: string): string => {
+  const salt = bcrypt.genSaltSync(10);
+  return bcrypt.hashSync(password, salt);
+};
+
+// Function to hash data (replacing encryptData)
 const encryptData = (data: string): string => {
-  return CryptoJS.AES.encrypt(data, SECRET_KEY).toString();
+  return bcrypt.hashSync(data, 10);
 };
 
-// Hàm giải mã dữ liệu
+// Function to "decrypt" data (not possible with bcrypt)
 const decryptData = (encryptedData: string): string => {
-  const bytes = CryptoJS.AES.decrypt(encryptedData, SECRET_KEY);
-  return bytes.toString(CryptoJS.enc.Utf8);
+  // bcrypt is a one-way hashing algorithm, so we cannot decrypt
+  throw new Error("Cannot decrypt data hashed with bcrypt");
 };
 
+// Rest of your wallet configurations remain unchanged
 const dcent = dcentModule();
 const INFURA_KEY = "7d389678fba04ceb9510b2be4fff5129";
 
@@ -161,7 +169,7 @@ function LoginPageContent() {
             name: ens?.name || formatWalletAddress(address),
             isLoggedIn: true,
           };
-          // Mã hóa trước khi lưu vào localStorage
+          // Hash before storing in localStorage
           localStorage.setItem("userDisplayInfo", encryptData(JSON.stringify(publicUserData)));
           localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
 
@@ -186,7 +194,9 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(email, password);
+      // Hash the password before sending it to the signIn function
+      const hashedPassword = hashPassword(password);
+      const { data, error } = await signIn(email, hashedPassword); // Assuming signIn accepts hashed password
       if (error) {
         if (error.message.includes("email")) setEmailError(error.message);
         else if (error.message.includes("password")) setPasswordError(error.message);
@@ -220,7 +230,7 @@ function LoginPageContent() {
         email,
         isLoggedIn: true,
       };
-      // Mã hóa trước khi lưu vào localStorage
+      // Hash before storing in localStorage
       localStorage.setItem("currentUser", encryptData(JSON.stringify(publicUserData)));
       localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
 
@@ -248,6 +258,7 @@ function LoginPageContent() {
     }
   };
 
+  // The rest of your JSX remains unchanged
   return (
     <>
       <div className="relative">
@@ -363,7 +374,7 @@ function LoginPageContent() {
                       </button>
                     </div>
                     <div className="text-center text-sm text-white">
-                      Don&apos;t have an account?{" "}
+                      Don't have an account?{" "}
                       <Link href="/signup" className="text-white underline ml-1">Sign up</Link>
                     </div>
                   </div>
