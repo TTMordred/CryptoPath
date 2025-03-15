@@ -45,6 +45,7 @@ const LoadingState = memo(({ coinName }: { coinName?: string }) => (
     <p className="text-gray-400 font-medium">Loading {coinName || ''} data...</p>
   </div>
 ));
+LoadingState.displayName = "LoadingState";
 
 const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => void }) => (
   <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-red-900/20 to-gray-800/50 rounded-xl backdrop-blur-sm">
@@ -66,12 +67,13 @@ const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => voi
     </Button>
   </div>
 ));
+ErrorState.displayName = "ErrorState";
 
 interface RevenueGraphProps {
   onCoinChange: (coin: CoinOption | null) => void;
 }
 
-export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
+const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -376,5 +378,8 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
       </AnimatePresence>
     </div>
   );
-} 
+};
+RevenueGraph.displayName = "RevenueGraph";
+
+export default RevenueGraph; 
 
