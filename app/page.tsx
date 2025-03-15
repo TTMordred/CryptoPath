@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { FaFacebookF, FaGithub, FaLinkedinIn } from 'react-icons/fa';
 import ParticlesBackground from '@/components/ParticlesBackground';
-import EthPriceLine from '@/components/EthPriceLine';
+import EthPriceLine from '@/components/home/EthPriceLine';
+import TrendingProjects from '@/components/home/TrendingProjects';
 import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -288,7 +289,7 @@ const HomePage = () => {
         </div>
 
         <PartnerBar />
-
+        <TrendingProjects/>
         {/* Trade Like a Pro Section */}
         <div className="min-h-screen w-full flex items-center" data-aos="fade-up">
           <div className="container mx-auto px-4 py-12 text-center" data-aos="fade-up">
