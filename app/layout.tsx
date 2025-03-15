@@ -17,6 +17,8 @@ import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchai
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
 import { DebugBadge } from "@/components/ui/debug-badge";
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Geist Sans font configuration
  * A modern, minimalist sans-serif typeface for primary text content
