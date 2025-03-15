@@ -188,11 +188,16 @@ const Header = () => {
           <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
             Faucet
           </Link>
+          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">
+            NFTs
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
-
-          <form onSubmit={handleSearch} className="relative flex items-center">
+          <Link href="/search" className="text-white text-sm hover:text-[#F5B056] transition">
+            Search
+          </Link>
+          {/* <form onSubmit={handleSearch} className="relative flex items-center">
             <button
               type="button"
               onClick={handleSearchIconClick}
@@ -227,7 +232,7 @@ const Header = () => {
               <option value="onchain">On-Chain</option>
               <option value="offchain">Off-Chain</option>
             </select>
-          </form>
+          </form> */}
 
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
@@ -276,7 +281,7 @@ const Header = () => {
         </button>
 
         {isOpen && (
-          <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 shadow-lg z-50 w-screen">
+          <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 mt-[50px] shadow-lg z-50 w-screen">
             <nav className="flex flex-col text-center text-xl">
               <Link
                 href="/"
@@ -306,6 +311,13 @@ const Header = () => {
               >
                 Faucet
               </Link>
+              <Link
+                href="/NFT"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                NFTs
+              </Link>
               <a
                 href="mailto:cryptopath@gmail.com"
                 className="text-sm uppercase hover:text-[#F5B056] transition"
@@ -313,8 +325,14 @@ const Header = () => {
               >
                 Support
               </a>
-
-              <form
+              <Link
+                href="/search"
+                className="text-sm uppercase hover:text-[#F5B056] transition"
+                onClick={() => setIsOpen(false)}
+              >
+                Search
+              </Link>
+              {/* <form
                 onSubmit={handleSearch}
                 className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center transition"
               >
@@ -330,7 +348,7 @@ const Header = () => {
                   <Search size={18} />
                 </button>
 
-                {/* Input Field */}
+              
                 <Input
                   type="text"
                   placeholder="Search wallet..."
@@ -339,7 +357,7 @@ const Header = () => {
                   className="pl-10 pr-24 py-2 w-full text-white rounded-[10px] transition-all duration-200 focus:border-amber-500"
                 />
 
-                {/* Clear Button */}
+                
                 {address.length > 0 && (
                   <button
                     type="button"
@@ -351,7 +369,7 @@ const Header = () => {
                   </button>
                 )}
 
-                {/* Select Dropdown */}
+                
                 <select
                   value={searchType}
                   onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
@@ -361,7 +379,7 @@ const Header = () => {
                   <option value="offchain">Off-Chain</option>
                 </select>
               </div>
-              </form>
+              </form> */}
 
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">

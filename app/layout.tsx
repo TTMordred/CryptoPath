@@ -16,6 +16,7 @@ import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
 import { SettingsProvider } from "@/components/context/SettingsContext";
+import SearchOnTop from "@/components/SearchOnTop";
 /**
  * Geist Sans font configuration
  * A modern, minimalist sans-serif typeface for primary text content
@@ -69,8 +70,12 @@ export const metadata: Metadata = {
  * Establishes the provider hierarchy for global state and context
  * 
  * @param children - The page content to render within the layout
+ * @param pathname - The current URL path for the active page
  */
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children, pathname }: { children: React.ReactNode;
+  pathname: string;
+ }) {
+  const isHome = pathname === "/"; // Check if the current route is the homepage
   return (
     <html lang="en">
       <body>
@@ -84,6 +89,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <SettingsProvider>
                 {/* Application UI components */}
                 <SplashScreen /> {/* Initial loading screen */}
+                {!isHome && <SearchOnTop />}
                 <Header /> {/* Global navigation */}
                 {children} {/* Page-specific content */}
                 <Toaster position="top-center" /> {/* Toast notification container */}
