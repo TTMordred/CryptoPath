@@ -1,5 +1,7 @@
+'use client'
 import React, { useState, useEffect } from 'react';
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
+import { LoadingScreen } from "@/components/loading-screen";
 
 const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
   const [searchValue, setSearchValue] = useState('');
@@ -10,7 +12,7 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('All Filters');
   const router = useRouter()
-
+  const [isLoading, setIsLoading] = useState(false);
   const filters = ['All Filters', 'On-Chain', 'Off-Chain', 'Tokens', 'NFTs', 'Addresses'];
 
   const translations = {
@@ -67,9 +69,23 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
     fetchData();
   }, []);
 
-  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-// Nho minh duy phan nay
+    if (!searchValue.trim()) return;
+
+    setIsLoading(true);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulated delay
+      if (selectedFilter === "On-Chain") {
+        router.push(`/search/?address=${encodeURIComponent(searchValue)}&network=mainnet`);
+      } else if (selectedFilter === "Off-Chain") {
+        router.push(`/search-offchain/?address=${encodeURIComponent(searchValue)}`);
+      }
+    } catch (error) {
+      console.error("Search error:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleFilterDropdown = () => {
@@ -82,6 +98,7 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
   };
 
   return (
+    <>
     <div className="w-full mb-16 mt-16">
       {/* Explorer Title */}
       <div className="mb-6 text-center">
@@ -241,6 +258,8 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
         </div>
       </div>
     </div>
+    <LoadingScreen isLoading={isLoading} />
+    </>
   );
 };
 
