@@ -17,7 +17,7 @@ import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchai
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
 import { DebugBadge } from "@/components/ui/debug-badge";
 import { SettingsProvider } from "@/components/context/SettingsContext"; // Add this import
-
+import SearchOnTop from "@/components/SearchOnTop";
 export const dynamic = 'force-dynamic';
 
 /**
@@ -88,6 +88,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <QueryProvider>
                 {/* Application UI components */}
                 <SplashScreen /> {/* Initial loading screen */}
+                <SearchOnTop />
                 <Header /> {/* Global navigation */}
                 {children} {/* Page-specific content */}
                 <Toaster position="top-center" /> {/* Toast notification container */}

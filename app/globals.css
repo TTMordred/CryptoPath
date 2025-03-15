@@ -220,10 +220,13 @@
   
   /* Legacy navigation styles - consider migrating to cp-nav-link */
   nav a {
-    @apply relative p-4 m-4 transition-all duration-200;
+    @apply p-4 transition-all duration-200;
     animation: appear 2s forwards;
   }
-  
+  nav form{
+    @apply transition-all duration-200;
+    animation: appear 2s forwards;
+  }
 
   
   /* ======================================
