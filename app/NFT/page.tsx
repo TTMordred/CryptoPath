@@ -222,16 +222,16 @@ export default function NFTMarketplace() {
   };
 
   // Handle mint NFT
-  const handleMintNFT = async (tokenURI: string) => {
+  const handleMintNFT = async (recipient: string, tokenURI: string) => {
     if (!account || !isOwner) return;
-
+  
     setProcessing(true);
     try {
       const provider = getProvider();
       const signer = provider.getSigner();
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
       
-      const tx = await contract.mintNFT(account, tokenURI);
+      const tx = await contract.mintNFT(recipient, tokenURI);
       await tx.wait();
       await refreshData();
     } catch (error) {
