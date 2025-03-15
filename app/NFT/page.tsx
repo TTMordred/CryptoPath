@@ -5,6 +5,8 @@ import NFTCard from '@/components/NFT/NFTCard';
 import NFTTabs from '@/components/NFT/NFTTabs';
 import Pagination from '@/components/NFT/Pagination';
 import { useWallet } from '@/components/Faucet/walletcontext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import ParticlesBackground from '@/components/ParticlesBackground';
 
 // Contract addresses
 const NFT_CONTRACT_ADDRESS = "0x279Bd9304152E0349427c4B7F35FffFD439edcFa";
@@ -156,6 +158,24 @@ export default function NFTMarketplace() {
     }
   }, [account]);
 
+  useEffect(() => {
+    if (account) {
+      fetchNFTs();
+      const interval = setInterval(fetchNFTs, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [account, fetchNFTs]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (account) {
+      fetchPathBalance(account);
+    }
+  }, [account, fetchPathBalance]);
+
   // Pagination
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -282,142 +302,129 @@ export default function NFTMarketplace() {
     }
   };
 
-  // Effects
-  useEffect(() => {
-    if (account) {
-      fetchNFTs();
-      const interval = setInterval(fetchNFTs, 15000);
-      return () => clearInterval(interval);
-    }
-  }, [account, fetchNFTs]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (account) {
-      fetchPathBalance(account);
-    }
-  }, [account, fetchPathBalance]);
-
   return (
-    <div className="min-h-screen bg-gray-900 p-6 lg:p-8 relative overflow-hidden">
-      {/* Background effects */}
-
-      <header className="flex flex-col lg:flex-row justify-between items-center mb-8 gap-6 animate-fade-in">
-        <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-orange-400 to-purple-400 bg-clip-text text-transparent">
-          NFT Marketplace
-        </h1>
-        <div className="flex items-center gap-4">
-          {account && (
-            <div className="hidden sm:flex items-center px-4 py-2 bg-gray-800 rounded-lg border border-gray-700 backdrop-blur-xs">
-              <span className="text-orange-400 font-mono font-medium tracking-tight">
-                {pathBalance}
-              </span>
-              <span className="text-gray-300 ml-2 font-medium">PATH</span>
-            </div>
-          )}
-          <button
-            onClick={() => {
-              if (!account) {
-                if (!window.ethereum) {
-                  alert('Please install MetaMask!');
-                  return;
+    <div className="relative min-h-screen bg-transparent text-white font-exo2">
+      <ParticlesBackground />
+      <div className="container mx-auto p-4 relative z-10">
+        {/* Updated header section with centered title */}
+        <header className="relative  p-4 bg-black rounded-md shadow-md">
+          {/* Centered title */}
+          <h1 className="text-center text-3xl lg:text-4xl font-bold tracking-tight text-orange-400">
+            NFT Marketplace
+          </h1>
+          {/* Wallet info positioned absolutely to the right */}
+          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 flex items-center gap-4">
+            {account && (
+              <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-black rounded-full border border-gray-800">
+                <span className="text-orange-500 font-mono font-medium tracking-tight">
+                  {pathBalance}
+                </span>
+                <span className="text-white font-medium">PATH</span>
+              </div>
+            )}
+            <button
+              onClick={() => {
+                if (!account) {
+                  if (!window.ethereum) {
+                    alert('Please install MetaMask!');
+                    return;
+                  }
+                  connectWallet();
                 }
-                connectWallet();
+              }}
+              className="flex items-center px-5 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all text-sm lg:text-base shadow-lg"
+            >
+              {account 
+                ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` 
+                : 'Connect Wallet'
               }
-            }}
-            className="px-6 py-2 bg-orange-500/90 hover:bg-orange-600 rounded-xl transition-all text-sm lg:text-base 
-              shadow-lg hover:shadow-orange-500/20"
-          >
-            {account ? 
-              `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` : 
-              'Connect Wallet'
-            }
-          </button>
-        </div>
-      </header>
+            </button>
+          </div>
+        </header>
+        {/* End updated header section */}
 
-      <NFTTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        balances={{
-          market: nftData.market.length,
-          owned: nftData.owned.length,
-          listings: nftData.listings.length
-        }}
-      />
+        <NFTTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          balances={{
+            market: nftData.market.length,
+            owned: nftData.owned.length,
+            listings: nftData.listings.length
+          }}
+        />
 
-      {!account ? (
-        <div className="text-center py-20 text-gray-400 animate-fade-in">
-          Please connect your wallet to view NFTs
-        </div>
-      ) : (
-        <>
-          {isInitialLoad ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {[...Array(8)].map((_, i) => (
-                <div 
-                  key={i}
-                  className="animate-pulse bg-gray-800 rounded-xl h-[500px] shadow-lg"
-                />
-              ))}
-            </div>
-          ) : (
-            <>
+        {!account ? (
+          <div className="text-center py-20 text-gray-400">
+            Please connect your wallet to view NFTs
+          </div>
+        ) : (
+          <>
+            {isInitialLoad ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {paginatedData.map((nft, index) => (
+                {[...Array(8)].map((_, i) => (
                   <div 
-                    key={nft.id}
-                    className="animate-fade-in-right"
-                    style={{ animationDelay: `${index * 50}ms` }}
-                  >
-                    <NFTCard
-                      nft={nft}
-                      mode={activeTab === 'listings' ? 'listing' : activeTab}
-                      onAction={
-                        activeTab === 'market' ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') :
-                        activeTab === 'owned' ? (tokenId, price) => handleListNFT(tokenId, price || '0') :
-                        handleUnlistNFT
-                      }
-                      processing={processing}
-                    />
-                  </div>
+                    key={i}
+                    className="animate-pulse bg-black rounded-xl h-[500px] shadow-lg"
+                  />
                 ))}
               </div>
-
-              {totalPages > 1 && (
-                <div className="mt-8 animate-scale-up">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                  />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {paginatedData.map((nft, index) => (
+                    <div 
+                      key={nft.id}
+                      className="animate-fade-in-right"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <NFTCard
+                        nft={nft}
+                        mode={activeTab === 'listings' ? 'listing' : activeTab}
+                        onAction={ 
+                          activeTab === 'market' 
+                            ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') 
+                            : activeTab === 'owned' 
+                            ? (tokenId, price) => handleListNFT(tokenId, price || '0') 
+                            : handleUnlistNFT
+                        }
+                        processing={processing}
+                      />
+                    </div>
+                  ))}
                 </div>
-              )}
-            </>
-          )}
-        </>
-      )}
 
-      {processing && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-gray-800/90 p-8 rounded-2xl text-center border border-orange-400/20 shadow-xl">
-            <div className="animate-spin h-12 w-12 border-4 border-orange-400 border-t-transparent rounded-full mb-4 mx-auto" />
-            <h3 className="text-xl text-white mb-2 font-semibold">Processing Transaction</h3>
-            <div className="flex items-center justify-center space-x-2">
-              {[...Array(3)].map((_, i) => (
-                <div 
-                  key={i}
-                  className="animate-float h-3 w-3 bg-orange-400 rounded-full"
-                  style={{ animationDelay: `${i * 0.2}s` }}
-                />
-              ))}
+                {totalPages > 1 && (
+                  <div className="mt-8">
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPageChange={handlePageChange}
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
+        {processing && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50">
+            <div className="bg-black/90 p-8 rounded-2xl text-center border border-orange-400/20 shadow-xl">
+              <div className="animate-spin h-12 w-12 border-4 border-orange-400 border-t-transparent rounded-full mb-4 mx-auto" />
+              <h3 className="text-xl text-white mb-2 font-semibold">Processing Transaction</h3>
+              <div className="flex items-center justify-center space-x-2">
+                {[...Array(3)].map((_, i) => (
+                  <div 
+                    key={i}
+                    className="animate-float h-3 w-3 bg-orange-400 rounded-full"
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
