@@ -42,7 +42,7 @@ const LoadingState = memo(({ coinName }: { coinName?: string }) => (
     >
       <Loader2 className="h-8 w-8 text-[#F5B056]" />
     </motion.div>
-    <p className="text-gray-400 font-medium">Loading {coinName || 'Loading...'} data...</p>
+    <p className="text-gray-400 font-medium">Loading {coinName || ''} data...</p>
   </div>
 ));
 
@@ -204,12 +204,36 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
       borderRadius: '12px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
       backdropFilter: 'blur(8px)',
+    },
+    customTooltip: (props: any) => {
+      if (!props.active || !props.payload || !props.payload.length) {
+        return null;
+      }
+
+      const priceValue = props.payload.find((p: any) => p.dataKey === 'price');
+      const volumeValue = props.payload.find((p: any) => p.dataKey === 'volume');
+
+      return (
+        <div className="bg-gray-900/95 border border-gray-700/30 rounded-xl p-2 shadow-lg backdrop-blur-lg">
+          <p className="text-gray-400 mb-1">{props.label}</p>
+          {priceValue && (
+            <p className="text-[#3b82f6] font-medium">
+              Price: ${priceValue.value.toLocaleString()}
+            </p>
+          )}
+          {volumeValue && (
+            <p className="text-[#22d3ee] font-medium">
+              Volume: {volumeValue.value.toFixed(0)}M
+            </p>
+          )}
+        </div>
+      );
     }
   }), []);
 
   return (
     <div className="space-y-6">
-      <Card className="bg-gradient-to-br from-gray-900 to-gray-800/95 border-gray-800/50 rounded-2xl shadow-xl backdrop-blur-sm transition-all duration-300 hover:shadow-2xl hover:shadow-[#F5B056]/5">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
         <CardHeader className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -271,7 +295,7 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.5 }}
-                className="h-[350px]"
+                className="h-[400px]"
               >
                 <Chart width="100%" height="100%">
             <LineChart data={data}>
@@ -286,29 +310,28 @@ export default function RevenueGraph({ onCoinChange }: RevenueGraphProps) {
                     />
                     <YAxis
                       yAxisId="left"
-                stroke="#666" 
-                tickLine={false}
-                axisLine={false}
+                      stroke="#666" 
+                      tickLine={false}
+                      axisLine={false}
                       tickFormatter={(value) => `$${value.toLocaleString()}`}
                       tick={{ fill: '#9ca3af' }}
-              />
-              <YAxis 
+                      width={80}
+                      padding={{ top: 0 }}
+                    />
+                    <YAxis 
                       yAxisId="right"
                       orientation="right"
-                stroke="#666"
-                tickLine={false}
-                axisLine={false}
+                      stroke="#666"
+                      tickLine={false}
+                      axisLine={false}
                       tickFormatter={(value) => `${value.toFixed(0)}M`}
                       tick={{ fill: '#9ca3af' }}
-              />
+                      width={70}
+                      padding={{ top: 20 }}
+                    />
               <Tooltip 
-                      contentStyle={chartConfig.tooltipStyle}
-                      formatter={(value: number, name: string) => [
-                        name === 'price' ? `$${value.toLocaleString()}` : `${value.toFixed(0)}M`,
-                        name === 'price' ? 'Price' : 'Volume'
-                      ]}
-                      labelStyle={{ color: '#9ca3af' }}
-                      itemStyle={{ color: '#fff', fontWeight: 500 }}
+                content={chartConfig.customTooltip}
+                cursor={{ stroke: '#666', strokeWidth: 1 }}
               />
               <Line
                       yAxisId="left"

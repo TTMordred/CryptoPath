@@ -86,11 +86,11 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {/* UAW */}
-      <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Users className="w-4 h-4 text-[#F5B056]" />
-            <CardTitle className="text-sm text-gray-400">UAW</CardTitle>
+            <CardTitle className="text-sm text-white">UAW</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
@@ -104,11 +104,11 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Incoming Transactions */}
-      <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <ArrowDownToLine className="w-4 h-4 text-[#3b82f6]" />
-            <CardTitle className="text-sm text-gray-400">Incoming Txs</CardTitle>
+            <CardTitle className="text-sm text-white">Incoming Txs</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
@@ -122,11 +122,11 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Incoming Volume */}
-      <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Coins className="w-4 h-4 text-[#22c55e]" />
-            <CardTitle className="text-sm text-gray-400">Incoming Volume</CardTitle>
+            <CardTitle className="text-sm text-white">Incoming Volume</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center">
@@ -140,11 +140,11 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Contract Balance */}
-      <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Building2 className="w-4 h-4 text-[#a855f7]" />
-            <CardTitle className="text-sm text-gray-400">Contract Balance</CardTitle>
+            <CardTitle className="text-sm text-white">Contract Balance</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col items-center">

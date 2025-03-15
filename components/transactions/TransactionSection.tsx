@@ -11,9 +11,9 @@ interface TransactionSectionProps {
 
 export default function TransactionSection({ selectedCoin }: TransactionSectionProps) {
   return (
-    <Card className="bg-gradient-to-br from-gray-900 to-gray-800/95 border-gray-800/50 rounded-2xl shadow-xl backdrop-blur-sm">
+    <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
       <CardHeader className="p-6">
-        <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-300">
+        <CardTitle className="text-xl font-bold text-white">
           Transaction History
         </CardTitle>
       </CardHeader>

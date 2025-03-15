@@ -99,80 +99,78 @@ export default function NetworkStats() {
 
   return (
     <div className="text-white font-exo2">
-      <div className="container mx-auto p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
-            <CardHeader>
-              <div className="flex items-center justify-center gap-2">
-                <Clock className="w-5 h-5 text-[#F5B056]" />
-                <CardTitle className="text-xl text-center text-gray-300">Transactions (24h)</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl text-center font-bold text-[#F5B056]">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                  stats.transactions24h.toLocaleString()
-                )}
-              </p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2">
+              <Clock className="w-5 h-5 text-[#F5B056]" />
+              <CardTitle className="text-xl text-center text-white">Transactions (24h)</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl text-center font-bold text-[#F5B056]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              ) : (
+                stats.transactions24h.toLocaleString()
+              )}
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
-            <CardHeader>
-              <div className="flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 text-[#F5B056] animate-spin" />
-                <CardTitle className="text-xl text-center text-gray-300">Pending Txns</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl text-center font-bold text-[#F5B056]">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                  stats.pendingTransactions.toLocaleString()
-                )}
-              </p>
-            </CardContent>
-          </Card>
+        <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 text-[#F5B056] animate-spin" />
+              <CardTitle className="text-xl text-center text-white">Pending Txns</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl text-center font-bold text-[#F5B056]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              ) : (
+                stats.pendingTransactions.toLocaleString()
+              )}
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
-            <CardHeader>
-              <div className="flex items-center justify-center gap-2">
-                <Gauge className="w-5 h-5 text-[#F5B056]" />
-                <CardTitle className="text-lg text-center text-gray-300">Network Fee</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl text-center font-bold text-[#F5B056]">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                  `${stats.networkFee.toFixed(2)} Gwei`
-                )}
-              </p>
-            </CardContent>
-          </Card>
+        <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2">
+              <Gauge className="w-5 h-5 text-[#F5B056]" />
+              <CardTitle className="text-xl text-center text-white">Network Fee</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl text-center font-bold text-[#F5B056]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              ) : (
+                `${stats.networkFee.toFixed(2)} Gwei`
+              )}
+            </p>
+          </CardContent>
+        </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
-            <CardHeader>
-              <div className="flex items-center justify-center gap-2">
-                <Calculator className="w-5 h-5 text-[#F5B056]" />
-                <CardTitle className="text-xl text-center text-gray-300">AVG Gas Fee</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl text-center font-bold text-[#F5B056]">
-                {loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin mx-auto" />
-                ) : (
-                  `${stats.avgGasFee.toFixed(2)} Gwei`
-                )}
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+        <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <CardHeader>
+            <div className="flex items-center justify-center gap-2">
+              <Calculator className="w-5 h-5 text-[#F5B056]" />
+              <CardTitle className="text-xl text-center text-white">AVG Gas Fee</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl text-center font-bold text-[#F5B056]">
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin mx-auto" />
+              ) : (
+                `${stats.avgGasFee.toFixed(2)} Gwei`
+              )}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

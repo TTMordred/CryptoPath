@@ -157,18 +157,18 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
   }, []);
 
   return (
-    <div className="rounded-lg border border-gray-800 bg-gray-900">
+    <div className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-gray-800">
+          <TableRow className="hover:bg-white/5">
             <TableHead className="w-[50px]"></TableHead>
-            <TableHead>Txn Hash</TableHead>
-            <TableHead>Method</TableHead>
-            {!selectedCoin && <TableHead>Block</TableHead>}
-            <TableHead>Age</TableHead>
-            <TableHead>From</TableHead>
-            <TableHead>To</TableHead>
-            <TableHead>Value</TableHead>
+            <TableHead className="text-white">Txn Hash</TableHead>
+            <TableHead className="text-white">Method</TableHead>
+            {!selectedCoin && <TableHead className="text-white">Block</TableHead>}
+            <TableHead className="text-white">Age</TableHead>
+            <TableHead className="text-white">From</TableHead>
+            <TableHead className="text-white">To</TableHead>
+            <TableHead className="text-white">Value</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -177,7 +177,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
               <TableCell colSpan={selectedCoin ? 7 : 8} className="text-center py-4">
                 <div className="flex items-center justify-center space-x-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#F5B056]"></div>
-                  <span>Loading transactions...</span>
+                  <span className="text-white">Loading transactions...</span>
                 </div>
               </TableCell>
             </TableRow>
@@ -189,13 +189,13 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
             </TableRow>
           ) : transactions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={selectedCoin ? 7 : 8} className="text-center py-4">
+              <TableCell colSpan={selectedCoin ? 7 : 8} className="text-center py-4 text-white">
                 No transactions found
               </TableCell>
             </TableRow>
           ) : (
             transactions.map((tx, index) => (
-              <TableRow key={index} className="bg-gray-900 text-gray-300 hover:bg-gray-800 transition-colors">
+              <TableRow key={index} className="text-white hover:bg-white/5 transition-colors">
                 <TableCell className="p-0">
                   <div className="flex items-center justify-center h-full">
                     <Eye size={16} className="text-gray-400" />

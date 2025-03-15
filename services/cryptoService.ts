@@ -47,9 +47,6 @@ export interface CoinOption {
 }
 
 export interface BlockchainMetrics {
-  lastBlock: number;
-  safeBlock: number;
-  finalizedBlock: number;
   avgBlockTime: number;
   gasPrice: number;
   activeValidators: number;
@@ -262,9 +259,6 @@ export const fetchBlockchainMetrics = async (): Promise<BlockchainMetrics> => {
   const baseBlock = Math.floor(Date.now() / 12000) + 19000000; // Simulates new blocks every ~12 seconds
 
   return {
-    lastBlock: baseBlock,
-    safeBlock: baseBlock - 64, // ~13 minutes behind
-    finalizedBlock: baseBlock - 128, // ~26 minutes behind
     avgBlockTime: 12,
     gasPrice: 25,
     activeValidators: 889643,

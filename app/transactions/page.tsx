@@ -12,10 +12,10 @@ import { CoinOption } from "@/services/cryptoService";
 
 // Loading component
 const LoadingCard = ({ children }: { children: React.ReactNode }) => (
-  <Card className="w-full p-4 bg-gray-900 border-gray-800">
+  <Card className="w-full p-4 bg-white/5 rounded-[10px] border border-gray-800 backdrop-blur-[4px]">
     <CardContent className="flex items-center justify-center gap-2">
       <Loader2 className="h-4 w-4 animate-spin text-[#F5B056]" />
-      <p className="text-sm text-gray-500">{children}</p>
+      <p className="text-sm text-white">{children}</p>
     </CardContent>
   </Card>
 );

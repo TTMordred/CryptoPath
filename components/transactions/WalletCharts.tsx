@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, Area, AreaChart, PieChart, Pie, Cell, RadialBarChart, RadialBar } from "recharts";
-import { Blocks, Activity, Gauge, Wallet, TrendingUp, Clock, Database, Cpu, Shield, CheckCircle } from "lucide-react";
+import { Activity, Wallet, TrendingUp, Database, Cpu } from "lucide-react";
 import { BlockchainMetrics, GlobalMetrics, fetchBlockchainMetrics, fetchGlobalMetrics } from "@/services/cryptoService";
 import { Loader2, AlertCircle } from "lucide-react";
 
@@ -71,17 +71,6 @@ export default function WalletCharts() {
     );
   }
 
-  const formatBlockNumber = (num: number): string => {
-    if (isNaN(num)) return '0';
-    return num.toLocaleString();
-  };
-
-  const formatBlocksBehind = (latest: number, current: number): string => {
-    const behind = latest - current;
-    if (isNaN(behind)) return '0';
-    return behind.toLocaleString();
-  };
-
   const formatNumber = (num: number): string => {
     if (num >= 1e12) return `${(num / 1e12).toFixed(2)}T`;
     if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
@@ -91,10 +80,6 @@ export default function WalletCharts() {
   };
 
   // Prepare data for visualizations
-  const blockData = [
-    { name: 'Block Height', lastBlock: blockchainMetrics.lastBlock, safeBlock: blockchainMetrics.safeBlock, finalizedBlock: blockchainMetrics.finalizedBlock }
-  ];
-
   const networkHealthData = [
     { name: 'Block Time', value: (blockchainMetrics.avgBlockTime / 15) * 100, fill: COLORS.primary },
     { name: 'Gas Price', value: (blockchainMetrics.gasPrice / 50) * 100, fill: COLORS.secondary },
@@ -111,72 +96,28 @@ export default function WalletCharts() {
     }));
 
   return (
-    <div className="space-y-4">
-      {/* Block Heights Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
-          <CardContent className="p-3 h-[90px] relative">
-            <div className="absolute top-2 left-0 right-0 flex items-center justify-center gap-2">
-              <Blocks className="w-4 h-4 text-[#F5B056]" />
-              <span className="text-sm text-gray-400">Last Block</span>
-              </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">
-                #{formatBlockNumber(blockchainMetrics.lastBlock)}
-              </span>
-                </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
-          <CardContent className="p-3 h-[90px] relative">
-            <div className="absolute top-2 left-0 right-0 flex items-center justify-center gap-2">
-              <Shield className="w-4 h-4 text-[#3b82f6]" />
-              <span className="text-sm text-gray-400">Safe Block</span>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">
-                #{formatBlockNumber(blockchainMetrics.safeBlock)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
-          <CardContent className="p-3 h-[90px] relative">
-            <div className="absolute top-2 left-0 right-0 flex items-center justify-center gap-2">
-              <CheckCircle className="w-4 h-4 text-[#22c55e]" />
-              <span className="text-sm text-gray-400">Finalized Block</span>
-            </div>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-3xl font-bold text-white">
-                #{formatBlockNumber(blockchainMetrics.finalizedBlock)}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Network Health and Market Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Market Share - Pie Chart */}
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
-          <CardHeader className="p-3 pb-0">
+    <div className="text-white font-exo2">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* Market Share Chart */}
+        <Card className="md:col-span-2 bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
+          <CardHeader className="p-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-[#F5B056]" />
-              <CardTitle className="text-lg text-gray-300">Market Share</CardTitle>
+              <CardTitle className="text-lg text-white">Market Share</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="p-3">
-            <div className="h-[200px]">
+          <CardContent className="p-4">
+            <div className="h-[200px] mb-4">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={marketShareData}
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={5}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
                     dataKey="value"
+                    startAngle={90}
+                    endAngle={450}
                   >
                     {marketShareData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -187,6 +128,7 @@ export default function WalletCharts() {
                       backgroundColor: '#1f2937',
                       border: 'none',
                       borderRadius: '8px',
+                      padding: '8px',
                       color: '#fff'
                     }}
                     formatter={(value: number) => [`${value.toFixed(2)}%`]}
@@ -196,74 +138,74 @@ export default function WalletCharts() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
               {marketShareData.map((entry) => (
                 <div key={entry.name} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.fill }} />
-                  <span className="text-xs text-gray-400">{entry.name}</span>
+                  <span className="text-xs text-white">{entry.name}</span>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Market Stats Grid */}
-        <div className="grid grid-cols-2 gap-3">
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+        {/* Stats Grid */}
+        <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
-                <Wallet className="w-4 h-4 text-[#F5B056]" />
-                <CardTitle className="text-sm text-gray-400">Market Cap</CardTitle>
+                <Wallet className="w-5 h-5 text-[#F5B056]" />
+                <CardTitle className="text-xl text-center text-white">Market Cap</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl text-center font-bold text-white">
+              <p className="text-2xl text-center font-bold text-white">
                 ${formatNumber(globalMetrics.total_market_cap.usd)}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
-                <Activity className="w-4 h-4 text-[#3b82f6]" />
-                <CardTitle className="text-sm text-gray-400">24h Volume</CardTitle>
+                <Activity className="w-5 h-5 text-[#3b82f6]" />
+                <CardTitle className="text-xl text-center text-white">24h Volume</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl text-center font-bold text-white">
+              <p className="text-2xl text-center font-bold text-white">
                 ${formatNumber(globalMetrics.total_volume.usd)}
               </p>
             </CardContent>
           </Card>
 
-        <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
-                <Database className="w-4 h-4 text-[#22c55e]" />
-                <CardTitle className="text-sm text-gray-400">Active Coins</CardTitle>
-            </div>
-          </CardHeader>
+                <Database className="w-5 h-5 text-[#22c55e]" />
+                <CardTitle className="text-xl text-center text-white">Active Coins</CardTitle>
+              </div>
+            </CardHeader>
             <CardContent>
-              <p className="text-3xl text-center font-bold text-white">
+              <p className="text-2xl text-center font-bold text-white">
                 {globalMetrics.active_cryptocurrencies.toLocaleString()}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
-                <Cpu className="w-4 h-4 text-[#a855f7]" />
-                <CardTitle className="text-sm text-gray-400">Markets</CardTitle>
-            </div>
+                <Cpu className="w-5 h-5 text-[#a855f7]" />
+                <CardTitle className="text-xl text-center text-white">Markets</CardTitle>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl text-center font-bold text-white">
+              <p className="text-2xl text-center font-bold text-white">
                 {globalMetrics.markets.toLocaleString()}
               </p>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
