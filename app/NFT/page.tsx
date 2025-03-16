@@ -405,29 +405,12 @@ export default function NFTMarketplace() {
             NFT Marketplace
           </h1>
           <div className="absolute top-1/2 right-4 transform -translate-y-1/2 flex items-center gap-4">
-            {account && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-black rounded-full border border-gray-800">
-                <span className="text-orange-500 font-mono font-medium tracking-tight">
-                  {pathBalance}
-                </span>
-                <span className="text-white font-medium">PATH</span>
-              </div>
-            )}
-            <button
-              onClick={() => {
-                if (!account && !window.ethereum) {
-                  alert('Please install MetaMask!');
-                } else if (!account) {
-                  connectWallet();
-                }
-              }}
-              className="flex items-center px-5 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all text-sm lg:text-base shadow-lg"
-            >
-              {account 
-                ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` 
-                : 'Connect Wallet'
-              }
-            </button>
+            <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-black rounded-full border border-gray-800">
+              <span className="text-orange-500 font-mono font-medium tracking-tight">
+                {pathBalance}
+              </span>
+              <span className="text-white font-medium">PATH</span>
+            </div>
           </div>
         </header>
 
