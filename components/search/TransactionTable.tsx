@@ -1,12 +1,12 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Loader2, Copy, Download, ExternalLink } from "lucide-react"
+import { Loader2, Copy, ExternalLink, RefreshCcw, ArrowUpDown } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { utils } from 'ethers'
@@ -32,6 +32,10 @@ interface ApiResponse {
   message?: string
 }
 
+// Cache for storing transaction data
+const CACHE_DURATION = 60000; // 1 minute cache
+const transactionCache = new Map<string, {data: Transaction[], timestamp: number}>();
+
 export default function TransactionTable() {
   const searchParams = useSearchParams()
   const address = searchParams.get("address")
@@ -43,8 +47,15 @@ export default function TransactionTable() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [isMobile, setIsMobile] = useState(false)
-  const [autoRefresh, setAutoRefresh] = useState(true)
-
+  const [selectedTab, setSelectedTab] = useState<"all" | "transfer" | "swap" | "inflow" | "outflow">("all")
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  
+  // Refs for debouncing and preventing race conditions
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
+  const isMountedRef = useRef(true);
+  const pauseAutoRefreshRef = useRef(false);
+  
   // Common function signatures for better categorization
   const knownMethods: Record<string, Transaction["type"]> = {
     '0x4a25d94a': 'swap',    // swapExactTokensForTokens
@@ -53,6 +64,11 @@ export default function TransactionTable() {
     '0x23b872dd': 'transfer', // transferFrom
     '0x095ea7b3': 'transfer', // approve
   }
+
+  // Create a cache key based on address, network, provider and page
+  const getCacheKey = useCallback(() => {
+    return `${address}-${network}-${provider}-${page}`;
+  }, [address, network, provider, page]);
 
   const categorizeTransaction = useCallback((tx: Transaction, userAddress: string): Transaction["type"] => {
     if (!tx.from || !tx.to) return "transfer";
@@ -67,157 +83,216 @@ export default function TransactionTable() {
       if (knownMethods[functionSelector]) return knownMethods[functionSelector];
     }
     
-    if (fromLower === userAddressLower && toLower === userAddressLower) return "swap"
-    if (fromLower === userAddressLower) return "outflow"
-    if (toLower === userAddressLower) return "inflow"
-    return "transfer"
+    if (fromLower === userAddressLower && toLower === userAddressLower) return "swap";
+    if (fromLower === userAddressLower) return "outflow";
+    if (toLower === userAddressLower) return "inflow";
+    return "transfer";
   }, [knownMethods]);
 
-  const fetchTransactions = useCallback(async () => {
-    if (!address) return;
+  // Debounced fetch function to prevent rate limiting
+  const debouncedFetch = useCallback((func: () => Promise<void>, delay: number) => {
+    if (fetchTimeoutRef.current) {
+      clearTimeout(fetchTimeoutRef.current);
+    }
+    
+    // Check if we need to delay based on rate limiting
+    const now = Date.now();
+    const timePassedSinceLastFetch = now - lastFetchTimeRef.current;
+    
+    // For Etherscan, enforce at least 300ms between requests (max ~3 req/sec)
+    const minDelay = provider === 'etherscan' ? 300 : 100;
+    const actualDelay = Math.max(delay, minDelay - timePassedSinceLastFetch);
+    
+    return new Promise<void>(resolve => {
+      fetchTimeoutRef.current = setTimeout(async () => {
+        lastFetchTimeRef.current = Date.now();
+        try {
+          await func();
+          resolve();
+        } catch (err) {
+          resolve();
+        }
+      }, actualDelay);
+    });
+  }, [provider]);
 
+  const fetchTransactions = useCallback(async (forceRefresh = false) => {
+    if (!address || !isMountedRef.current) return;
+
+    // Check cache first if not forcing refresh
+    if (!forceRefresh) {
+      const cacheKey = getCacheKey();
+      const cachedData = transactionCache.get(cacheKey);
+      
+      if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
+        console.log('Using cached transaction data');
+        setTransactions(cachedData.data);
+        return;
+      }
+    }
+
+    setLoading(true);
+    setError(null);
+    
     try {
-      setLoading(true);
-      setError(null);
+      // Prevent other fetches during this one
+      pauseAutoRefreshRef.current = true;
       
       const baseUrl = typeof window !== 'undefined' 
         ? window.location.origin 
         : process.env.NEXT_PUBLIC_URL || '';
+      
+      const apiEndpoint = `${baseUrl}/api/transactions?address=${address}&page=${page}&offset=20&network=${network}&provider=${provider}`;
+      
+      console.log("Fetching transactions from:", apiEndpoint);
+      
+      const response = await fetch(apiEndpoint);
+      if (!isMountedRef.current) return;
+      
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (!isMountedRef.current) return;
+      
+      if (Array.isArray(data)) {
+        // Format and categorize transactions
+        const processedTransactions = data.map(tx => ({
+          ...tx,
+          // Add type classification
+          type: categorizeTransaction(tx, address)
+        }));
         
-      const apiEndpoint = new URL(`${baseUrl}/api/transactions`);
-      apiEndpoint.searchParams.append('address', address);
-      apiEndpoint.searchParams.append('page', page.toString());
-      apiEndpoint.searchParams.append('offset', '20');
-      apiEndpoint.searchParams.append('network', network);
-      apiEndpoint.searchParams.append('provider', provider);
-      
-      console.log("Fetching transactions from:", apiEndpoint.toString());
-      
-      const res = await fetch(apiEndpoint.toString());
-      if (!res.ok) {
-        throw new Error(`API responded with status: ${res.status}`);
+        // Update cache with new data
+        transactionCache.set(getCacheKey(), {
+          data: processedTransactions,
+          timestamp: Date.now()
+        });
+        
+        setTransactions(processedTransactions);
+      } else if (data.error) {
+        throw new Error(data.error);
+      } else {
+        throw new Error("Unexpected API response format");
       }
-      
-      const responseData: ApiResponse = await res.json();
-      if (responseData.error) {
-        throw new Error(responseData.error);
-      }
-
-      // Format and categorize transactions
-      const formattedTransactions = (responseData.data || []).map(tx => ({
-        ...tx,
-        // Format values if they're in wei
-        value: tx.value?.startsWith('0x') ? 
-          `${parseFloat(utils.formatEther(tx.value)).toFixed(6)} ETH` : 
-          tx.value,
-        type: categorizeTransaction(tx, address)
-      }));
-
-      setTransactions(formattedTransactions);
-      
     } catch (err) {
       console.error("Error fetching transactions:", err);
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch transactions";
       setError(errorMessage);
-      toast.error(`Transaction error: ${errorMessage}`);
+      
+      // Only show toast on errors that aren't about finding no transactions
+      if (!errorMessage.includes("No transactions found")) {
+        toast.error(`Transaction error: ${errorMessage}`);
+      }
     } finally {
       setLoading(false);
+      pauseAutoRefreshRef.current = false;
     }
-  }, [address, page, network, provider, categorizeTransaction]);
+  }, [address, page, network, provider, categorizeTransaction, getCacheKey]);
+
+  // Handle page changes
+  const handlePageChange = useCallback((newPage: number) => {
+    setPage(newPage);
+  }, []);
 
   // Handle responsive design
   useEffect(() => {
+    isMountedRef.current = true;
+    
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     handleResize();
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    return () => {
+      isMountedRef.current = false;
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
-  // Auto-refresh transactions and fetch initial data
+  // Fetch transactions when dependencies change
   useEffect(() => {
-    fetchTransactions();
+    if (address) {
+      // Debounce the fetch to prevent rapid requests
+      debouncedFetch(() => fetchTransactions(), 100);
+    }
     
+    return () => {
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
+      }
+    };
+  }, [address, page, network, provider, debouncedFetch, fetchTransactions]);
+
+  // Set up auto-refresh with a reasonable interval (30 seconds)
+  useEffect(() => {
     let intervalId: NodeJS.Timeout | undefined;
-    if (autoRefresh) {
+    
+    if (autoRefresh && address) {
       intervalId = setInterval(() => {
-        fetchTransactions();
+        if (!pauseAutoRefreshRef.current && document.visibilityState === 'visible') {
+          debouncedFetch(() => fetchTransactions(true), 500);
+        }
       }, 30000); // Refresh every 30 seconds
     }
     
     return () => {
       if (intervalId) clearInterval(intervalId);
     };
-  }, [fetchTransactions, autoRefresh]);
+  }, [autoRefresh, address, debouncedFetch, fetchTransactions]);
 
-  // Handle CSV download
-  const handleDownloadCSV = () => {
-    if (transactions.length === 0) {
-      toast.error("No transactions to download");
-      return;
-    }
+  // Copy to clipboard function
+  const copyToClipboard = useCallback((text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success(`${label} copied!`);
+    }).catch(() => {
+      toast.error(`Failed to copy ${label}`);
+    });
+  }, []);
+
+  // Open transaction in block explorer
+  const openExternalLink = useCallback((txHash: string) => {
+    const baseUrl = network === 'mainnet' ? 'https://etherscan.io/tx/' : 
+                   network === 'optimism' ? 'https://optimistic.etherscan.io/tx/' :
+                   network === 'arbitrum' ? 'https://arbiscan.io/tx/' :
+                   'https://etherscan.io/tx/';
     
-    try {
-      // Create CSV content
-      const headers = ['Hash', 'Type', 'From', 'To', 'Value', 'Timestamp', 'Block Number'];
-      const csvContent = [
-        headers.join(','),
-        ...transactions.map(tx => [
-          tx.id,
-          tx.type || 'transfer',
-          tx.from,
-          tx.to,
-          tx.value,
-          new Date(tx.timestamp).toISOString(),
-          tx.blockNumber || ''
-        ].join(','))
-      ].join('\n');
-      
-      // Create download link
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `${address}-transactions.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      toast.success("CSV file downloaded successfully");
-    } catch (err) {
-      toast.error("Failed to download CSV file");
-      console.error("CSV download error:", err);
-    }
-  };
-
-  // Copy address/hash to clipboard
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => toast.success(`${type} copied to clipboard`))
-      .catch(() => toast.error(`Failed to copy ${type}`));
-  };
-
-  // View transaction on block explorer
-  const openExternalLink = (txHash: string) => {
-    const baseUrl = network === 'mainnet' ? 
-      'https://etherscan.io/tx/' : 
-      `https://${network}.etherscan.io/tx/`;
-    window.open(`${baseUrl}${txHash}`, '_blank');
-  };
+    window.open(`${baseUrl}${txHash}`, '_blank', 'noopener,noreferrer');
+  }, [network]);
 
   // Helper to truncate addresses/hashes
-  const truncateAddress = (addr: string) => {
-    if (!addr) return "Unknown";
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+  const truncateString = (str: string, startChars = 6, endChars = 4) => {
+    if (!str) return "";
+    if (str.length <= startChars + endChars) return str;
+    return `${str.slice(0, startChars)}...${str.slice(-endChars)}`;
   };
+
+  // Handle manual refresh
+  const handleManualRefresh = () => {
+    toast.info('Refreshing transaction data...');
+    fetchTransactions(true);
+  };
+
+  // Toggle auto refresh
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(prev => !prev);
+    toast.info(autoRefresh ? 'Auto-refresh disabled' : 'Auto-refresh enabled');
+  };
+
+  // Filter transactions based on selected tab
+  const filteredTransactions = selectedTab === 'all' 
+    ? transactions 
+    : transactions.filter(tx => tx.type === selectedTab);
 
   if (loading && transactions.length === 0) {
     return (
       <Card className="mt-4">
         <CardContent className="flex items-center justify-center h-40">
-          <Loader2 className="h-8 w-8 animate-spin" />
+          <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+          <span className="ml-2 text-amber-500">Loading transactions...</span>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error && transactions.length === 0) {
@@ -226,153 +301,65 @@ export default function TransactionTable() {
         <AlertTitle>Error</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
       </Alert>
-    )
+    );
   }
 
-  if (transactions.length === 0) {
+  if (transactions.length === 0 && !loading) {
     return (
       <Card className="mt-4">
-        <CardContent className="py-10 text-center">
-          <p className="text-gray-400">No transactions found for this address.</p>
+        <CardContent className="flex flex-col items-center justify-center h-40 space-y-2">
+          <p className="text-center text-gray-400">No transactions found for this address.</p>
+          <Button 
+            onClick={handleManualRefresh} 
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCcw size={16} />
+            Refresh
+          </Button>
         </CardContent>
       </Card>
-    )
+    );
   }
-
-  const renderTransactionTable = (filteredTxs: Transaction[]) => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Hash</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>From</TableHead>
-            <TableHead>To</TableHead>
-            <TableHead>Value</TableHead>
-            <TableHead className={isMobile ? "hidden" : ""}>Time</TableHead>
-            {provider === 'bitquery' && <TableHead>Network</TableHead>}
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredTxs.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={isMobile ? 6 : 7} className="text-center py-4">
-                No {filteredTxs === transactions ? "" : "matching"} transactions found.
-              </TableCell>
-            </TableRow>
-          ) : (
-            filteredTxs.map((tx) => (
-              <TableRow key={tx.id}>
-                <TableCell className="font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#F5B056]">{truncateAddress(tx.id)}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => copyToClipboard(tx.id, "Hash")}
-                    >
-                      <Copy size={12} />
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    tx.type === 'swap' ? 'bg-purple-900/50 text-purple-300' :
-                    tx.type === 'inflow' ? 'bg-green-900/50 text-green-300' :
-                    tx.type === 'outflow' ? 'bg-red-900/50 text-red-300' :
-                    'bg-gray-800 text-gray-300'
-                  }`}>
-                    {tx.type}
-                  </span>
-                </TableCell>
-                <TableCell className="font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className={tx.from?.toLowerCase() === address?.toLowerCase() ? 'text-red-400' : 'text-[#F5B056]'}>
-                      {truncateAddress(tx.from)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => copyToClipboard(tx.from, "From address")}
-                    >
-                      <Copy size={12} />
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell className="font-mono">
-                  <div className="flex items-center gap-2">
-                    <span className={tx.to?.toLowerCase() === address?.toLowerCase() ? 'text-green-400' : 'text-[#F5B056]'}>
-                      {tx.to ? truncateAddress(tx.to) : "Contract"}
-                    </span>
-                    {tx.to && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => copyToClipboard(tx.to, "To address")}
-                      >
-                        <Copy size={12} />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{tx.value}</TableCell>
-                <TableCell className={isMobile ? "hidden" : ""}>
-                  {new Date(tx.timestamp).toLocaleString()}
-                </TableCell>
-                {provider === 'bitquery' && <TableCell>{tx.network}</TableCell>}
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => openExternalLink(tx.id)}
-                  >
-                    <ExternalLink size={14} />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </div>
-  );
 
   return (
     <Card className="mt-4">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Recent Transactions</CardTitle>
+        <CardTitle className="text-xl font-bold">Recent Transactions</CardTitle>
         <div className="flex items-center gap-2">
           {loading && transactions.length > 0 && (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <div className="flex items-center gap-1">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-xs text-gray-400">Updating...</span>
+            </div>
           )}
-          <Button
-            variant="outline"
+          <Button 
+            onClick={toggleAutoRefresh}
+            variant="outline" 
             size="sm"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            className={`text-xs ${autoRefresh ? 'bg-green-900/20 text-green-400 border-green-800' : ''}`}
+            className={`text-xs ${autoRefresh ? 'bg-amber-900/20 text-amber-400 border-amber-800' : ''}`}
           >
-            {autoRefresh ? "Auto-refresh On" : "Auto-refresh Off"}
+            {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleDownloadCSV}
-            className="flex items-center gap-2"
+          <Button 
+            onClick={handleManualRefresh} 
+            variant="outline" 
+            size="icon"
+            disabled={loading}
           >
-            <Download size={16} />
-            {!isMobile && "Download CSV"}
+            <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="all" className="w-full">
+        <Tabs 
+          defaultValue="all" 
+          value={selectedTab}
+          onValueChange={(value) => setSelectedTab(value as any)}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-5 gap-2 p-1 bg-gradient-to-r from-gray-900 to-black rounded-lg">
-            {["all", "transfer", "swap", "inflow", "outflow"].map(tab => (
+            {["all", "transfer", "swap", "inflow", "outflow"].map((tab) => (
               <TabsTrigger 
                 key={tab}
                 value={tab}
@@ -384,28 +371,101 @@ export default function TransactionTable() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <div className="mt-4">
-            <TabsContent value="all">{renderTransactionTable(transactions)}</TabsContent>
-            <TabsContent value="transfer">
-              {renderTransactionTable(transactions.filter(tx => tx.type === "transfer"))}
-            </TabsContent>
-            <TabsContent value="swap">
-              {renderTransactionTable(transactions.filter(tx => tx.type === "swap"))}
-            </TabsContent>
-            <TabsContent value="inflow">
-              {renderTransactionTable(transactions.filter(tx => tx.type === "inflow"))}
-            </TabsContent>
-            <TabsContent value="outflow">
-              {renderTransactionTable(transactions.filter(tx => tx.type === "outflow"))}
-            </TabsContent>
+
+          <div className="mt-4 relative overflow-x-auto">
+            {filteredTransactions.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">No {selectedTab} transactions found.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Hash</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead className={isMobile ? "hidden" : ""}>Time</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredTransactions.map((tx) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="font-mono">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[#F5B056] text-sm">
+                            {truncateString(tx.id)}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(tx.id, 'Hash')}
+                            className="h-6 w-6"
+                          >
+                            <Copy size={12} />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          tx.type === 'swap' ? 'bg-purple-900/50 text-purple-300' :
+                          tx.type === 'inflow' ? 'bg-green-900/50 text-green-300' :
+                          tx.type === 'outflow' ? 'bg-red-900/50 text-red-300' :
+                          'bg-gray-800 text-gray-300'
+                        }`}>
+                          {tx.type}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-[#F5B056] text-sm">
+                        {truncateString(tx.from)}
+                      </TableCell>
+                      <TableCell className="font-mono text-[#F5B056] text-sm">
+                        {tx.to ? truncateString(tx.to) : "Contract Creation"}
+                      </TableCell>
+                      <TableCell>{tx.value}</TableCell>
+                      <TableCell className={isMobile ? "hidden" : ""}>
+                        {new Date(tx.timestamp).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end space-x-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => copyToClipboard(tx.from, 'Address')}
+                            className="h-6 w-6"
+                          >
+                            <Copy size={12} className="text-gray-400" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openExternalLink(tx.id)}
+                            className="h-6 w-6"
+                          >
+                            <ExternalLink size={12} className="text-gray-400" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </div>
         </Tabs>
-        
-        <div className="flex items-center justify-between py-4 px-4 mt-4 border-t border-gray-800">
+
+        <div className="flex items-center justify-between py-4 px-4 mt-4">
           <Button
             variant="outline"
-            onClick={() => setPage(p => Math.max(1, p - 1))}
-            disabled={page === 1}
+            onClick={() => handlePageChange(Math.max(1, page - 1))}
+            disabled={page === 1 || loading}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
               hover:bg-[#E69A45]
               disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -415,8 +475,8 @@ export default function TransactionTable() {
           <span className="text-sm text-gray-400">Page {page}</span>
           <Button
             variant="outline"
-            onClick={() => setPage(p => p + 1)}
-            disabled={transactions.length < 20}
+            onClick={() => handlePageChange(page + 1)}
+            disabled={filteredTransactions.length < 20 || loading}
             className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
               hover:bg-[#E69A45]
               disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
@@ -426,5 +486,5 @@ export default function TransactionTable() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
