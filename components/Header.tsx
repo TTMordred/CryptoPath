@@ -179,6 +179,9 @@ const Header = () => {
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
+          <Link href="/market-overview" className="text-sm hover:text-[#F5B056] transition">
+            Market Overview
+          </Link>
           <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">
             PriceTable
           </Link>
