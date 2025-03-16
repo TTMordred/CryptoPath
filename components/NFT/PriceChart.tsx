@@ -42,7 +42,7 @@ export default function PriceChart({ data, tokenId }: PriceChartProps) {
     }
 
     const now = new Date();
-    let filterDate = new Date();
+    const filterDate = new Date();
 
     switch (timeRange) {
       case '1h':

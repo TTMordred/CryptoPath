@@ -71,8 +71,11 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
           </div>
           
           {/* Connect Wallet Button */}
-          <Button 
-            onClick={connectWallet}
+          <Button
+            onClick={(e) => {
+              e.preventDefault();
+              connectWallet();
+            }}
             className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
           >
             {account ? (
