@@ -263,49 +263,49 @@ const Header = () => {
             <nav className="flex flex-col text-center text-xl">
               <Link
                 href="/"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Home
               </Link>
               <Link
                 href="/pricetable"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Pricetable
               </Link>
               <Link
                 href="/transactions"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Transactions
               </Link>
               <Link
                 href="/Faucet"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Faucet
               </Link>
               <Link
                 href="/NFT"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 NFTs
               </Link>
               <a
                 href="mailto:cryptopath@gmail.com"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Support
               </a>
               <Link
                 href="/search"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
                 Search
@@ -337,7 +337,7 @@ const Header = () => {
                   </button>
                 </div>
               ) : (
-                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">
+                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500">
                   Login
                 </Link>
               )}
