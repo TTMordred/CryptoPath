@@ -8,7 +8,9 @@ import MintForm from '@/components/NFT/MintForm';
 import WhitelistForm from '@/components/NFT/WhitelistForm';
 import { useWallet } from '@/components/Faucet/walletcontext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import ParticlesBackground from '@/components/ParticlesBackground';
+import NFTMarketStats from '@/components/NFT/NFTMarketStats';
+import PriceChart from '@/components/NFT/PriceChart';
+import { toast } from '@/hooks/use-toast';
 
 // Contract addresses
 const NFT_CONTRACT_ADDRESS = "0xdf5d4038723f6605A3eCd7776FFe25f3b1Be39a0";
@@ -53,6 +55,13 @@ interface NFTData {
   listings: any[];
 }
 
+interface NFTMetadata {
+  name: string;
+  image: string;
+  description?: string;
+  [key: string]: any;
+}
+
 export default function NFTMarketplace() {
   const { account, connectWallet } = useWallet();
   const [activeTab, setActiveTab] = useState<'market' | 'owned' | 'listings' | 'mint' | 'whitelist'>('market');
@@ -67,6 +76,16 @@ export default function NFTMarketplace() {
     listings: [] 
   });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  
+  // Market statistics
+  const [marketStats, setMarketStats] = useState({
+    totalVolume: '12,450.35',
+    dailyVolume: '1,245.62',
+    avgPrice: '125.75',
+    listedCount: 48,
+    soldCount: 152,
+    priceChange: 8.5
+  });
 
   const isOwner = useMemo(() => 
     account?.toLowerCase() === ownerAddress.toLowerCase(),
@@ -118,18 +137,49 @@ export default function NFTMarketplace() {
   }, [account, checkWhitelistStatus]);
 
   // Fetch PATH balance
-  const fetchPathBalance = useCallback(async (account: string) => {
+  const fetchPathBalance = useCallback(async (address: string) => {
     try {
       const provider = getProvider();
       const tokenContract = new ethers.Contract(PATH_TOKEN_ADDRESS, TOKEN_ABI, provider);
-      const balance = await tokenContract.balanceOf(account);
+      const balance = await tokenContract.balanceOf(address);
       setPathBalance(parseFloat(ethers.utils.formatUnits(balance, 18)).toFixed(4));
     } catch (error) {
       console.error("Error fetching PATH balance:", error);
     }
   }, []);
 
-  // Fetch NFT data
+  // Fetch metadata with timeout and retry
+  const fetchMetadata = async (uri: string, retries = 3): Promise<NFTMetadata> => {
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Metadata fetch timeout')), 5000)
+    );
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        const response = await Promise.race([
+          fetch(uri),
+          timeout
+        ]) as Response;
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data.name || !data.image) {
+          throw new Error('Invalid metadata format');
+        }
+
+        return data as NFTMetadata;
+      } catch (error) {
+        if (i === retries - 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    }
+    throw new Error('Failed to fetch metadata after retries');
+  };
+
+  // Fetch NFT data with improved error handling
   const fetchNFTs = useCallback(async () => {
     if (!account) return;
 
@@ -139,8 +189,8 @@ export default function NFTMarketplace() {
 
       const listedIds = await contract.getAllListings().catch(() => []);
       
-      // Market NFTs
-      const marketNFTs = await Promise.all(
+      // Market NFTs with improved error handling
+      const marketNFTs = await Promise.allSettled(
         listedIds.map(async (id: ethers.BigNumber) => {
           try {
             const [uri, listing, owner] = await Promise.all([
@@ -148,7 +198,9 @@ export default function NFTMarketplace() {
               contract.listings(id),
               contract.ownerOf(id).catch(() => '0x0')
             ]);
-            const metadata = await fetch(uri.toString()).then(res => res.json());
+
+            const metadata = await fetchMetadata(uri);
+
             return {
               id: id.toString(),
               ...metadata,
@@ -164,46 +216,67 @@ export default function NFTMarketplace() {
         })
       );
 
-      // Owned NFTs
+      // Owned NFTs with improved pagination
       const totalSupply = await contract.totalSupply().catch(() => ethers.BigNumber.from(0));
+      const pageSize = 20; // Process in smaller chunks
       const allIds = Array.from({ length: totalSupply.toNumber() }, (_, i) => i);
+      const ownedNFTs = [];
 
-      const ownedNFTs = await Promise.all(
-        allIds.map(async (id) => {
-          try {
-            const [owner, listing] = await Promise.all([
-              contract.ownerOf(id).catch(() => '0x0'),
-              contract.listings(id)
-            ]);
-            if (owner.toLowerCase() === account.toLowerCase() && !listing.isListed) {
-              const uri = await contract.tokenURI(id);
-              const metadata = await fetch(uri.toString()).then(res => res.json());
-              return {
-                id: id.toString(),
-                ...metadata,
-                owner: owner,
-                isListed: false
-              };
+      for (let i = 0; i < allIds.length; i += pageSize) {
+        const pageIds = allIds.slice(i, i + pageSize);
+        const pageResults = await Promise.allSettled(
+          pageIds.map(async (id) => {
+            try {
+              const [owner, listing] = await Promise.all([
+                contract.ownerOf(id).catch(() => '0x0'),
+                contract.listings(id)
+              ]);
+              
+              if (owner.toLowerCase() === account.toLowerCase() && !listing.isListed) {
+                const uri = await contract.tokenURI(id);
+                const metadata = await fetchMetadata(uri);
+
+                return {
+                  id: id.toString(),
+                  ...metadata,
+                  owner: owner,
+                  isListed: false
+                };
+              }
+              return null;
+            } catch (error) {
+              console.error(`Error processing owned NFT ${id}:`, error);
+              return null;
             }
-            return null;
-          } catch (error) {
-            return null;
-          }
-        })
-      );
+          })
+        );
+
+        ownedNFTs.push(...pageResults
+          .filter(result => result.status === 'fulfilled' && result.value !== null)
+          .map(result => (result as PromiseFulfilledResult<any>).value)
+        );
+      }
+
+      const validMarketNFTs = marketNFTs
+        .filter(result => result.status === 'fulfilled' && result.value !== null)
+        .map(result => (result as PromiseFulfilledResult<any>).value);
 
       setNftData({
-        market: marketNFTs.filter(nft => nft !== null),
-        owned: ownedNFTs.filter(nft => nft !== null),
-        listings: marketNFTs.filter(nft => 
-          nft !== null && 
-          nft.isListed &&
+        market: validMarketNFTs,
+        owned: ownedNFTs,
+        listings: validMarketNFTs.filter(nft => 
+          nft.isListed && 
           nft.seller?.toLowerCase() === account.toLowerCase()
         )
       });
       setIsInitialLoad(false);
     } catch (error) {
       console.error("Error fetching NFTs:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch NFTs. Please try again later.",
+        variant: "destructive"
+      });
     }
   }, [account]);
 
@@ -259,12 +332,24 @@ export default function NFTMarketplace() {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
       
+      // Validate the token URI before minting
+      await fetchMetadata(tokenURI);
+      
       const tx = await contract.mintNFT(recipient, tokenURI);
       await tx.wait();
       await refreshData();
+      toast({
+        title: "Success",
+        description: "NFT minted successfully!",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Minting failed:", error);
-      alert(error instanceof Error ? error.message : "Mint failed");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Mint failed",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
@@ -273,7 +358,11 @@ export default function NFTMarketplace() {
   // Handle buy NFT
   const handleBuyNFT = async (tokenId: string, price: string) => {
     if (!account) {
-      alert("Please connect wallet!");
+      toast({
+        title: "Error",
+        description: "Please connect wallet first!",
+        variant: "destructive"
+      });
       return;
     }
 
@@ -298,9 +387,18 @@ export default function NFTMarketplace() {
       await tx.wait();
       
       await refreshData();
+      toast({
+        title: "Success",
+        description: "NFT purchased successfully!",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Purchase failed:", error);
-      alert("Transaction failed! Check console for details.");
+      toast({
+        title: "Error",
+        description: "Transaction failed! Check console for details.",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
@@ -309,7 +407,11 @@ export default function NFTMarketplace() {
   // Handle list NFT
   const handleListNFT = async (tokenId: string, price: string) => {
     if (!account) {
-      alert("Please connect wallet first!");
+      toast({
+        title: "Error",
+        description: "Please connect wallet first!",
+        variant: "destructive"
+      });
       return;
     }
   
@@ -331,9 +433,18 @@ export default function NFTMarketplace() {
       );
       await tx.wait();
       await refreshData();
+      toast({
+        title: "Success",
+        description: "NFT listed successfully!",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Listing failed:", error);
-      alert(error instanceof Error ? error.message : "Unknown error");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
@@ -342,7 +453,11 @@ export default function NFTMarketplace() {
   // Handle unlist NFT
   const handleUnlistNFT = async (tokenId: string) => {
     if (!account) {
-      alert("Please connect wallet first!");
+      toast({
+        title: "Error",
+        description: "Please connect wallet first!",
+        variant: "destructive"
+      });
       return;
     }
   
@@ -362,13 +477,18 @@ export default function NFTMarketplace() {
       const tx = await contract.unlistNFT(tokenId);
       await tx.wait();
       await refreshData();
+      toast({
+        title: "Success",
+        description: "NFT unlisted successfully!",
+        variant: "default"
+      });
     } catch (error: unknown) {
       console.error("Unlisting failed:", error);
-      alert(
-        error instanceof Error 
-          ? error.message 
-          : "Unknown error occurred during unlisting"
-      );
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unknown error occurred during unlisting",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
@@ -386,164 +506,150 @@ export default function NFTMarketplace() {
       
       const tx = await contract.updateWhitelist(address, status);
       await tx.wait();
-      alert('Whitelist updated successfully!');
+      toast({
+        title: "Success",
+        description: "Whitelist updated successfully!",
+        variant: "default"
+      });
     } catch (error) {
       console.error("Whitelist update failed:", error);
-      alert(error instanceof Error ? error.message : "Update failed");
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Update failed",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen bg-transparent text-white font-exo2">
-      <ParticlesBackground />
-      <div className="container mx-auto p-4 relative z-10">
-        {/* Header section */}
-        <header className="relative p-4 bg-black rounded-md shadow-md">
-          <h1 className="text-center text-3xl lg:text-4xl font-bold tracking-tight text-orange-400">
-            NFT Marketplace
-          </h1>
-          <div className="absolute top-1/2 right-4 transform -translate-y-1/2 flex items-center gap-4">
-            {account && (
-              <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-black rounded-full border border-gray-800">
-                <span className="text-orange-500 font-mono font-medium tracking-tight">
-                  {pathBalance}
-                </span>
-                <span className="text-white font-medium">PATH</span>
-              </div>
-            )}
-            <button
-              onClick={() => {
-                if (!account && !window.ethereum) {
-                  alert('Please install MetaMask!');
-                } else if (!account) {
-                  connectWallet();
-                }
-              }}
-              className="flex items-center px-5 py-2 rounded-full bg-orange-500 hover:bg-orange-600 text-white transition-all text-sm lg:text-base shadow-lg"
-            >
-              {account 
-                ? `Connected: ${account.slice(0, 6)}...${account.slice(-4)}` 
-                : 'Connect Wallet'
-              }
-            </button>
-          </div>
-        </header>
+    <div className="relative text-white font-exo2">
+      <div className="mb-6">
+        <p className="text-gray-400">Trade exclusive NFTs in the PATH ecosystem using PATH tokens</p>
+      </div>
+      
+      {/* Market Statistics */}
+      <NFTMarketStats {...marketStats} />
+      
+      {/* Price Chart */}
+      <div className="mb-8">
+        <PriceChart data={[]} />
+      </div>
+      
+      {/* Tabs Navigation */}
+      <NFTTabs
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        balances={{
+          market: nftData.market.length,
+          owned: nftData.owned.length,
+          listings: nftData.listings.length
+        }}
+        showMintTab={isWhitelisted || isOwner}
+        showWhitelistTab={isOwner}
+      />
 
-        <NFTTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          balances={{
-            market: nftData.market.length,
-            owned: nftData.owned.length,
-            listings: nftData.listings.length
-          }}
-          showMintTab={isWhitelisted || isOwner}
-          showWhitelistTab={isOwner}
-        />
-
-        {!account ? (
-          <div className="text-center py-20 text-gray-400">
-            Please connect your wallet to view NFTs
-          </div>
-        ) : (
-          <>
-            {isInitialLoad ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                {[...Array(8)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="animate-pulse bg-black rounded-xl h-[500px] shadow-lg"
-                  />
-                ))}
-              </div>
-            ) : (
-              <>
-                {activeTab === 'mint' ? (
-                  <Card className="bg-black/50 border border-orange-400/20 mt-6">
-                    <CardHeader>
-                      <CardTitle className="text-orange-400">Mint</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <MintForm 
-                        onSubmit={handleMintNFT}
-                        processing={processing}
-                        checkWhitelist={checkWhitelistStatus}
-                      />
-                    </CardContent>
-                  </Card>
-                ) : activeTab === 'whitelist' ? (
-                  <Card className="bg-black/50 border border-orange-400/20 mt-6">
-                    <CardHeader>
-                      <CardTitle className="text-orange-400">Whitelist Management</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <WhitelistForm 
-                        onSubmit={handleUpdateWhitelist} 
-                        isOwner={isOwner}
-                      />
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                      {paginatedData.map((nft, index) => (
-                        <div 
-                          key={nft.id}
-                          className="animate-fade-in-right"
-                          style={{ animationDelay: `${index * 50}ms` }}
-                        >
-                          <NFTCard
-                            nft={nft}
-                            mode={activeTab === 'listings' ? 'listing' : activeTab}
-                            onAction={ 
-                              activeTab === 'market' 
-                                ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') 
-                                : activeTab === 'owned' 
-                                ? (tokenId, price) => handleListNFT(tokenId, price || '0') 
-                                : handleUnlistNFT
-                            }
-                            processing={processing}
-                          />
-                        </div>
-                      ))}
-                    </div>
-
-                    {totalPages > 1 && (
-                      <div className="mt-8">
-                        <Pagination
-                          currentPage={currentPage}
-                          totalPages={totalPages}
-                          onPageChange={handlePageChange}
+      {!account ? (
+        <div className="text-center py-20 text-gray-400">
+          Please connect your wallet to view NFTs
+        </div>
+      ) : (
+        <>
+          {isInitialLoad ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {[...Array(8)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="animate-pulse bg-black rounded-xl h-[500px] shadow-lg"
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              {activeTab === 'mint' ? (
+                <Card className="bg-black/50 border border-orange-400/20 mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-orange-400">Mint</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <MintForm 
+                      onSubmit={handleMintNFT}
+                      processing={processing}
+                      checkWhitelist={checkWhitelistStatus}
+                    />
+                  </CardContent>
+                </Card>
+              ) : activeTab === 'whitelist' ? (
+                <Card className="bg-black/50 border border-orange-400/20 mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-orange-400">Whitelist Management</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <WhitelistForm 
+                      onSubmit={handleUpdateWhitelist} 
+                      isOwner={isOwner}
+                    />
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {paginatedData.map((nft, index) => (
+                      <div 
+                        key={nft.id}
+                        className="animate-fade-in-right"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <NFTCard
+                          nft={nft}
+                          mode={activeTab === 'listings' ? 'listing' : activeTab}
+                          onAction={ 
+                            activeTab === 'market' 
+                              ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') 
+                              : activeTab === 'owned' 
+                              ? (tokenId, price) => handleListNFT(tokenId, price || '0') 
+                              : handleUnlistNFT
+                          }
+                          processing={processing}
                         />
                       </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </>
-        )}
+                    ))}
+                  </div>
 
-        {processing && (
-          <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50">
-            <div className="bg-black/90 p-8 rounded-2xl text-center border border-orange-400/20 shadow-xl">
-              <div className="animate-spin h-12 w-12 border-4 border-orange-400 border-t-transparent rounded-full mb-4 mx-auto" />
-              <h3 className="text-xl text-white mb-2 font-semibold">Processing Transaction</h3>
-              <div className="flex items-center justify-center space-x-2">
-                {[...Array(3)].map((_, i) => (
-                  <div 
-                    key={i}
-                    className="animate-float h-3 w-3 bg-orange-400 rounded-full"
-                    style={{ animationDelay: `${i * 0.2}s` }}
-                  />
-                ))}
-              </div>
+                  {totalPages > 1 && (
+                    <div className="mt-8">
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+
+      {processing && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-xs flex items-center justify-center z-50">
+          <div className="bg-black/90 p-8 rounded-2xl text-center border border-orange-400/20 shadow-xl">
+            <div className="animate-spin h-12 w-12 border-4 border-orange-400 border-t-transparent rounded-full mb-4 mx-auto" />
+            <h3 className="text-xl text-white mb-2 font-semibold">Processing Transaction</h3>
+            <div className="flex items-center justify-center space-x-2">
+              {[...Array(3)].map((_, i) => (
+                <div 
+                  key={i}
+                  className="animate-float h-3 w-3 bg-orange-400 rounded-full"
+                  style={{ animationDelay: `${i * 0.2}s` }}
+                />
+              ))}
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

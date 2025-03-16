@@ -1,4 +1,3 @@
-
 import { toast } from "sonner";
 
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
@@ -221,57 +220,122 @@ export async function fetchCollectionNFTs(
   }
 }
 
-export async function fetchPopularCollections(chainId: string = '0x1'): Promise<any[]> {
-  try {
-    // In a production app, you would fetch this from a backend API
-    // For now, we'll use a mock response
-    return [
-      {
-        id: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
-        name: 'Bored Ape Yacht Club',
-        imageUrl: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?w=500&auto=format',
-        floorPrice: 30.5,
-        totalSupply: 10000,
-      },
-      {
-        id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
-        name: 'Mutant Ape Yacht Club',
-        imageUrl: 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPFoG53VnLJezYi8hAs0OxNZwlw6Y-dmI?w=500&auto=format',
-        floorPrice: 12.2,
-        totalSupply: 20000,
-      },
-      {
-        id: '0xed5af388653567af2f388e6224dc7c4b3241c544',
-        name: 'Azuki',
-        imageUrl: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?w=500&auto=format',
-        floorPrice: 8.9,
-        totalSupply: 10000,
-      },
-      {
-        id: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb',
-        name: 'CryptoPunks',
-        imageUrl: 'https://i.seadn.io/gae/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE?w=500&auto=format',
-        floorPrice: 50.2,
-        totalSupply: 10000,
-      },
-      {
-        id: '0x8a90cab2b38dba80c64b7734e58ee1db38b8992e',
-        name: 'Doodles',
-        imageUrl: 'https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEOtztls02RlWQ?w=500&auto=format',
-        floorPrice: 3.8,
-        totalSupply: 10000,
-      },
-      {
-        id: '0x1a92f7381b9f03921564a437210bb9396471050c',
-        name: 'Cool Cats',
-        imageUrl: 'https://i.seadn.io/gae/LIov33kogXOK4XZd2ESj29sqm_Hww5JSdO7AFn5wjt8xgnJJ0UpNV9yITqxra3s_LMEW1AnnrgOVB_hDpjJRA1uF4skI5Sdi_9rULi8?w=500&auto=format',
-        floorPrice: 2.1,
-        totalSupply: 9999,
-      },
-    ];
-  } catch (error) {
-    console.error('Error fetching popular collections:', error);
-    toast.error("Failed to load popular collections");
-    return [];
+// Mocked API service for NFT data
+// In a real application, this would connect to Alchemy or another provider
+export async function fetchPopularCollections(chainId: string): Promise<any[]> {
+  // In a production app, this would fetch from Alchemy API
+  // For this demo, we'll return mock data
+  return [
+    {
+      id: "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
+      name: "Bored Ape Yacht Club",
+      totalSupply: 10000,
+      floorPrice: "30.5",
+      imageUrl: "https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=1000"
+    },
+    {
+      id: "0x60e4d786628fea6478f785a6d7e704777c86a7c6",
+      name: "Mutant Ape Yacht Club",
+      totalSupply: 19423,
+      floorPrice: "10.2",
+      imageUrl: "https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPF6rLh2D4Xw?auto=format&dpr=1&w=1000"
+    },
+    {
+      id: "0xed5af388653567af2f388e6224dc7c4b3241c544",
+      name: "Azuki",
+      totalSupply: 10000,
+      floorPrice: "8.75",
+      imageUrl: "https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=1000"
+    },
+    {
+      id: "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb",
+      name: "CryptoPunks",
+      totalSupply: 10000,
+      floorPrice: "54.95",
+      imageUrl: "https://i.seadn.io/gae/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE?auto=format&dpr=1&w=1000"
+    },
+    {
+      id: "0x8a90cab2b38dba80c64b7734e58ee1db38b8992e",
+      name: "Doodles",
+      totalSupply: 10000,
+      floorPrice: "5.25",
+      imageUrl: "https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEOtztls02RlWQ?auto=format&dpr=1&w=1000"
+    },
+    {
+      id: "0xdf5d4038723f6605a3ecd7776ffe25f3b1be39a0",
+      name: "PATH NFT Collection",
+      totalSupply: 1000,
+      floorPrice: "0.5",
+      imageUrl: "/images/path-token.png"
+    }
+  ];
+}
+
+// Function to fetch marketplace trading history 
+export async function fetchTradeHistory(tokenId?: string): Promise<any[]> {
+  // This would normally connect to a blockchain indexer service
+  // For now, we'll return mock data
+  return [
+    {
+      id: '1',
+      event: 'Sale',
+      tokenId: tokenId || '123',
+      from: '0x1234567890abcdef1234567890abcdef12345678',
+      to: '0xabcdef1234567890abcdef1234567890abcdef12',
+      price: '120.5',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(), // 2 hours ago
+      txHash: '0xabc123def456'
+    },
+    {
+      id: '2',
+      event: 'Transfer',
+      tokenId: tokenId || '123',
+      from: '0xabcdef1234567890abcdef1234567890abcdef12',
+      to: '0x9876543210abcdef1234567890abcdef12345678',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+      txHash: '0xdef456abc789'
+    },
+    {
+      id: '3',
+      event: 'Mint',
+      tokenId: tokenId || '123',
+      from: '0x0000000000000000000000000000000000000000',
+      to: '0x1234567890abcdef1234567890abcdef12345678',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 days ago
+      txHash: '0x789abc123def'
+    },
+    {
+      id: '4',
+      event: 'List',
+      tokenId: tokenId || '123',
+      from: '0x1234567890abcdef1234567890abcdef12345678',
+      to: '0x0000000000000000000000000000000000000000',
+      price: '100',
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+      txHash: '0x456def789abc'
+    }
+  ];
+}
+
+// Function to fetch price history data for charts
+export async function fetchPriceHistory(tokenId?: string): Promise<any[]> {
+  // This would normally fetch real historical price data
+  // For now, generate some mock data
+  const now = Date.now();
+  const data = [];
+  
+  // Generate 30 days of price data
+  for (let i = 30; i >= 0; i--) {
+    const date = new Date(now - 1000 * 60 * 60 * 24 * i);
+    const basePrice = tokenId ? 100 : 120; // Different base for collection vs single NFT
+    const randomFactor = 0.3 * Math.sin(i / 2) + 0.2 * Math.cos(i);
+    const volatility = 0.1;
+    
+    data.push({
+      date: date.toISOString().split('T')[0],
+      price: basePrice * (1 + randomFactor + volatility * (Math.random() - 0.5))
+    });
   }
+  
+  return data;
 }

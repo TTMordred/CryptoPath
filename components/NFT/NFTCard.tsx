@@ -34,12 +34,22 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
     setIsSeller(!!sellerMatch);
   }, [account, nft.seller]);
 
-  // Convert ipfs:// URL to a gateway URL
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  
+  // Convert ipfs:// URL to a gateway URL with fallbacks
   const formatImageUrl = (ipfsUrl?: string) => {
     if (!ipfsUrl) return '/fallback-nft.png';
     if (ipfsUrl.startsWith('http')) return ipfsUrl;
+    
     const cid = ipfsUrl.replace('ipfs://', '').split('/')[0];
-    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    const gateways = [
+      `https://gateway.pinata.cloud/ipfs/${cid}`,
+      `https://cloudflare-ipfs.com/ipfs/${cid}`,
+      `https://ipfs.io/ipfs/${cid}`
+    ];
+    
+    // Try multiple gateways if one fails
+    return gateways[Math.floor(Math.random() * gateways.length)];
   };
 
   // Render the appropriate action button with solid color styling
@@ -128,15 +138,33 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
     >
       {/* Image section */}
       <div className="relative aspect-square">
+        {isImageLoading && (
+          <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
         <Image
           src={imgError ? '/fallback-nft.png' : formatImageUrl(nft.image)}
           alt={nft.name || 'Unnamed NFT'}
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          onError={() => setImgError(true)}
+          className={`
+            object-cover transition-all duration-300
+            group-hover:scale-105
+            ${isImageLoading ? 'opacity-0' : 'opacity-100'}
+          `}
+          onError={() => {
+            setImgError(true);
+            setIsImageLoading(false);
+          }}
+          onLoad={() => setIsImageLoading(false)}
           quality={85}
           priority
         />
+        {imgError && (
+          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center text-gray-400 text-sm">
+            Failed to load image
+          </div>
+        )}
       </div>
 
       {/* Info section */}

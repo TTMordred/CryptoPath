@@ -260,7 +260,7 @@ const nextConfig = {
   // Add important settings for Vercel deployment
   experimental: {
     // Allow more time for API routes that make external calls
-    serverComponentsExternalPackages: [],
+    serverExternalPackages: [],
   },
   // Add extra security headers
   async headers() {
