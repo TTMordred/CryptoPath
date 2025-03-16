@@ -323,46 +323,46 @@ export default function NFTMarketplace() {
 
   // Handle mint NFT
   const handleMintNFT = async (recipient: string, tokenURI: string) => {
-    if (!account || !isOwner) return;
-
+    if (!account) return; // Nếu không có tài khoản, thoát
+    if (!isOwner && !isWhitelisted) { // Nếu không phải owner và không whitelist, báo lỗi
+        toast({
+            title: "Error",
+            description: "You are not authorized to mint NFTs",
+            variant: "destructive"
+        });
+        return;
+    }
     setProcessing(true);
-
     try {
-      const provider = getProvider();
-      const signer = provider.getSigner();
-      const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
-      
-      // Validate the token URI before minting
-      await fetchMetadata(tokenURI);
-      
-      const tx = await contract.mintNFT(recipient, tokenURI);
-      await tx.wait();
-      await refreshData();
-      toast({
-        title: "Success",
-        description: "NFT minted successfully!",
-        variant: "default"
-      });
+        const provider = getProvider();
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
+        
+        await fetchMetadata(tokenURI); // Xác thực URI trước khi mint
+        const tx = await contract.mintNFT(recipient, tokenURI);
+        await tx.wait();
+        await refreshData();
+        toast({
+            title: "Success",
+            description: "NFT minted successfully!",
+            variant: "default"
+        });
     } catch (error) {
-      console.error("Minting failed:", error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Mint failed",
-        variant: "destructive"
-      });
+        console.error("Minting failed:", error);
+        toast({
+            title: "Error",
+            description: error instanceof Error ? error.message : "Mint failed",
+            variant: "destructive"
+        });
     } finally {
-      setProcessing(false);
+        setProcessing(false);
     }
   };
 
   // Handle buy NFT
   const handleBuyNFT = async (tokenId: string, price: string) => {
     if (!account) {
-      toast({
-        title: "Error",
-        description: "Please connect wallet first!",
-        variant: "destructive"
-      });
+      alert("Please connect wallet!");
       return;
     }
 
@@ -387,18 +387,9 @@ export default function NFTMarketplace() {
       await tx.wait();
       
       await refreshData();
-      toast({
-        title: "Success",
-        description: "NFT purchased successfully!",
-        variant: "default"
-      });
     } catch (error) {
       console.error("Purchase failed:", error);
-      toast({
-        title: "Error",
-        description: "Transaction failed! Check console for details.",
-        variant: "destructive"
-      });
+      alert("Transaction failed! Check console for details.");
     } finally {
       setProcessing(false);
     }
