@@ -833,7 +833,7 @@ function TransactionGraph() {
 
   if (loading) {
     return (
-      <Card className="h-[500px] flex flex-col items-center justify-center bg-gray-900 border border-amber-500/20">
+      <Card className="h-[600px] flex flex-col items-center justify-center bg-gray-900 border border-amber-500/20">
         <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-4" />
         <div className="text-center">
           <p className="text-sm text-gray-300 mb-1">
@@ -883,7 +883,7 @@ function TransactionGraph() {
   }
 
   return (
-    <Card className={`bg-gray-900/95 backdrop-blur-sm border border-amber-500/20 ${isFullscreen ? 'fixed top-0 left-0 right-0 bottom-0 z-50 h-screen w-screen rounded-none' : 'h-[540px]'}`}>
+    <Card className={`bg-gray-900/95 backdrop-blur-sm border border-amber-500/20 ${isFullscreen ? 'fixed top-0 left-0 right-0 bottom-0 z-50 h-screen w-screen rounded-none' : 'h-[593px]'}`}>
       <CardHeader className="bg-black/20 border-b border-amber-500/10">
         <div className="flex justify-between items-center">
           <CardTitle className="text-lg font-medium flex items-center gap-2">
@@ -995,7 +995,7 @@ function TransactionGraph() {
           onNodeClick={handleNodeClick}
           onLinkClick={handleLinkClick}
           width={isFullscreen ? window.innerWidth : 580}
-          height={isFullscreen ? window.innerHeight - 116 : 440}
+          height={isFullscreen ? window.innerHeight - 116 : 510}
         />
       </CardContent>
       <CardFooter className="bg-black/20 border-t border-amber-500/10 flex justify-end">
