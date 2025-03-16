@@ -4,11 +4,12 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { AreaChart, Clock } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ethers } from "ethers";
 
 interface Transaction {
   hash: string;
   timeStamp: string;
-  value: string; // Chuỗi thập phân từ API
+  value: string; // Chuỗi thập phân từ API (wei)
 }
 
 interface HistoryChartProps {
@@ -41,12 +42,14 @@ const HistoryChart: React.FC<HistoryChartProps> = ({ transactions, isLoading }) 
       if (isNaN(timestampMs)) return;
 
       const date = new Date(timestampMs).toLocaleDateString();
-      const value = parseFloat(tx.value || "0"); // Sử dụng trực tiếp giá trị thập phân
+      // Chuyển đổi giá trị từ wei sang ETH
+      const valueInWei = tx.value || "0"; // Đảm bảo không có undefined
+      const valueInEth = parseFloat(ethers.utils.formatEther(valueInWei));
 
       if (groupedData[date]) {
-        groupedData[date].value += value;
+        groupedData[date].value += valueInEth;
       } else {
-        groupedData[date] = { date, value };
+        groupedData[date] = { date, value: valueInEth };
       }
     });
 
@@ -56,20 +59,20 @@ const HistoryChart: React.FC<HistoryChartProps> = ({ transactions, isLoading }) 
   const chartData = processChartData(transactions, selectedPeriod);
 
   return (
-    <div className="backdrop-blur-md bg-shark-700/30 border border-shark-600 border-[#f6b355] rounded-2xl shadow-lg transition-all duration-300 hover:border-amber/30 p-6 h-full opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
+    <div className="backdrop-blur-md bg-shark-700/30 border border-[#f6b355] rounded-2xl shadow-lg transition-all duration-300 hover:shadow-xl hover:-translate-y-1 p-6 h-full opacity-0 animate-[fadeIn_0.5s_ease-out_forwards]">
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
-          <div className="bg-amber/20 rounded-full p-2 mr-3">
-            <AreaChart className="h-5 w-5 text-amber" />
+          <div className="bg-[#f6b355]/20 rounded-full p-2 mr-3 transition-all duration-300 hover:bg-[#f6b355]/30">
+            <AreaChart className="h-5 w-5 text-[#f6b355]" />
           </div>
           <h3 className="text-gray-300 font-medium">Transaction History</h3>
         </div>
         <Tabs defaultValue="all" className="w-auto" onValueChange={setSelectedPeriod}>
-          <TabsList className="bg-shark-700/30 border border-shark-600">
-            <TabsTrigger value="1d" className="text-xs">1D</TabsTrigger>
-            <TabsTrigger value="7d" className="text-xs">7D</TabsTrigger>
-            <TabsTrigger value="30d" className="text-xs">30D</TabsTrigger>
-            <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
+          <TabsList className="bg-shark-700/30 border border-[#f6b355]">
+            <TabsTrigger value="1d" className="text-xs text-[#f6b355] data-[state=active]:bg-[#f6b355]/20">1D</TabsTrigger>
+            <TabsTrigger value="7d" className="text-xs text-[#f6b355] data-[state=active]:bg-[#f6b355]/20">7D</TabsTrigger>
+            <TabsTrigger value="30d" className="text-xs text-[#f6b355] data-[state=active]:bg-[#f6b355]/20">30D</TabsTrigger>
+            <TabsTrigger value="all" className="text-xs text-[#f6b355] data-[state=active]:bg-[#f6b355]/20">All</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -89,7 +92,7 @@ const HistoryChart: React.FC<HistoryChartProps> = ({ transactions, isLoading }) 
           </ResponsiveContainer>
         ) : (
           <div className="flex flex-col items-center justify-center h-full">
-            <Clock className="h-12 w-12 text-shark-400 mb-4" />
+            <Clock className="h-12 w-12 text-[#f6b355] mb-4" />
             <p className="text-shark-300 text-center">No transaction history available</p>
           </div>
         )}
