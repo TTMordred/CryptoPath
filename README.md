@@ -40,6 +40,10 @@ NEXTAUTH_URL=https://cryptopath.vercel.app/
 NEXTAUTH_SECRET=your-secret-key
 NEXT_PUBLIC_INFURA_KEY=your-infura-key
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-projectid
+NEXT_PUBLIC_URL=http://localhost:3000
+ALCHEMY_API_KEY=your-alchemy-key
+REACT_APP_DAPPRADAR_API_KEY=your-DAPPRADAR-key
+COINMARKETCAP_API_KEY=your-COINMARKETCAP-key
 ```
 ```bash
 # Start the development server
