@@ -22,7 +22,9 @@ import okxModule from "@web3-onboard/okx";
 import frontierModule from "@web3-onboard/frontier";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useSettings } from "@/components/context/SettingsContext";
-import { Subscription } from "@supabase/supabase-js"; // Import kiểu Subscription
+import { Subscription } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs"; // Thêm bcryptjs để hash mật khẩu
+import crypto from "crypto"; // Dùng crypto để mã hóa dữ liệu
 
 // Web3-Onboard configuration
 const INFURA_KEY = "7d389678fba04ceb9510b2be4fff5129";
@@ -82,6 +84,32 @@ const debounce = <T extends (...args: any[]) => void>(
   };
 };
 
+// Khóa bí mật để mã hóa dữ liệu (nên lưu trong biến môi trường trong thực tế)
+const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "your-secret-key-here-32bytes-long";
+const IV_LENGTH = 16; // Độ dài IV cho AES
+
+// Hàm mã hóa dữ liệu
+const encryptData = (text: string): string => {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString("hex") + ":" + encrypted.toString("hex");
+};
+
+// Hàm giải mã dữ liệu
+const decryptData = (text: string): string => {
+  const [iv, encryptedText] = text.split(":");
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    Buffer.from(ENCRYPTION_KEY),
+    Buffer.from(iv, "hex")
+  );
+  let decrypted = decipher.update(Buffer.from(encryptedText, "hex"));
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+};
+
 function LoginPageContent() {
   const router = useRouter();
   const { signInWithWalletConnect, signIn } = useAuth();
@@ -111,7 +139,6 @@ function LoginPageContent() {
 
   // Check session and listen to auth state changes
   useEffect(() => {
-    // Check initial session
     const checkExistingSession = async () => {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
@@ -125,7 +152,6 @@ function LoginPageContent() {
     };
     checkExistingSession();
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event);
       if (event === "SIGNED_IN" && session) {
@@ -137,7 +163,6 @@ function LoginPageContent() {
       }
     });
 
-    // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -152,24 +177,27 @@ function LoginPageContent() {
       const authenticateWithWallet = async () => {
         try {
           setIsLoading(true);
+          const hashedAddress = await bcrypt.hash(address, 10); // Hash địa chỉ ví
           const { data, error } = await signInWithWalletConnect(address);
           if (error) {
             if (error.message.includes("User already registered")) {
               toast.info("User already exists. Logging in instead.");
               const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
                 email: `${address}@cryptopath.local`,
-                password: address,
+                password: hashedAddress, // Sử dụng hashed address làm mật khẩu
               });
               if (loginError) throw new Error(loginError.message);
               if (!loginData.session) throw new Error("No session returned from login");
-              localStorage.setItem("userToken", JSON.stringify(loginData.session.access_token));
+              const encryptedToken = encryptData(JSON.stringify(loginData.session.access_token));
+              localStorage.setItem("userToken", encryptedToken);
             } else {
               throw new Error(error.message);
             }
           } else if (!data || !data.session) {
             throw new Error("No session data returned from sign-in");
           } else {
-            localStorage.setItem("userToken", JSON.stringify(data.session.access_token));
+            const encryptedToken = encryptData(JSON.stringify(data.session.access_token));
+            localStorage.setItem("userToken", encryptedToken);
           }
 
           updateProfile({
@@ -185,7 +213,8 @@ function LoginPageContent() {
             name: ens?.name || formatWalletAddress(address),
             isLoggedIn: true,
           };
-          localStorage.setItem("userDisplayInfo", JSON.stringify(publicUserData));
+          const encryptedUserData = encryptData(JSON.stringify(publicUserData));
+          localStorage.setItem("userDisplayInfo", encryptedUserData);
 
           console.log("Wallet login successful, redirecting to dashboard");
           toast.success("Successfully authenticated with wallet");
@@ -211,7 +240,8 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(email, password);
+      const hashedPassword = await bcrypt.hash(password, 10); // Hash mật khẩu trước khi gửi
+      const { data, error } = await signIn(email, hashedPassword); // Gửi hashed password
       if (error) {
         if (error.message.includes("email")) setEmailError(error.message);
         else if (error.message.includes("password")) setPasswordError(error.message);
@@ -243,8 +273,10 @@ function LoginPageContent() {
         email,
         isLoggedIn: true,
       };
-      localStorage.setItem("currentUser", JSON.stringify(publicUserData));
-      localStorage.setItem("userToken", JSON.stringify(data.session.access_token));
+      const encryptedUserData = encryptData(JSON.stringify(publicUserData));
+      const encryptedToken = encryptData(JSON.stringify(data.session.access_token));
+      localStorage.setItem("currentUser", encryptedUserData);
+      localStorage.setItem("userToken", encryptedToken);
 
       console.log("Email login successful, redirecting to dashboard");
       toast.success("Login successful!");
