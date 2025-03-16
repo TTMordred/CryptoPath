@@ -427,11 +427,10 @@ export default function WalletInfo() {
   const blockExplorerUrl = getBlockExplorerUrl();
 
   return (
-    <motion.div
+    <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="relative z-10"
     >
       <Card className="overflow-hidden border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm relative">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-amber-600/5 rounded-lg pointer-events-none"></div>
@@ -585,7 +584,7 @@ export default function WalletInfo() {
                 {/* Transaction Count and Network Info */}
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div className="rounded-xl bg-gradient-to-br from-gray-900/80 to-black/80 border border-amber-500/20 p-4 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div className="relative">
                       <div className="text-sm text-gray-400 mb-1">Transactions</div>
                       <div className="text-xl font-bold text-white">{walletData.transactionCount.toLocaleString()}</div>
@@ -667,7 +666,7 @@ export default function WalletInfo() {
                 </div>
                 
                 {/* Action Buttons */}
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4 relative z-10">
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -677,22 +676,15 @@ export default function WalletInfo() {
                     <ExternalLink className="mr-1 h-4 w-4" />
                     View on {getExplorerName()}
                   </Button>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 border-amber-500/30 bg-gradient-to-b from-amber-900/20 to-transparent hover:from-amber-900/40 text-amber-400"
-                          onClick={() => setShowQR(true)}
-                        >
-                          <QrCode className="mr-1 h-4 w-4" />
-                          Show QR Code
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Show QR code</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="flex-1 border-amber-500/30 bg-gradient-to-b from-amber-900/20 to-transparent hover:from-amber-900/40 text-amber-400"
+                    onClick={() => setShowQR(true)}
+                  >
+                    <QrCode className="mr-1 h-4 w-4" />
+                    Show QR Code
+                  </Button>
                 </div>
               </div>
             </TabsContent>

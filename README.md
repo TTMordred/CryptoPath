@@ -23,7 +23,7 @@ npm install next --legacy-peer-deps
 
 # Set up environment variables
 touch .env.local
-```
+```s
 Populate `.env.local` with:
 ```dotenv
 ETHERSCAN_API_KEY=YOUR_API_KEY
