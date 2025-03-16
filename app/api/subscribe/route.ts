@@ -13,6 +13,16 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      const errorMessage = language === 'en' ? 'Invalid email format' : 'Định dạng email không hợp lệ';
+      return NextResponse.json(
+        { success: false, message: errorMessage },
+        { status: 400 }
+      );
+    }
+
     // Nodemailer configuration
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || 'smtp.example.com',
@@ -106,10 +116,13 @@ export async function POST(request: Request) {
 
     await transporter.sendMail(mailOptions);
 
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
     // Success response based on language
     const successMessage = language === 'en' ? 'Subscription successful!' : 'Đăng ký thành công!';
     return NextResponse.json(
-      { success: true, message: successMessage },
+      { success: true, message: successMessage, data: { email, timestamp: new Date().toISOString() } },
       { status: 200 }
     );
   } catch (error) {
