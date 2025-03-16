@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
+
 export default function NFTCollectionPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -221,8 +222,8 @@ export default function NFTCollectionPage() {
   );
   
   return (
-    <div className="relative min-h-screen bg-transparent font-exo2">
-      <ParticlesBackground />
+    <div className="min-h-screen bg-transparent text-white">
+      <ParticlesBackground/>
       
       <div className="container mx-auto p-4 relative z-10">
         <div className="flex flex-col gap-8 mt-20 mb-10">

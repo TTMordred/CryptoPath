@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { LayoutGrid, Layers, Bookmark, Activity, ChevronRight, Info, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button'; // Add Button import
 import { useWallet } from '@/components/Faucet/walletcontext'; // Add wallet context import
+import ParticlesBackground from "@/components/ParticlesBackground";
 
 export default function NFTLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,6 +27,7 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-transparent text-white">
+      <ParticlesBackground/>
       <div className="container mx-auto px-4 pt-20 pb-8">
         {/* Navigation Tabs with Wallet Button */}
         <div className="flex flex-col md:flex-row items-center justify-between mb-8">
