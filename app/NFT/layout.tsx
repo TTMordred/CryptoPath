@@ -4,12 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { LayoutGrid, Layers, Bookmark, Activity, ChevronRight, Info } from 'lucide-react';
+import { LayoutGrid, Layers, Bookmark, Activity, ChevronRight, Info, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Add Button import
+import { useWallet } from '@/components/Faucet/walletcontext'; // Add wallet context import
 
 export default function NFTLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const { account, connectWallet } = useWallet(); // Add wallet context hooks
 
   // Determine active section based on URL
   const isMarketplace = pathname === '/NFT';
@@ -24,9 +27,9 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-transparent text-white">
       <div className="container mx-auto px-4 pt-20 pb-8">
-        {/* Navigation Tabs */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="bg-black/60 rounded-full p-1 flex gap-1 backdrop-blur-sm border border-gray-800">
+        {/* Navigation Tabs with Wallet Button */}
+        <div className="flex flex-col md:flex-row items-center justify-between mb-8">
+          <div className="bg-black/60 rounded-full p-1 flex gap-1 backdrop-blur-sm border border-gray-800 mb-4 md:mb-0">
             <Link href="/NFT" passHref>
               <button 
                 className={`relative px-4 py-2 rounded-full flex items-center text-sm font-medium transition-all ${
@@ -66,6 +69,24 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
               </button>
             </Link>
           </div>
+          
+          {/* Connect Wallet Button */}
+          <Button 
+            onClick={connectWallet}
+            className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+          >
+            {account ? (
+              <span className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                {account.substring(0, 6)}...{account.substring(account.length - 4)}
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <Wallet className="h-4 w-4" />
+                Connect Wallet
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Breadcrumb Navigation */}
