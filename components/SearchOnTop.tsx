@@ -1,28 +1,44 @@
 'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import { useRouter, usePathname } from "next/navigation";
+import React, { useRef, useEffect, useState } from 'react';
+import { usePathname } from "next/navigation";
 import { Search, X, Wallet, Network, ArrowRight } from 'lucide-react';
 import { LoadingScreen } from "@/components/loading-screen";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSearch, SearchType } from '@/hooks/use-search';
+import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Image from "next/image";
 
 const SearchOnTop = () => {
   const pathname = usePathname();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
+  const router = useRouter();
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchType,
+    setSearchType: setGlobalSearchType,
+    isLoading,
+    handleSearch
+  } = useSearch();
   const [cryptoPrices, setCryptoPrices] = useState({
     eth: { price: '0.00', change: '0.00%' },
     bnb: { price: '0.00', change: '0.00%' }
   });
   const [gasPrice, setGasPrice] = useState({ price: '0', speed: 'Standard' });
   const [expanded, setExpanded] = useState(false);
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const searchBarRef = useRef<HTMLDivElement>(null);
+
+  // Map search types for the selector
+  const mapSearchTypeToSelector = (type: SearchType) => {
+    return type === "Off-Chain" ? "offchain" : "onchain";
+  };
+
+  const mapSelectorToSearchType = (type: "onchain" | "offchain"): SearchType => {
+    return type === "offchain" ? "Off-Chain" : "On-Chain";
+  };
   
   // Fetch real-time prices and gas data
   useEffect(() => {
@@ -83,24 +99,10 @@ const SearchOnTop = () => {
     return null;
   }
 
-  const handleSearch = async (event: React.FormEvent) => {
+  const onSearch = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!searchQuery.trim()) return;
-
-    try {
-      setIsLoading(true);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Reduced delay for better UX
-      if (searchType === "onchain") {
-        router.push(`/search/?address=${encodeURIComponent(searchQuery)}&network=mainnet`);
-      } else {
-        router.push(`/search-offchain/?address=${encodeURIComponent(searchQuery)}`);
-      }
-    } catch (error) {
-      console.error("Search error:", error);
-    } finally {
-      setIsLoading(false);
-      setExpanded(false);
-    }
+    await handleSearch(event);
+    setExpanded(false);
   };
 
   const clearSearch = () => {
@@ -220,8 +222,8 @@ const SearchOnTop = () => {
 
                 <div className="h-full px-2 flex items-center border-l border-amber-500/20">
                   <Select
-                    value={searchType}
-                    onValueChange={(value) => setSearchType(value as "onchain" | "offchain")}
+                    value={mapSearchTypeToSelector(searchType)}
+                    onValueChange={(value) => setGlobalSearchType(mapSelectorToSearchType(value as "onchain" | "offchain"))}
                   >
                     <SelectTrigger className="w-[110px] border-0 bg-transparent focus:ring-0 text-white h-8">
                       <SelectValue placeholder="Search Type" />

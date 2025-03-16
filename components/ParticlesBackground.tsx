@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Script from 'next/script';
 
 // Extend the global window interface to include particlesJS
@@ -50,7 +50,7 @@ const particlesConfig = {
     },
   },
   interactivity: {
-    detect_on: "window", 
+    detect_on: "canvas", // Changed from "window" to "canvas" for better performance
     events: {
       onhover: {
         enable: true,
@@ -77,25 +77,45 @@ const particlesConfig = {
 };
 
 const ParticlesBackground = () => {
+  const [scriptLoaded, setScriptLoaded] = useState(false);
+
   const initParticles = () => {
-    if (window.particlesJS) {
-      window.particlesJS("particles-js", particlesConfig);
+    try {
+      console.log("Initializing particles...");
+      if (window.particlesJS && document.getElementById('particles-js')) {
+        window.particlesJS("particles-js", particlesConfig);
+        console.log("Particles initialized successfully");
+        setScriptLoaded(true);
+      } else {
+        console.error("particlesJS not available or particles-js element not found");
+      }
+    } catch (error) {
+      console.error("Error initializing particles:", error);
     }
   };
 
   useEffect(() => {
-    if (typeof window !== "undefined" && "particlesJS" in window) 
-      {
+    // Try to initialize if the script is already loaded
+    if (typeof window !== "undefined" && "particlesJS" in window) {
+      console.log("particlesJS found in window - initializing");
+      // Add a small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
         initParticles();
-      }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   return (
     <>
       <Script
-        src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"
+        src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"
         strategy="afterInteractive"
-        onLoad={initParticles}
+        onLoad={() => {
+          console.log("Particles.js script loaded");
+          initParticles();
+        }}
+        onError={(e) => console.error("Failed to load particles.js script:", e)}
       />
       <div
         id="particles-js"
@@ -105,10 +125,11 @@ const ParticlesBackground = () => {
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: -1,
-          backgroundColor: "#000000", 
-          pointerEvents: "auto", 
+          zIndex: 0, // Changed from -1 to 0
+          backgroundColor: "transparent", // Changed from #000000 to transparent
+          pointerEvents: "none", // Changed from auto to none
         }}
+        data-loaded={scriptLoaded ? "true" : "false"}
       />
     </>
   );

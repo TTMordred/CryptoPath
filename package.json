@@ -76,6 +76,7 @@
     "nodemailer": "^6.10.0",
     "particles.js": "^2.0.0",
     "pino-pretty": "^13.0.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
     "react-day-picker": "^9.5.1",
     "react-dom": "^19.0.0",

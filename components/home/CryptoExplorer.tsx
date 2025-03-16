@@ -1,19 +1,23 @@
 'use client'
 import React, { useState, useEffect } from 'react';
-import { useRouter } from "next/navigation";
 import { LoadingScreen } from "@/components/loading-screen";
+import { useSearch, SearchType } from '@/hooks/use-search';
 
 const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
-  const [searchValue, setSearchValue] = useState('');
+  const {
+    searchQuery,
+    setSearchQuery,
+    searchType,
+    setSearchType,
+    isLoading,
+    handleSearch
+  } = useSearch();
   const [ethPrice, setEthPrice] = useState('');
   const [ethChange, setEthChange] = useState('');
   const [opPrice, setOpPrice] = useState('');
   const [opChange, setOpChange] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [selectedFilter, setSelectedFilter] = useState('All Filters');
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false);
-  const filters = ['All Filters', 'On-Chain', 'Off-Chain', 'Tokens', 'NFTs', 'Addresses'];
+  const filters = ['All Filters', 'On-Chain', 'Off-Chain', 'Tokens', 'NFTs', 'Addresses'] as const;
 
   const translations = {
     en: {
@@ -69,32 +73,18 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
     fetchData();
   }, []);
 
-  const handleSearch = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!searchValue.trim()) return;
-
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulated delay
-      if (selectedFilter === "On-Chain") {
-        router.push(`/search/?address=${encodeURIComponent(searchValue)}&network=mainnet`);
-      } else if (selectedFilter === "Off-Chain") {
-        router.push(`/search-offchain/?address=${encodeURIComponent(searchValue)}`);
-      }
-    } catch (error) {
-      console.error("Search error:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const toggleFilterDropdown = () => {
     setIsFilterOpen(!isFilterOpen);
   };
 
-  const selectFilter = (filter: string) => {
-    setSelectedFilter(filter);
+  const selectFilter = (filter: typeof filters[number]) => {
+    setSearchType(filter);
     setIsFilterOpen(false);
+  };
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await handleSearch(e);
   };
 
   return (
@@ -111,11 +101,11 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
           <div className="flex">
             {/* Filter Dropdown */}
             <div className="relative">
-              <button 
+              <button
                 onClick={toggleFilterDropdown}
                 className="px-4 py-2 bg-gray-900/80 text-white rounded-l-[10px] border border-gray-700 font-medium flex items-center"
               >
-                {selectedFilter}
+                {searchType}
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   className="h-4 w-4 ml-2" 
@@ -143,11 +133,11 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
             </div>
             
             {/* Search Input */}
-            <form onSubmit={handleSearch} className="flex flex-grow">
+            <form onSubmit={onSubmit} className="flex flex-grow">
               <input
                 type="text"
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 className="w-full px-4 py-2 text-white bg-gray-900/80 border-y border-gray-700 focus:outline-none"
               />

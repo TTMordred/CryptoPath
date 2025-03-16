@@ -199,7 +199,7 @@ export default function NFTGallery() {
 
   if (loading) {
     return (
-      <Card className="mt-8 bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-amber-500/20">
+      <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
         <CardContent className="flex items-center justify-center h-40">
           <Loader2 className="h-10 w-10 animate-spin text-amber-400" />
         </CardContent>
@@ -232,7 +232,7 @@ export default function NFTGallery() {
 
   return (
     <>
-      <Card className="mt-8 bg-gray-800/90 backdrop-blur-md rounded-xl shadow-2xl border border-amber-500/20">
+      <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
         <CardHeader className="flex flex-row items-center justify-between pb-2">
           <CardTitle className="text-2xl font-bold text-amber-400">NFT Gallery</CardTitle>
           <div className="flex items-center gap-2">
