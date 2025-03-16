@@ -57,9 +57,9 @@ CryptoPath is a blockchain transaction visualization system that simplifies bloc
 - Leverage a graph database (currently using static demo data) for efficient data storage and retrieval.
 
 ## Team Members
-- **Le Nguyen Dang Duy** (105028557) - Frontend Lead / Graph Visualization
-- **Phan Cong Hung** (104995595) - Backend & Data Integration Lead
-- **Nguyen Minh Duy** (104974743) - Full-Stack Developer / UI & UX
+- **Le Nguyen Dang Duy** (105028557) - **Frontend Developer / Graph Visualization**
+- **Nguyen Minh Duy** (104974743) - **Team Leader / Full-Stack Developer / Product Experience Architect**
+- **Phan Cong Hung** (104995595) - **Backend & Frontend Developer / API Integration**
 
 ## Project Structure
 ### Frontend
