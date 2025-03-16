@@ -4,7 +4,7 @@
 
 import SearchBar from "@/components/search/SearchBar"
 import WalletInfo from "@/components/search/WalletInfo"
-import TransactionGraph from "@/components/search/TransactionGraph"
+import { default as TransactionGraph } from "@/components/search/TransactionGraph"
 import TransactionTable from "@/components/search/TransactionTable"
 import Portfolio from "@/components/search/Portfolio"
 import NFTGallery from "@/components/search/NFTGallery"
@@ -137,17 +137,17 @@ export default function Transactions() {
     // If we have a valid address, render the wallet info
     if (address) {
       return (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <WalletInfo />
-              <Portfolio />
-            </div>
-            <TransactionGraph />
-          </div>
-          <TransactionTable />
-          <NFTGallery />
-        </>
+      <>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <WalletInfo />
+        <TransactionGraph />
+        </div>
+        <div className="mb-8">
+        <Portfolio />
+        </div>
+        <TransactionTable />
+        <NFTGallery />
+      </>
       );
     }
     

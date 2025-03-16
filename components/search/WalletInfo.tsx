@@ -280,7 +280,7 @@ export default function WalletInfo() {
   const blockExplorerUrl = getBlockExplorerUrl();
 
   return (
-    <Card>
+    <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="flex justify-between">
           <span>Wallet Information</span>

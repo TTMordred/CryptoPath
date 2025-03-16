@@ -323,7 +323,7 @@ export default function TransactionTable() {
   }
 
   return (
-    <Card className="mt-4">
+    <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl font-bold">Recent Transactions</CardTitle>
         <div className="flex items-center gap-2">
@@ -466,22 +466,22 @@ export default function TransactionTable() {
             variant="outline"
             onClick={() => handlePageChange(Math.max(1, page - 1))}
             disabled={page === 1 || loading}
-            className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
-              hover:bg-[#E69A45]
-              disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
           >
-            Previous
+            <ArrowUpDown className="mr-1 h-4 w-4 rotate-90 transform scale-x-[-1]" /> Previous
           </Button>
-          <span className="text-sm text-gray-400">Page {page}</span>
+          
+          <span className="text-gray-400">
+            Page {page}
+          </span>
+          
           <Button
             variant="outline"
             onClick={() => handlePageChange(page + 1)}
             disabled={filteredTransactions.length < 20 || loading}
-            className="bg-[#F5B056] text-white px-6 py-2 rounded-lg font-medium
-              hover:bg-[#E69A45]
-              disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
           >
-            Next
+            Next <ArrowUpDown className="ml-1 h-4 w-4 rotate-90" />
           </Button>
         </div>
       </CardContent>
