@@ -273,7 +273,7 @@ const Header = () => {
                 className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
                 onClick={() => setIsOpen(false)}
               >
-                Pricetable
+                TopTokens
               </Link>
               <Link
                 href="/transactions"
