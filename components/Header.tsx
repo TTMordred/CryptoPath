@@ -179,7 +179,7 @@ const Header = () => {
           </h1>
         </div>
 
-        <nav className="hidden xl:flex justify-center items-center space-x-6">
+        <nav className="hidden 2xl:flex justify-center items-center space-x-6">
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
@@ -252,7 +252,7 @@ const Header = () => {
         </nav>
 
         <button
-          className="xl:hidden text-white focus:outline-none"
+          className="2xl:hidden text-white focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}

@@ -39,7 +39,7 @@ export default function Portfolio() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [totalValue, setTotalValue] = useState(0)
-  const [provider, setProvider] = useState<"moralis" | "alchemy" | "combined">("moralis")
+  const [provider, setProvider] = useState<"moralis" | "alchemy" | "combined">("alchemy")
   const [sortField, setSortField] = useState<"value" | "name" | "balance" | "chain">("value")
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc")
   const [filterChain, setFilterChain] = useState<string | null>(null)
@@ -261,9 +261,9 @@ export default function Portfolio() {
                 onChange={(e) => setProvider(e.target.value as "moralis" | "alchemy" | "combined")}
                 className="bg-gray-800 border border-amber-500/30 rounded p-1 text-sm text-white"
               >
-                <option value="moralis">Moralis</option>
+                {/* <option value="moralis">Moralis</option> */}
                 <option value="alchemy">Alchemy</option>
-                <option value="combined">Combined</option>
+                {/* <option value="combined">Combined</option> */}
               </select>
             </div>
             <div className="flex items-center space-x-2">
@@ -304,9 +304,9 @@ export default function Portfolio() {
                 onChange={(e) => setProvider(e.target.value as "moralis" | "alchemy" | "combined")}
                 className="bg-gray-800 border border-amber-500/30 rounded p-1 text-sm text-gray-200"
               >
-                <option value="moralis">Moralis</option>
+                {/* <option value="moralis">Moralis</option> */}
                 <option value="alchemy">Alchemy</option>
-                <option value="combined">Combined</option>
+                {/* <option value="combined">Combined</option> */}
               </select>
             </div>
             <div className="flex items-center space-x-2">
