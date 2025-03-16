@@ -40,6 +40,10 @@ NEXTAUTH_URL=https://cryptopath.vercel.app/
 NEXTAUTH_SECRET=your-secret-key
 NEXT_PUBLIC_INFURA_KEY=your-infura-key
 NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=your-walletconnect-projectid
+NEXT_PUBLIC_URL=http://localhost:3000
+ALCHEMY_API_KEY=your-alchemy-key
+REACT_APP_DAPPRADAR_API_KEY=your-DAPPRADAR-key
+COINMARKETCAP_API_KEY=your-COINMARKETCAP-key
 ```
 ```bash
 # Start the development server
@@ -57,9 +61,9 @@ CryptoPath is a blockchain transaction visualization system that simplifies bloc
 - Leverage a graph database (currently using static demo data) for efficient data storage and retrieval.
 
 ## Team Members
-- **Le Nguyen Dang Duy** (105028557) - Frontend Lead / Graph Visualization
-- **Phan Cong Hung** (104995595) - Backend & Data Integration Lead
-- **Nguyen Minh Duy** (104974743) - Full-Stack Developer / UI & UX
+- **Le Nguyen Dang Duy** (105028557) - **Frontend Developer / Graph Visualization**
+- **Nguyen Minh Duy** (104974743) - **Team Leader / Full-Stack Developer / Product Experience Architect**
+- **Phan Cong Hung** (104995595) - **Backend & Frontend Developer / API Integration**
 
 ## Project Structure
 ### Frontend
