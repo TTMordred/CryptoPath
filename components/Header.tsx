@@ -127,6 +127,10 @@ const Header = () => {
     router.push("/setting");
     setDropdownOpen(false);
   };
+  const handlePortfolioClick = () => {
+    router.push("/portfolio");
+    setDropdownOpen(false);
+  };
 
   const clearAddress = () => setAddress("");
 
@@ -200,42 +204,7 @@ const Header = () => {
           <Link href="/search" className="text-white text-sm hover:text-[#F5B056] transition">
             Search
           </Link>
-          {/* <form onSubmit={handleSearch} className="relative flex items-center">
-            <button
-              type="button"
-              onClick={handleSearchIconClick}
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors duration-200"
-            >
-              <Search size={16} />
-            </button>
-            <div className="relative w-64">
-              <Input
-                type="text"
-                placeholder="Search wallet..."
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                className="pl-10 pr-10 py-2 h-9 w-64 text-sm transition-all duration-200 focus:border-amber-500 rounded-[5px]"
-              />
-              {address.length > 0 && (
-                <button
-                  type="button"
-                  onClick={clearAddress}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 bg-transparent p-1 rounded-[10px] transition-colors duration-200"
-                  aria-label="Clear input"
-                >
-                  <X size={12} />
-                </button>
-              )}
-            </div>
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-              className="ml-2 px-2 py-1 h-9 text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
-            >
-              <option value="onchain">On-Chain</option>
-              <option value="offchain">Off-Chain</option>
-            </select>
-          </form> */}
+   
 
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
@@ -265,6 +234,12 @@ const Header = () => {
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Setting
+                  </button>
+                  <button
+                    onClick={handlePortfolioClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Portfolio
                   </button>
                 </div>
               )}
@@ -335,43 +310,7 @@ const Header = () => {
               >
                 Search
               </Link>
-              {/* <form
-                onSubmit={handleSearch}
-                className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center"
-              >
-                <button
-                  type="button"
-                  onClick={handleSearchIconClick}
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                >
-                  <Search size={18} />
-                </button>
-                <Input
-                  type="text"
-                  placeholder="Search wallet..."
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  className="pl-10 pr-10 py-2 w-full text-black transition-all duration-200 focus:border-amber-500"
-                />
-                {address.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={clearAddress}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent p-1 rounded-full"
-                    aria-label="Clear input"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-                <select
-                  value={searchType}
-                  onChange={(e) => setSearchType(e.target.value as "onchain" | "offchain")}
-                  className="mt-2 px-4 py-2 w-full text-sm text-white bg-black border border-gray-700 rounded-[5px] focus:outline-none hover:bg-gray-800 transition-colors"
-                >
-                  <option value="onchain">On-Chain</option>
-                  <option value="offchain">Off-Chain</option>
-                </select>
-              </form> */}
+      
 
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
@@ -389,6 +328,12 @@ const Header = () => {
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Setting
+                  </button>
+                  <button
+                    onClick={handlePortfolioClick}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Portfolio
                   </button>
                 </div>
               ) : (
