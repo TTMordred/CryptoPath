@@ -1,22 +1,61 @@
-import { useState } from 'react';
-import { Loader2, CloudUpload } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { utils } from 'ethers';
+import { Loader2, CloudUpload, Wallet } from 'lucide-react';
 
 interface MintFormProps {
-  onSubmit: (tokenURI: string) => void;
+  onSubmit: (recipient: string, tokenURI: string) => void;
   processing?: boolean;
+  checkWhitelist: (address: string) => Promise<boolean>;
 }
 
-export default function MintForm({ onSubmit, processing }: MintFormProps) {
+export default function MintForm({ 
+  onSubmit, 
+  processing,
+  checkWhitelist 
+}: MintFormProps) {
   const [tokenURI, setTokenURI] = useState('');
+  const [recipient, setRecipient] = useState('');
+  const [isWhitelisted, setIsWhitelisted] = useState(false);
+
+  // Validate Ethereum address
+  const isValidAddress = (address: string) => utils.isAddress(address);
+
+  // Validate IPFS/HTTP URI
+  const isValidURI = (uri: string) => uri.startsWith('ipfs://') || uri.startsWith('https://');
+
+  // Check whitelist status when recipient changes
+  useEffect(() => {
+    const verifyWhitelist = async () => {
+      if (isValidAddress(recipient)) {
+        const status = await checkWhitelist(recipient);
+        setIsWhitelisted(status);
+      } else {
+        setIsWhitelisted(false);
+      }
+    };
+    verifyWhitelist();
+  }, [recipient, checkWhitelist]);
+
+  // Combined disable conditions
+  const isDisabled = processing || 
+                    !isValidAddress(recipient) || 
+                    !isValidURI(tokenURI);
 
   return (
-    <div className="space-y-4 p-6 bg-gray-900/50 rounded-xl border border-orange-400/20">
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-orange-400 flex items-center gap-2">
-          <CloudUpload className="w-5 h-5" />
-          Mint New NFT
-        </h3>
-        
+    <div className="space-y-6 p-8 bg-gray-900/80 rounded-xl border-2 border-orange-400/30 shadow-xl">
+      {/* Header Section */}
+      <div className="text-center space-y-2">
+        <div className="inline-flex items-center gap-2 text-orange-400">
+          <CloudUpload className="w-8 h-8" />
+          <h2 className="text-2xl font-bold">Mint</h2>
+        </div>
+        <p className="text-sm text-gray-400">
+          Only whitelisted addresses can mint NFTs
+        </p>
+      </div>
+
+      {/* IPFS Guidance Section */}
+      <div className="space-y-3">
         <div className="text-sm text-gray-400 space-y-2">
           <p>1. Upload your metadata to IPFS using:</p>
           <div className="flex flex-wrap gap-2">
@@ -24,16 +63,32 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
               href="https://pinata.cloud/"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1 bg-gray-800 rounded-md hover:bg-gray-700 transition-colors text-orange-300"
+              className="px-3 py-1.5 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-orange-300 flex items-center gap-2"
             >
+              <img 
+                src="/pinata-logo.svg" 
+                className="w-4 h-4" 
+                alt="Pinata Cloud Logo"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
               Pinata Cloud
             </a>
             <a
               href="https://nft.storage/"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1 bg-gray-800 rounded-md hover:bg-gray-700 transition-colors text-purple-300"
+              className="px-3 py-1.5 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors text-purple-300 flex items-center gap-2"
             >
+              <img
+                src="/nft-storage-logo.svg"
+                className="w-4 h-4"
+                alt="NFT.Storage Logo"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
               NFT.Storage
             </a>
           </div>
@@ -41,23 +96,59 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
         </div>
       </div>
 
-      <input
-        type="text"
-        value={tokenURI}
-        onChange={(e) => setTokenURI(e.target.value)}
-        placeholder="ipfs://Qm... or https://ipfs.io/ipfs/Qm..."
-        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg 
-                 focus:border-orange-400 focus:ring-2 focus:ring-orange-400/30 
-                 transition-all placeholder-gray-500 text-white"
-      />
+      {/* Input Section */}
+      <div className="space-y-4">
+        {/* Recipient Address Input */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm text-gray-400">
+            <Wallet className="w-4 h-4" />
+            Recipient Address
+          </label>
+          <input
+            type="text"
+            value={recipient}
+            onChange={(e) => setRecipient(e.target.value)}
+            placeholder="0x..."
+            className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl
+                     focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 
+                     transition-all placeholder-gray-500 text-white font-mono text-sm"
+          />
+          {!isValidAddress(recipient) && recipient !== '' && (
+            <p className="text-red-400 text-sm flex items-center gap-1">
+              ⚠ Invalid BSC address
+            </p>
+            )}  
+        </div>
 
+        {/* Metadata URI Input */}
+        <div className="space-y-2">
+          <label className="text-sm text-gray-400">Metadata URI</label>
+          <input
+            type="text"
+            value={tokenURI}
+            onChange={(e) => setTokenURI(e.target.value)}
+            placeholder="ipfs://Qm... or https://"
+            className="w-full px-4 py-3 bg-gray-800 border-2 border-gray-700 rounded-xl
+                     focus:border-orange-400 focus:ring-4 focus:ring-orange-400/20 
+                     transition-all placeholder-gray-500 text-white text-sm"
+          />
+          {!isValidURI(tokenURI) && tokenURI !== '' && (
+            <p className="text-red-400 text-sm flex items-center gap-1">
+              ⚠ URI must start with ipfs:// or https://
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Mint Button */}
       <button
-        onClick={() => onSubmit(tokenURI)}
-        disabled={processing}
-        className={`w-full flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all
-          ${processing 
-            ? 'bg-gray-600 cursor-not-allowed text-gray-400' 
-            : 'bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white'
+        onClick={() => onSubmit(recipient, tokenURI)}
+        disabled={isDisabled}
+        className={`w-full flex items-center justify-center gap-3 py-4 rounded-xl font-bold transition-all
+          ${
+            isDisabled
+              ? 'bg-gray-700 cursor-not-allowed text-gray-400'
+              : 'bg-gradient-to-r from-orange-500 to-purple-600 hover:from-orange-600 hover:to-purple-700 text-white shadow-lg hover:shadow-orange-400/20'
           }`}
       >
         {processing ? (
@@ -66,36 +157,30 @@ export default function MintForm({ onSubmit, processing }: MintFormProps) {
             Minting...
           </>
         ) : (
-          'Mint NFT'
+          <>
+            <CloudUpload className="w-5 h-5" />
+            Mint NFT
+          </>
         )}
       </button>
 
-      <p className="text-xs text-gray-400 mt-4">
-        Example metadata format: 
-        <pre className="mt-2 p-3 bg-gray-800 rounded-md overflow-x-auto text-sm">
-    <code className="text-orange-200">
-      {`{
-  "name": "NFT Name",
-  "description": "NFT Description",
+      {/* Metadata Example */}
+      <div className="text-xs text-gray-500 mt-4">
+        <p>Example metadata format:</p>
+        <pre className="mt-2 p-3 bg-gray-800 rounded-lg overflow-x-auto text-sm">
+          <code className="text-orange-200">
+            {`{
+  "name": "CryptoPunk #9999",
+  "description": "A rare digital artifact",
   "image": "ipfs://Qm...",
   "attributes": [
-    {
-      "trait_type": "Rarity",
-      "value": "Common/Rare/Unique/.."
-    },
-    {
-      "trait_type": "Collection",
-      "value": "CryptoPath Genesis"
-    },
-    {
-      "trait_type": "Artist", 
-      "value": "Your Name"
-    }
+    {"trait_type": "Rarity", "value": "Legendary"},
+    {"trait_type": "Collection", "value": "CryptoPath Genesis"}
   ]
 }`}
-    </code>
-  </pre>
-</p>
+          </code>
+        </pre>
+      </div>
     </div>
   );
 }
