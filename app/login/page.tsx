@@ -22,63 +22,31 @@ import okxModule from "@web3-onboard/okx";
 import frontierModule from "@web3-onboard/frontier";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useSettings } from "@/components/context/SettingsContext";
-import CryptoJS from "crypto-js"; // Still imported but not used in encryption here
-import bcrypt from "bcryptjs"; // Import bcryptjs
+import { Subscription } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs"; // Thêm bcryptjs để hash mật khẩu
+import crypto from "crypto"; // Dùng crypto để mã hóa dữ liệu
 
-// Secret key (should ideally be stored in environment variables)
-const SECRET_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "my-secret-key-1234567890";
-
-// Function to hash a password
-const hashPassword = (password: string): string => {
-  const salt = bcrypt.genSaltSync(10);
-  return bcrypt.hashSync(password, salt);
-};
-
-// Function to hash data (replacing encryptData)
-const encryptData = (data: string): string => {
-  return bcrypt.hashSync(data, 10);
-};
-
-// Function to "decrypt" data (not possible with bcrypt)
-const decryptData = (encryptedData: string): string => {
-  // bcrypt is a one-way hashing algorithm, so we cannot decrypt
-  throw new Error("Cannot decrypt data hashed with bcrypt");
-};
-
-// Rest of your wallet configurations remain unchanged
-const dcent = dcentModule();
+// Web3-Onboard configuration
 const INFURA_KEY = "7d389678fba04ceb9510b2be4fff5129";
-
 const walletConnect = walletConnectModule({
   projectId: "b773e42585868b9b143bb0f1664670f1",
   optionalChains: [1, 137],
 });
 
-const injected = injectedModule();
-const coinbase = coinbaseModule();
-const infinityWallet = infinityWalletModule();
-const safe = safeModule();
-const sequence = sequenceModule();
-const taho = tahoModule();
-const trust = trustModule();
-const okx = okxModule();
-const frontier = frontierModule();
-const trezor = trezorModule({ email: "test@test.com", appUrl: "https://www.blocknative.com" });
-const magic = magicModule({ apiKey: "pk_live_E9B0C0916678868E" });
-
 const wallets = [
-  infinityWallet,
-  sequence,
-  injected,
-  trust,
-  okx,
-  frontier,
-  taho,
-  coinbase,
-  dcent,
+  infinityWalletModule(),
+  sequenceModule(),
+  injectedModule(),
+  trustModule(),
+  okxModule(),
+  frontierModule(),
+  tahoModule(),
+  coinbaseModule(),
+  dcentModule(),
   walletConnect,
-  safe,
-  magic,
+  safeModule(),
+  magicModule({ apiKey: "pk_live_E9B0C0916678868E" }),
+  trezorModule({ email: "test@test.com", appUrl: "https://www.blocknative.com" }),
 ];
 
 const chains = [
@@ -104,43 +72,103 @@ const appMetadata = {
 
 const web3Onboard = init({ wallets, chains, appMetadata });
 
+// Debounce utility with proper TypeScript types
+const debounce = <T extends (...args: any[]) => void>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout | undefined;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
+
+// Khóa bí mật để mã hóa dữ liệu (nên lưu trong biến môi trường trong thực tế)
+const ENCRYPTION_KEY = process.env.NEXT_PUBLIC_ENCRYPTION_KEY || "your-secret-key-here-32bytes-long";
+const IV_LENGTH = 16; // Độ dài IV cho AES
+
+// Hàm mã hóa dữ liệu
+const encryptData = (text: string): string => {
+  const iv = crypto.randomBytes(IV_LENGTH);
+  const cipher = crypto.createCipheriv("aes-256-cbc", Buffer.from(ENCRYPTION_KEY), iv);
+  let encrypted = cipher.update(text);
+  encrypted = Buffer.concat([encrypted, cipher.final()]);
+  return iv.toString("hex") + ":" + encrypted.toString("hex");
+};
+
+// Hàm giải mã dữ liệu
+const decryptData = (text: string): string => {
+  const [iv, encryptedText] = text.split(":");
+  const decipher = crypto.createDecipheriv(
+    "aes-256-cbc",
+    Buffer.from(ENCRYPTION_KEY),
+    Buffer.from(iv, "hex")
+  );
+  let decrypted = decipher.update(Buffer.from(encryptedText, "hex"));
+  decrypted = Buffer.concat([decrypted, decipher.final()]);
+  return decrypted.toString();
+};
+
 function LoginPageContent() {
   const router = useRouter();
   const { signInWithWalletConnect, signIn } = useAuth();
   const { updateProfile, addWallet, syncWithSupabase } = useSettings();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [emailError, setEmailError] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
-  const [isLoggedOut, setIsLoggedOut] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState<boolean>(false);
 
   interface Account {
     address: string;
     ens: string | null;
   }
 
-  const formatWalletAddress = (walletAddress: string) => {
+  const [account, setAccount] = useState<Account | null>(null);
+
+  const formatWalletAddress = (walletAddress: string): string => {
     if (!walletAddress) return "";
     return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
   };
 
-  const [account, setAccount] = useState<Account | null>(null);
-
+  // Check session and listen to auth state changes
   useEffect(() => {
     const checkExistingSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error checking session:", error.message);
+        return;
+      }
       if (session) {
+        console.log("Initial session found, redirecting to dashboard");
         router.push("/");
       }
     };
     checkExistingSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event);
+      if (event === "SIGNED_IN" && session) {
+        console.log("User signed in, redirecting to dashboard");
+        router.push("/");
+      } else if (event === "SIGNED_OUT") {
+        console.log("User signed out, staying on login page");
+        setIsLoggedOut(true);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [router]);
 
+  // Handle wallet connection and authentication
   useEffect(() => {
     if (wallet?.provider && !isLoggedOut) {
       const { address, ens } = wallet.accounts[0];
@@ -149,11 +177,27 @@ function LoginPageContent() {
       const authenticateWithWallet = async () => {
         try {
           setIsLoading(true);
+          const hashedAddress = await bcrypt.hash(address, 10); // Hash địa chỉ ví
           const { data, error } = await signInWithWalletConnect(address);
           if (error) {
-            console.error("Wallet auth error:", error);
-            toast.error(`Failed to authenticate with wallet: ${error.message}`);
-            return;
+            if (error.message.includes("User already registered")) {
+              toast.info("User already exists. Logging in instead.");
+              const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                email: `${address}@cryptopath.local`,
+                password: hashedAddress, // Sử dụng hashed address làm mật khẩu
+              });
+              if (loginError) throw new Error(loginError.message);
+              if (!loginData.session) throw new Error("No session returned from login");
+              const encryptedToken = encryptData(JSON.stringify(loginData.session.access_token));
+              localStorage.setItem("userToken", encryptedToken);
+            } else {
+              throw new Error(error.message);
+            }
+          } else if (!data || !data.session) {
+            throw new Error("No session data returned from sign-in");
+          } else {
+            const encryptedToken = encryptData(JSON.stringify(data.session.access_token));
+            localStorage.setItem("userToken", encryptedToken);
           }
 
           updateProfile({
@@ -169,15 +213,16 @@ function LoginPageContent() {
             name: ens?.name || formatWalletAddress(address),
             isLoggedIn: true,
           };
-          // Hash before storing in localStorage
-          localStorage.setItem("userDisplayInfo", encryptData(JSON.stringify(publicUserData)));
-          localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
+          const encryptedUserData = encryptData(JSON.stringify(publicUserData));
+          localStorage.setItem("userDisplayInfo", encryptedUserData);
 
+          console.log("Wallet login successful, redirecting to dashboard");
           toast.success("Successfully authenticated with wallet");
           router.push("/");
-        } catch (error: any) {
-          console.error("Error authenticating with wallet:", error);
-          toast.error(`Authentication failed: ${error?.message || "Unknown error"}`);
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : "Unknown error";
+          console.error("Wallet authentication error:", error);
+          toast.error(`Authentication failed: ${errorMessage}`);
         } finally {
           setIsLoading(false);
         }
@@ -187,6 +232,7 @@ function LoginPageContent() {
     }
   }, [wallet, router, isLoggedOut, signInWithWalletConnect, updateProfile, addWallet, syncWithSupabase]);
 
+  // Handle email/password login
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setEmailError("");
@@ -194,20 +240,17 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
-      // Hash the password before sending it to the signIn function
-      const hashedPassword = hashPassword(password);
-      const { data, error } = await signIn(email, hashedPassword); // Assuming signIn accepts hashed password
+      const hashedPassword = await bcrypt.hash(password, 10); // Hash mật khẩu trước khi gửi
+      const { data, error } = await signIn(email, hashedPassword); // Gửi hashed password
       if (error) {
         if (error.message.includes("email")) setEmailError(error.message);
         else if (error.message.includes("password")) setPasswordError(error.message);
         else toast.error(error.message);
-        setIsLoading(false);
         return;
       }
 
-      if (!data.user) {
+      if (!data.user || !data.session) {
         toast.error("Something went wrong with the login");
-        setIsLoading(false);
         return;
       }
 
@@ -230,25 +273,29 @@ function LoginPageContent() {
         email,
         isLoggedIn: true,
       };
-      // Hash before storing in localStorage
-      localStorage.setItem("currentUser", encryptData(JSON.stringify(publicUserData)));
-      localStorage.setItem("userToken", encryptData(data.session?.access_token || ""));
+      const encryptedUserData = encryptData(JSON.stringify(publicUserData));
+      const encryptedToken = encryptData(JSON.stringify(data.session.access_token));
+      localStorage.setItem("currentUser", encryptedUserData);
+      localStorage.setItem("userToken", encryptedToken);
 
+      console.log("Email login successful, redirecting to dashboard");
       toast.success("Login successful!");
       router.push("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
       console.error("Login error:", error);
-      toast.error("An unexpected error occurred. Please try again.");
+      toast.error(`An unexpected error occurred: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleWalletConnect = async () => {
+  // Handle wallet connect/disconnect with debounce
+  const handleWalletConnect = debounce(async () => {
     if (!wallet) {
-      connect();
+      await connect();
     } else {
-      disconnect({ label: wallet.label });
+      await disconnect({ label: wallet.label });
       setAccount(null);
       setIsLoggedOut(true);
       await supabase.auth.signOut();
@@ -256,9 +303,8 @@ function LoginPageContent() {
       localStorage.removeItem("userToken");
       router.push("/login");
     }
-  };
+  }, 1000);
 
-  // The rest of your JSX remains unchanged
   return (
     <>
       <div className="relative">
@@ -347,9 +393,10 @@ function LoginPageContent() {
                               options: { redirectTo: `${window.location.origin}/` },
                             });
                             if (error) throw error;
-                          } catch (error) {
+                          } catch (error: unknown) {
+                            const errorMessage = error instanceof Error ? error.message : "Unknown error";
                             console.error("Google login error:", error);
-                            toast.error("Google login failed. Please try again.");
+                            toast.error(`Google login failed: ${errorMessage}`);
                           } finally {
                             setIsLoading(false);
                           }

@@ -12,7 +12,6 @@ import { supabase } from "@/src/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
-// Add this helper function at the top of your component or in a utils file
 const shortenAddress = (address: string): string => {
   if (!address) return '';
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
@@ -33,11 +32,10 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { profile } = useSettings();
 
-  // Fetch and sync user state with Supabase Auth
+  // Auth handling
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (session) {
         const user = session.user;
         setCurrentUser({
@@ -45,8 +43,6 @@ const Header = () => {
           email: user.email,
           name: user.user_metadata?.full_name || user.email?.split("@")[0],
         });
-        
-        // Store user info in localStorage for other components
         localStorage.setItem('currentUser', JSON.stringify({
           id: user.id,
           email: user.email,
@@ -62,7 +58,6 @@ const Header = () => {
 
     fetchUser();
 
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (event === "SIGNED_IN" && session) {
@@ -72,8 +67,6 @@ const Header = () => {
             email: user.email,
             name: user.user_metadata?.full_name || user.email?.split("@")[0],
           });
-          
-          // Store user info in localStorage for other components
           localStorage.setItem('currentUser', JSON.stringify({
             id: user.id,
             email: user.email,
@@ -93,7 +86,7 @@ const Header = () => {
     };
   }, []);
 
-  // Handle dropdown click outside
+  // Dropdown handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -110,12 +103,12 @@ const Header = () => {
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulated delay
-      if (searchType === "onchain") {
-        router.push(`/search/?address=${encodeURIComponent(address)}`);
-      } else {
-        router.push(`/search-offchain/?address=${encodeURIComponent(address)}`);
-      }
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+      router.push(
+        searchType === "onchain"
+          ? `/search/?address=${encodeURIComponent(address)}`
+          : `/search-offchain/?address=${encodeURIComponent(address)}`
+      );
     } catch (error) {
       console.error("Search error:", error);
     } finally {
@@ -128,15 +121,16 @@ const Header = () => {
     setDropdownOpen(false);
   };
 
-  const clearAddress = () => setAddress("");
-
-  const handleSearchIconClick = () => router.push("/search");
+  const handlePortfolioClick = () => {
+    router.push("/portfolio");
+    setDropdownOpen(false);
+  };
 
   const handleLogout = async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      localStorage.removeItem("currentUser"); // Clean up if used
+      localStorage.removeItem("currentUser");
       setCurrentUser(null);
       setDropdownOpen(false);
       toast.success("Logged out successfully");
@@ -150,6 +144,9 @@ const Header = () => {
     }
   };
 
+  const clearAddress = () => setAddress("");
+  const handleSearchIconClick = () => router.push("/search");
+
   const displayName =
     profile?.username && profile.username !== "User"
       ? profile.username
@@ -158,8 +155,8 @@ const Header = () => {
   return (
     <>
       <header className="flex items-center bg-black h-16 px-4">
-        <div className="text-white mr-auto ml-4 text-2xl xl:text-3xl font-bold">
-          <h1 className="ml-0 xl:ml-8">
+        <div className="text-white mr-auto ml-4 text-2xl md:text-3xl font-bold">
+          <h1 className="ml-0 md:ml-8">
             <Link href="/">
               <Image
                 src="/Img/logo/logo2.png"
@@ -175,32 +172,16 @@ const Header = () => {
           </h1>
         </div>
 
-        <nav className="hidden xl:flex justify-center items-center space-x-6">
-          <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
-            Home
-          </Link>
-          <Link href="/market-overview" className="text-sm hover:text-[#F5B056] transition">
-            Market Overview
-          </Link>
-          <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">
-            PriceTable
-          </Link>
-          <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
-            Transactions
-          </Link>
-          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">
-            Faucet
-          </Link>
-          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">
-            NFTs
-          </Link>
-          <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
-            Support
-          </a>
-          <Link href="/search" className="text-white text-sm hover:text-[#F5B056] transition">
-            Search
-          </Link>
-          {/* <form onSubmit={handleSearch} className="relative flex items-center">
+        <nav className="hidden md:flex justify-center items-center space-x-6">
+          <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">Home</Link>
+          <Link href="/market-overview" className="text-white text-sm hover:text-[#F5B056] transition">Market Overview</Link>
+          <Link href="/pricetable" className="text-white text-sm hover:text-[#F5B056] transition">PriceTable</Link>
+          <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">Transactions</Link>
+          <Link href="/Faucet" className="text-white text-sm hover:text-[#F5B056] transition">Faucet</Link>
+          <Link href="/NFT" className="text-white text-sm hover:text-[#F5B056] transition">NFTs</Link>
+          <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">Support</a>
+
+          <form onSubmit={handleSearch} className="relative flex items-center">
             <button
               type="button"
               onClick={handleSearchIconClick}
@@ -235,7 +216,7 @@ const Header = () => {
               <option value="onchain">On-Chain</option>
               <option value="offchain">Off-Chain</option>
             </select>
-          </form> */}
+          </form>
 
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
@@ -255,10 +236,10 @@ const Header = () => {
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-32 bg-white rounded-[5px] shadow-lg z-20">
                   <button
-                    onClick={handleLogout}
+                    onClick={handlePortfolioClick}
                     className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
-                    Logout
+                    Portfolio
                   </button>
                   <button
                     onClick={handleSettingClick}
@@ -266,79 +247,40 @@ const Header = () => {
                   >
                     Setting
                   </button>
+                  <button
+                    onClick={handleLogout}
+                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
           ) : (
-            <Link href="/login" className="text-white text-sm hover:text-[#F5B056] transition">
-              Login
-            </Link>
+            <Link href="/login" className="text-white text-sm hover:text-[#F5B056] transition">Login</Link>
           )}
         </nav>
 
         <button
-          className="xl:hidden text-white focus:outline-none"
+          className="md:hidden text-white focus:outline-none"
           onClick={() => setIsOpen(!isOpen)}
         >
           {isOpen ? <X size={28} /> : <Menu size={28} />}
         </button>
 
         {isOpen && (
-          <div className="absolute top-16 right-0 w-64 bg-black text-white p-6 mt-[50px] shadow-lg z-50 w-screen">
-            <nav className="flex flex-col text-center text-xl">
-              <Link
-                href="/"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/pricetable"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Pricetable
-              </Link>
-              <Link
-                href="/transactions"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Transactions
-              </Link>
-              <Link
-                href="/Faucet"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Faucet
-              </Link>
-              <Link
-                href="/NFT"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                NFTs
-              </Link>
-              <a
-                href="mailto:cryptopath@gmail.com"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Support
-              </a>
-              <Link
-                href="/search"
-                className="text-sm uppercase hover:text-[#F5B056] transition"
-                onClick={() => setIsOpen(false)}
-              >
-                Search
-              </Link>
-              {/* <form
-                onSubmit={handleSearch}
-                className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center"
-              >
+          <div className="absolute top-16 right-0 w-full bg-black text-white p-6 shadow-lg md:hidden z-50">
+            <nav className="flex flex-col space-y-4 text-center text-xl">
+              <Link href="/" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Home</Link>
+              <Link href="/market-overview" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Market Overview</Link>
+              <Link href="/pricetable" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Pricetable</Link>
+              <Link href="/transactions" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Transactions</Link>
+              <Link href="/Faucet" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Faucet</Link>
+              <Link href="/NFT" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>NFTs</Link>
+              <a href="mailto:cryptopath@gmail.com" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Support</a>
+              <Link href="/search" className="text-sm uppercase hover:text-[#F5B056] transition" onClick={() => setIsOpen(false)}>Search</Link>
+
+              <form onSubmit={handleSearch} className="relative w-3/4 mx-auto mt-4 pt-2 flex flex-col items-center">
                 <button
                   type="button"
                   onClick={handleSearchIconClick}
@@ -371,30 +313,36 @@ const Header = () => {
                   <option value="onchain">On-Chain</option>
                   <option value="offchain">Off-Chain</option>
                 </select>
-              </form> */}
+              </form>
 
               {currentUser ? (
-                <div className="relative flex justify-center mt-4 pt-2">
-                  <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
-                    {displayName}
-                  </Link>
+                <div className="mt-4 pt-2">
+                  <div className="flex justify-center items-center gap-2">
+                    <Link href="/search" className="text-white text-xs uppercase hover:text-[#F5B056]">
+                      {displayName}
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded-[5px] transition"
+                    >
+                      Logout
+                    </button>
+                  </div>
                   <button
-                    onClick={handleLogout}
-                    className="text-xs text-black bg-white hover:bg-[#F5B056] px-4 py-2 rounded-[5px] transition ml-2"
+                    onClick={handlePortfolioClick}
+                    className="block w-full text-center px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
-                    Logout
+                    Portfolio
                   </button>
                   <button
                     onClick={handleSettingClick}
-                    className="block w-full text-left px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
+                    className="block w-full text-center px-4 py-2 text-sm text-white bg-black hover:text-[#F5B056]"
                   >
                     Setting
                   </button>
                 </div>
               ) : (
-                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">
-                  Login
-                </Link>
+                <Link href="/login" className="text-white text-sm uppercase hover:text-[#F5B056] transition">Login</Link>
               )}
             </nav>
           </div>
