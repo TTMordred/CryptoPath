@@ -13,7 +13,7 @@ import PriceChart from '@/components/NFT/PriceChart';
 import { toast } from '@/hooks/use-toast';
 
 // Contract addresses
-const NFT_CONTRACT_ADDRESS = "0xdf5d4038723f6605A3eCd7776FFe25f3b1Be39a0";
+const NFT_CONTRACT_ADDRESS = "0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551";
 const PATH_TOKEN_ADDRESS = "0xc3e9Cf26237c9002c0C04305D637AEa3d9A4A1DE";
 const ITEMS_PER_PAGE = 8;
 
