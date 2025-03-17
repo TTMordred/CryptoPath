@@ -113,7 +113,7 @@ export const TopMoversSection = () => {
       `}</style>
       <div className="container max-w-7xl mx-auto px-4">
         <div className="mb-10 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4 section-title">
+          <h2 className="text-4xl !text-[#f6b333] font-bold mb-4 section-title">
             Top Movers (24h)
           </h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
