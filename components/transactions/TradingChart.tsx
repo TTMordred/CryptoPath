@@ -44,22 +44,24 @@ const intervals = [
 type ChartType = 'candlestick' | 'line' | 'area';
 
 export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingChartProps) {
-  const [chartData, setChartData] = useState<KlineData[]>([]);
-  const [tickerData, setTickerData] = useState<MarketTicker | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [interval, setInterval] = useState('1h');
-  const [chartType, setChartType] = useState<ChartType>('area');
-  const [lastPrice, setLastPrice] = useState<string | null>(null);
-  const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [showVolume, setShowVolume] = useState(true);
-  const [showGrid, setShowGrid] = useState(true);
-  const [legendVisible, setLegendVisible] = useState(true);
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [chartHeight, setChartHeight] = useState(350);
-  const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+const [chartData, setChartData] = useState<KlineData[]>([]);
+const [tickerData, setTickerData] = useState<MarketTicker | null>(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+const [interval, setInterval] = useState('1h');
+const [chartType, setChartType] = useState<ChartType>('area');
+const [lastPrice, setLastPrice] = useState<string | null>(null);
+const [priceDirection, setPriceDirection] = useState<'up' | 'down' | null>(null);
+const [fullscreen, setFullscreen] = useState(false);
+const [showVolume, setShowVolume] = useState(true);
+const [showGrid, setShowGrid] = useState(true);
+const [legendVisible, setLegendVisible] = useState(true);
+const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+const [chartHeight, setChartHeight] = useState(350);
+const [selectedIndicators, setSelectedIndicators] = useState<string[]>([]);
+const [settingsOpen, setSettingsOpen] = useState(false);
+const [brushDomain, setBrushDomain] = useState<[number, number] | null>(null);
+const [brushIndex, setBrushIndex] = useState<[number, number] | null>(null);
   const lastPriceRef = useRef<string | null>(null);
   const lastUpdateTimeRef = useRef<string>(new Date().toLocaleTimeString());
   const chartRef = useRef<HTMLDivElement>(null);
@@ -211,6 +213,19 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
     };
   }, [symbol, interval]);
 
+  // Handle brush change
+  const handleBrushChange = (domain: any) => {
+    if (!domain) return;
+    setBrushDomain(domain);
+    setBrushIndex([domain.startIndex, domain.endIndex]);
+  };
+
+  // Reset brush to default view
+  const resetBrush = () => {
+    setBrushDomain(null);
+    setBrushIndex(null);
+  };
+
   // Handle interval change
   const handleIntervalChange = async (newInterval: string) => {
     setLoading(true);
@@ -219,6 +234,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
       const data = await getKlineData(symbol, newInterval);
       setChartData(data);
       setInterval(newInterval);
+      resetBrush(); // Reset brush when interval changes
       
       // Update WebSocket subscription
       if (ws.current?.updateInterval) {
@@ -592,12 +608,27 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 />
               )}
               <Brush
-                dataKey="timestamp"
-                height={30}
-                stroke={chartTheme.brush.stroke}
-                fill={chartTheme.brush.fill}
-                tickFormatter={() => ''}
-              />
+               dataKey="timestamp"
+               height={30}
+               stroke={chartTheme.brush.stroke}
+               fill={chartTheme.brush.fill}
+               tickFormatter={() => ''}
+               onChange={handleBrushChange}
+               startIndex={brushIndex ? brushIndex[0] : Math.max(0, formattedChartData.length - 100)}
+               endIndex={brushIndex ? brushIndex[1] : formattedChartData.length - 1}
+              >
+               <Button
+                 variant="outline"
+                 size="sm"
+                 className="absolute right-0 top-0 h-6 w-6 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   resetBrush();
+                 }}
+               >
+                 <Eye className="h-3 w-3" />
+               </Button>
+              </Brush>
             </AreaChart>
           </ResponsiveContainer>
         );
@@ -700,15 +731,28 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 />
               )}
               {legendVisible && (
-                <Brush 
-                  dataKey="timestamp" 
-                  height={30} 
+                <Brush
+                  dataKey="timestamp"
+                  height={30}
                   stroke={chartTheme.brush.stroke}
                   fill={chartTheme.brush.fill}
                   tickFormatter={() => ''}
-                  startIndex={Math.max(0, formattedChartData.length - 100)}
-                  endIndex={formattedChartData.length - 1}
-                />
+                  onChange={handleBrushChange}
+                  startIndex={brushIndex ? brushIndex[0] : Math.max(0, formattedChartData.length - 100)}
+                  endIndex={brushIndex ? brushIndex[1] : formattedChartData.length - 1}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute right-0 top-0 h-6 w-6 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetBrush();
+                    }}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </Brush>
               )}
             </ReChartsLine>
           </ResponsiveContainer>
@@ -851,15 +895,28 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 />
               )}
               {legendVisible && (
-                <Brush 
-                  dataKey="timestamp" 
-                  height={30} 
+                <Brush
+                  dataKey="timestamp"
+                  height={30}
                   stroke={chartTheme.brush.stroke}
                   fill={chartTheme.brush.fill}
                   tickFormatter={() => ''}
-                  startIndex={Math.max(0, formattedChartData.length - 100)}
-                  endIndex={formattedChartData.length - 1}
-                />
+                  onChange={handleBrushChange}
+                  startIndex={brushIndex ? brushIndex[0] : Math.max(0, formattedChartData.length - 100)}
+                  endIndex={brushIndex ? brushIndex[1] : formattedChartData.length - 1}
+                >
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="absolute right-0 top-0 h-6 w-6 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      resetBrush();
+                    }}
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                </Brush>
               )}
             </BarChart>
           </ResponsiveContainer>
