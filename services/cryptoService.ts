@@ -1,4 +1,4 @@
-  // CoinGecko API service
+// CoinGecko API service with error handling and fallbacks
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -24,9 +24,10 @@ async function fetchWithRetry(url: string, retries = 3, delayMs = 1000): Promise
   throw new Error('Max retries reached');
 }
 
+// Type definitions
 export interface CryptoMarketData {
   prices: [number, number][]; // [timestamp, price]
-  market_caps: [number, number][];
+  market_caps?: [number, number][];
   total_volumes: [number, number][];
 }
 
@@ -59,6 +60,19 @@ export interface GlobalMetrics {
   market_cap_percentage: { [key: string]: number };
   active_cryptocurrencies: number;
   markets: number;
+}
+
+export interface ChainAnalytics {
+  uniqueActiveWallets: number;
+  incomingTransactions: number;
+  incomingVolume: number;
+  contractBalance: number;
+  dailyChange: {
+    uaw: number;
+    transactions: number;
+    volume: number;
+    balance: number;
+  };
 }
 
 export interface CoinAnalytics {
@@ -94,18 +108,76 @@ export interface CoinAnalytics {
   };
 }
 
-export interface ChainAnalytics {
-  uniqueActiveWallets: number;
-  incomingTransactions: number;
-  incomingVolume: number;
-  contractBalance: number;
-  dailyChange: {
-    uaw: number;
-    transactions: number;
-    volume: number;
-    balance: number;
-  };
-}
+// Mock data for development and fallbacks
+const MOCK_BLOCKCHAIN_METRICS: BlockchainMetrics = {
+  avgBlockTime: 12.5,
+  gasPrice: 25,
+  activeValidators: 450000,
+  stakingAPR: 4.2
+};
+
+const MOCK_GLOBAL_METRICS: GlobalMetrics = {
+  total_market_cap: {
+    usd: 2350000000000
+  },
+  total_volume: {
+    usd: 98750000000
+  },
+  market_cap_percentage: {
+    btc: 42.5,
+    eth: 18.3,
+    bnb: 4.1,
+    sol: 3.2,
+    xrp: 2.6
+  },
+  active_cryptocurrencies: 12840,
+  markets: 792
+};
+
+// Sample coin list for development fallback
+const MOCK_COINS: CoinOption[] = [
+  { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC' },
+  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH' },
+  { id: 'binancecoin', name: 'BNB', symbol: 'BNB' },
+  { id: 'ripple', name: 'XRP', symbol: 'XRP' },
+  { id: 'cardano', name: 'Cardano', symbol: 'ADA' },
+  { id: 'solana', name: 'Solana', symbol: 'SOL' },
+  { id: 'polkadot', name: 'Polkadot', symbol: 'DOT' },
+];
+
+// Token contract addresses mapping - consolidated and deduplicated
+export const TOKEN_CONTRACTS: Record<string, string> = {
+  // Major tokens
+  'bitcoin': '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB',
+  'ethereum': '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+  'binancecoin': '0xB8c77482e45F1F44dE1745F52C74426C631bDD52',
+  'ripple': '0x1e6bb68acec8fefbd87cb5902797f8800d8d261c',
+  'cardano': '0x86831848a8e6a98be164a9694581dccc9954eb6d',
+  'solana': '0x1e20639ff1b68ae9544a5fcdb393e284e68964c2',
+  'polkadot': '0xed111ccc9e8fbe16c6f5e405ce68ebcac52bb3b5',
+  // Stablecoins
+  'usd-coin': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+  'tether': '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+  'dai': '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+  // DeFi tokens
+  'uniswap': '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
+  'aave': '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', // AAVE
+  'maker': '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2', // MKR
+  'compound': '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
+  'chainlink': '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+  'wrapped-bitcoin': '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
+  // Other popular tokens
+  'shiba-inu': '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // SHIB
+  'yearn-finance': '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', // YFI
+  'sushi': '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2', // SUSHI
+  'curve-dao-token': '0xD533a949740bb3306d119CC777fa900bA034cd52', // CRV
+  'synthetix': '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F', // SNX
+  '1inch': '0x111111111117dC0aa78b770fA6A738034120C302', // 1INCH
+  'loopring': '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD', // LRC
+  'enjincoin': '0xF629cBd94d3791C9250152BD8dfBDF380E2a3B9c', // ENJ
+  'decentraland': '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942', // MANA
+  'the-sandbox': '0x3845badAde8e6dFF049820680d1F14bD3903a5d0' // SAND
+};
 
 // Add cache for historical data
 const historicalDataCache = new Map<string, {
@@ -115,6 +187,9 @@ const historicalDataCache = new Map<string, {
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+/**
+ * Fetch historical price and volume data with caching and error handling
+ */
 export const fetchHistoricalData = async (coinId: string, days: number = 30, currency: string = 'usd'): Promise<CryptoMarketData> => {
   // Check cache first
   const cached = historicalDataCache.get(coinId);
@@ -123,28 +198,18 @@ export const fetchHistoricalData = async (coinId: string, days: number = 30, cur
   }
 
   try {
-    const response = await fetchWithRetry(
-      `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=${currency}&days=${days}&interval=daily`,
-      3,
-      2000
-    );
+    // Try to use proxy in development environment
+    const proxyUrl = process.env.NODE_ENV === 'development' 
+      ? `/api/proxy?url=${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=${currency}&days=${days}&interval=daily`
+      : `${COINGECKO_API_BASE}/coins/${coinId}/market_chart?vs_currency=${currency}&days=${days}&interval=daily`;
+    
+    const response = await fetchWithRetry(proxyUrl, 3, 2000);
     const data = await response.json();
     
-    if (!data.prices || !data.market_caps || !data.total_volumes || 
-        !Array.isArray(data.prices) || !Array.isArray(data.market_caps) || !Array.isArray(data.total_volumes) ||
+    if (!data.prices || !data.total_volumes || 
+        !Array.isArray(data.prices) || !Array.isArray(data.total_volumes) ||
         data.prices.length === 0) {
       throw new Error('Invalid or empty data received from API');
-    }
-    
-    const validData = data.prices.every((price: any, index: number) => {
-      return Array.isArray(price) && price.length === 2 &&
-             typeof price[0] === 'number' && typeof price[1] === 'number' &&
-             Array.isArray(data.market_caps[index]) && data.market_caps[index].length === 2 &&
-             Array.isArray(data.total_volumes[index]) && data.total_volumes[index].length === 2;
-    });
-
-    if (!validData) {
-      throw new Error('Inconsistent or invalid data format');
     }
 
     const result = {
@@ -192,7 +257,7 @@ function generateMockHistoricalData(coinId: string, days: number): CryptoMarketD
     total_volumes: []
   };
   
-  const config = {
+  const config: Record<string, { price: number, volume: number, volatility: number }> = {
     bitcoin: { price: 45000, volume: 30000000000, volatility: 0.03 },
     ethereum: { price: 2500, volume: 15000000000, volatility: 0.04 },
     binancecoin: { price: 300, volume: 5000000000, volatility: 0.035 },
@@ -202,7 +267,7 @@ function generateMockHistoricalData(coinId: string, days: number): CryptoMarketD
   };
   
   const { price: basePrice, volume: baseVolume, volatility } = 
-    (config as any)[coinId] || config.default;
+    config[coinId] || config.default;
   
   const now = Math.floor(Date.now() / (24 * 60 * 60 * 1000)) * (24 * 60 * 60 * 1000); // Normalize to start of day
   let currentPrice = basePrice;
@@ -220,6 +285,7 @@ function generateMockHistoricalData(coinId: string, days: number): CryptoMarketD
     currentVolume = baseVolume * (1 + volumeChange);
     
     mockData.prices.push([timestamp, currentPrice]);
+    mockData.market_caps = mockData.market_caps || [];
     mockData.market_caps.push([timestamp, currentPrice * (baseVolume / 1000)]);
     mockData.total_volumes.push([timestamp, currentVolume]);
   }
@@ -227,6 +293,9 @@ function generateMockHistoricalData(coinId: string, days: number): CryptoMarketD
   return mockData;
 }
 
+/**
+ * Fetch top tokens with rate limiting protection
+ */
 export const fetchTopTokens = async (limit: number = 10, currency: string = 'usd'): Promise<TokenData[]> => {
   try {
     const response = await fetchWithRetry(
@@ -239,6 +308,9 @@ export const fetchTopTokens = async (limit: number = 10, currency: string = 'usd
   }
 };
 
+/**
+ * Format currency for display
+ */
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -248,54 +320,65 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
+/**
+ * Format percentage for display
+ */
 export const formatPercentage = (value: number): string => {
   return `${value.toFixed(2)}%`;
 };
 
-const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/api';
-
-export const fetchBlockchainMetrics = async (): Promise<BlockchainMetrics> => {
-  // Since we don't have an API key, we'll use simulated data that updates
-  const baseBlock = Math.floor(Date.now() / 12000) + 19000000; // Simulates new blocks every ~12 seconds
-
-  return {
-    avgBlockTime: 12,
-    gasPrice: 25,
-    activeValidators: 889643,
-    stakingAPR: 3.7
-  };
-};
-
-export const fetchGlobalMetrics = async (): Promise<GlobalMetrics> => {
+/**
+ * Fetch blockchain metrics with fallback to mock data
+ */
+export async function fetchBlockchainMetrics(): Promise<BlockchainMetrics> {
   try {
-    const response = await fetch('https://api.coingecko.com/api/v3/global');
-    const data = await response.json();
-    return {
-      total_market_cap: { usd: data.data.total_market_cap.usd },
-      total_volume: { usd: data.data.total_volume.usd },
-      market_cap_percentage: data.data.market_cap_percentage,
-      active_cryptocurrencies: data.data.active_cryptocurrencies,
-      markets: data.data.markets
-    };
+    // Try to fetch from API
+    const response = await fetch('/api/blockchain/metrics', { 
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    return await response.json();
   } catch (error) {
-    console.error('Error fetching global metrics:', error);
-    // Return fallback data if API fails
-    return {
-      total_market_cap: { usd: 2785000000000 },
-      total_volume: { usd: 89700000000 },
-      market_cap_percentage: {
-        btc: 51.2,
-        eth: 16.8,
-        usdt: 7.3,
-        bnb: 4.1,
-        xrp: 3.2
-      },
-      active_cryptocurrencies: 11250,
-      markets: 914
-    };
+    console.warn("Using mock blockchain metrics due to fetch error:", error);
+    // Return mock data if fetch fails
+    return MOCK_BLOCKCHAIN_METRICS;
   }
-};
+}
 
+/**
+ * Fetch global market metrics with fallback to mock data
+ */
+export async function fetchGlobalMetrics(): Promise<GlobalMetrics> {
+  try {
+    // Attempt to fetch from CoinGecko with a proxy to avoid CORS
+    const proxyUrl = process.env.NODE_ENV === 'development' 
+      ? '/api/proxy?url=https://api.coingecko.com/api/v3/global'
+      : 'https://api.coingecko.com/api/v3/global';
+    
+    const response = await fetch(proxyUrl, { 
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    return data.data || MOCK_GLOBAL_METRICS;
+  } catch (error) {
+    console.warn("Using mock global metrics due to fetch error:", error);
+    // Return mock data if fetch fails
+    return MOCK_GLOBAL_METRICS;
+  }
+}
+
+/**
+ * Fetch detailed coin analytics
+ */
 export const fetchCoinAnalytics = async (coinId: string): Promise<CoinAnalytics> => {
   try {
     const response = await fetchWithRetry(
@@ -307,7 +390,7 @@ export const fetchCoinAnalytics = async (coinId: string): Promise<CoinAnalytics>
     // Return mock data if API fails
     return {
       id: coinId,
-      symbol: coinId.toUpperCase(),
+      symbol: coinId.substring(0, 4).toUpperCase(),
       name: coinId.charAt(0).toUpperCase() + coinId.slice(1),
       market_data: {
         current_price: { usd: 0 },
@@ -340,6 +423,9 @@ export const fetchCoinAnalytics = async (coinId: string): Promise<CoinAnalytics>
   }
 };
 
+/**
+ * Fetch chain analytics (simulated for development)
+ */
 export const fetchChainAnalytics = async (coinId: string): Promise<ChainAnalytics> => {
   try {
     // Since we don't have direct access to blockchain data, we'll simulate realistic data
@@ -365,43 +451,27 @@ export const fetchChainAnalytics = async (coinId: string): Promise<ChainAnalytic
   }
 };
 
-export const fetchAvailableCoins = async (): Promise<CoinOption[]> => {
+/**
+ * Fetch available coins with fallback to mock data
+ */
+export async function fetchAvailableCoins(): Promise<CoinOption[]> {
   try {
-    const response = await fetchWithRetry(
-      `${COINGECKO_API_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false`
-    );
-    const data = await response.json();
-    return data.map((coin: any) => ({
-      id: coin.id,
-      symbol: coin.symbol.toUpperCase(),
-      name: coin.name
-    }));
-  } catch (error) {
-    console.error('Error fetching available coins:', error);
-    throw error;
-  }
-};
+    const proxyUrl = process.env.NODE_ENV === 'development' 
+      ? '/api/proxy?url=https://api.coingecko.com/api/v3/coins/list'
+      : 'https://api.coingecko.com/api/v3/coins/list';
 
-// Add token contract addresses mapping
-export const TOKEN_CONTRACTS: { [key: string]: string } = {
-  'ethereum': 'ETH', // Native ETH
-  'usd-coin': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
-  'tether': '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
-  'wrapped-bitcoin': '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
-  'chainlink': '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
-  'dai': '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
-  'shiba-inu': '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // SHIB
-  'uniswap': '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
-  'aave': '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', // AAVE
-  'maker': '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2', // MKR
-  'compound': '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-  'yearn-finance': '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', // YFI
-  'sushi': '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2', // SUSHI
-  'curve-dao-token': '0xD533a949740bb3306d119CC777fa900bA034cd52', // CRV
-  'synthetix': '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F', // SNX
-  '1inch': '0x111111111117dC0aa78b770fA6A738034120C302', // 1INCH
-  'loopring': '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD', // LRC
-  'enjincoin': '0xF629cBd94d3791C9250152BD8dfBDF380E2a3B9c', // ENJ
-  'decentraland': '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942', // MANA
-  'the-sandbox': '0x3845badAde8e6dFF049820680d1F14bD3903a5d0' // SAND
-};
+    const response = await fetch(proxyUrl, {
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    const coins = await response.json();
+    return coins.slice(0, 50); // Limit to first 50 coins
+  } catch (error) {
+    console.warn("Using mock coin list due to fetch error:", error);
+    return MOCK_COINS;
+  }
+}

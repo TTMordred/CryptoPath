@@ -10,6 +10,7 @@ import { useSearch, SearchType } from '@/hooks/use-search';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Image from "next/image";
+import { fetchCryptoPrices } from '@/services/cryptoDataService';
 
 const SearchOnTop = () => {
   const pathname = usePathname();
@@ -44,45 +45,14 @@ const SearchOnTop = () => {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // Format price data helper function
-        const formatPriceData = (price: string, priceChange: string) => {
-          const formattedPrice = parseFloat(price).toLocaleString(undefined, { 
-            minimumFractionDigits: 2, 
-            maximumFractionDigits: 2 
-          });
-          
-          const changeValue = parseFloat(priceChange);
-          const formattedChange = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
-          
-          return {
-            price: formattedPrice,
-            change: formattedChange
-          };
-        };
-
-        // Fetch crypto prices from Binance API
-        const [ethResponse, bnbResponse] = await Promise.allSettled([
-          fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
-          fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT')
-        ]);
-
-        const ethData = ethResponse.status === 'fulfilled' && await ethResponse.value.json();
-        const bnbData = bnbResponse.status === 'fulfilled' && await bnbResponse.value.json();
-
-        // Calculate prices and percentage changes
-        const newPrices = {
-          eth: ethData ? formatPriceData(
-            ethData.lastPrice, 
-            (parseFloat(ethData.priceChangePercent)).toString()
-          ) : { price: '0.00', change: '0.00%' },
-          
-          bnb: bnbData ? formatPriceData(
-            bnbData.lastPrice, 
-            (parseFloat(bnbData.priceChangePercent)).toString()
-          ) : { price: '0.00', change: '0.00%' }
-        };
+        // Use our new service for crypto prices with caching and fallback
+        const priceData = await fetchCryptoPrices(['ethereum', 'bnb']);
         
-        setCryptoPrices(newPrices);
+        // Update state with the fetched prices
+        setCryptoPrices({
+          eth: priceData.ethereum || { price: '0.00', change: '0.00%' },
+          bnb: priceData.bnb || { price: '0.00', change: '0.00%' }
+        });
 
         // Fetch gas prices from Etherscan API
         try {
@@ -106,7 +76,7 @@ const SearchOnTop = () => {
     };
 
     fetchPrices();
-    // Refresh data every 30 seconds (Binance API has higher rate limits than CoinGecko)
+    // Refresh data every 30 seconds (using cache when appropriate)
     const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, []);
@@ -151,38 +121,38 @@ const SearchOnTop = () => {
         <div className="container mx-auto px-4 py-2 flex items-center justify-between">
             {/* Market Data */}
             <div className="hidden lg:flex items-center space-x-6">
-            {/* ETH Price */}
-            <div className="flex items-center">
-              <div className="w-5 h-5 rounded-full bg-[#627EEA] flex items-center justify-center mr-2 shadow-[0_0_10px_rgba(98,126,234,0.5)]">
-              <svg width="12" height="12" viewBox="0 0 256 417" version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid">
-                <g>
-                <polygon fill="#FFFFFF" points="127.9611 0 125.1661 9.5 125.1661 285.168 127.9611 287.958 255.9231 212.32"/>
-                <polygon fill="#FFFFFF" points="127.962 0 0 212.32 127.962 287.959 127.962 154.158"/>
-                <polygon fill="#FFFFFF" points="127.9609 312.1866 126.3859 314.1066 126.3859 412.3056 127.9609 416.9066 255.9999 236.5866"/>
-                <polygon fill="#FFFFFF" points="127.962 416.9052 127.962 312.1852 0 236.5852"/>
-                </g>
-              </svg>
+              {/* ETH Price */}
+              <div className="flex items-center">
+                <div className="w-5 h-5 rounded-full bg-[#627EEA] flex items-center justify-center mr-2 shadow-[0_0_10px_rgba(98,126,234,0.5)]">
+                  <svg width="12" height="12" viewBox="0 0 256 417" version="1.1" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid">
+                    <g>
+                      <polygon fill="#FFFFFF" points="127.9611 0 125.1661 9.5 125.1661 285.168 127.9611 287.958 255.9231 212.32"/>
+                      <polygon fill="#FFFFFF" points="127.962 0 0 212.32 127.962 287.959 127.962 154.158"/>
+                      <polygon fill="#FFFFFF" points="127.9609 312.1866 126.3859 314.1066 126.3859 412.3056 127.9609 416.9066 255.9999 236.5866"/>
+                      <polygon fill="#FFFFFF" points="127.962 416.9052 127.962 312.1852 0 236.5852"/>
+                    </g>
+                  </svg>
+                </div>
+                <div>
+                  <span className="text-white font-medium text-sm">${cryptoPrices.eth.price}</span>
+                  <span className={`ml-1 text-xs ${cryptoPrices.eth.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                    {cryptoPrices.eth.change}
+                  </span>
+                </div>
               </div>
-              <div>
-              <span className="text-white font-medium text-sm">${cryptoPrices.eth.price}</span>
-              <span className={`ml-1 text-xs ${cryptoPrices.eth.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                {cryptoPrices.eth.change}
-              </span>
-              </div>
-            </div>
-            
-            {/* BNB Price */}
-            <div className="flex items-center">
+              
+              {/* BNB Price */}
+              <div className="flex items-center">
               <div className="w-5 h-5 rounded-full bg-[#F3BA2F] flex items-center justify-center mr-2 shadow-[0_0_10px_rgba(243,186,47,0.5)]">
-              <svg width="12" height="12" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L311.7 264.3L367.8 320.4L512 176.1L656.2 320.4L712.3 264.3L512 64ZM176.1 512L120 567.9L64 512L120 456.1L176.1 512ZM512 847.9L367.8 703.6L311.7 759.7L512 960L512 960L512 960L512 960L512 960L512 960L512 960L512 960L712.3 759.7L656.2 703.6L512 847.9ZM904 456.1L960 512L904 567.9L847.9 512L904 456.1ZM512 623.9L400.1 512L512 400.1L623.9 512L512 623.9ZM512 400.1Z" fill="white"/>
-              </svg>
+                <svg width="12" height="12" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L512 64L311.7 264.3L367.8 320.4L512 176.1L656.2 320.4L712.3 264.3L512 64ZM176.1 512L120 567.9L64 512L120 456.1L176.1 512ZM512 847.9L367.8 703.6L311.7 759.7L512 960L512 960L512 960L512 960L512 960L512 960L512 960L512 960L712.3 759.7L656.2 703.6L512 847.9ZM904 456.1L960 512L904 567.9L847.9 512L904 456.1ZM512 623.9L400.1 512L512 400.1L623.9 512L512 623.9ZM512 400.1Z" fill="white"/>
+                </svg>
               </div>
               <div>
-              <span className="text-white font-medium text-sm">${cryptoPrices.bnb.price}</span>
-              <span className={`ml-1 text-xs ${cryptoPrices.bnb.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-                {cryptoPrices.bnb.change}
-              </span>
+                <span className="text-white font-medium text-sm">${cryptoPrices.bnb.price}</span>
+                <span className={`ml-1 text-xs ${cryptoPrices.bnb.change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+                  {cryptoPrices.bnb.change}
+                </span>
               </div>
             </div>
 
