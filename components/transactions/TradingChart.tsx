@@ -591,17 +591,13 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                   }}
                 />
               )}
-              {legendVisible && (
-                <Brush 
-                  dataKey="timestamp" 
-                  height={30} 
-                  stroke={chartTheme.brush.stroke}
-                  fill={chartTheme.brush.fill}
-                  tickFormatter={() => ''}
-                  startIndex={Math.max(0, formattedChartData.length - 100)}
-                  endIndex={formattedChartData.length - 1}
-                />
-              )}
+              <Brush
+                dataKey="timestamp"
+                height={30}
+                stroke={chartTheme.brush.stroke}
+                fill={chartTheme.brush.fill}
+                tickFormatter={() => ''}
+              />
             </AreaChart>
           </ResponsiveContainer>
         );

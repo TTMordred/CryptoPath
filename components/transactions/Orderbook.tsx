@@ -19,6 +19,7 @@ export default function Orderbook({ symbol, baseAsset, quoteAsset }: OrderbookPr
   const [error, setError] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<'both' | 'bids' | 'asks'>('both');
   const [precision, setPrecision] = useState<number>(2);
+  const [wsInitialized, setWsInitialized] = useState<boolean>(false);
 
   // Set precision based on price (more decimals for lower-priced assets)
   useEffect(() => {
@@ -54,56 +55,93 @@ export default function Orderbook({ symbol, baseAsset, quoteAsset }: OrderbookPr
     return { value: '0', percent: '0' };
   }, [orderbook, precision]);
 
-  // Fetch initial orderbook data
+  // WebSocket and data management
   useEffect(() => {
-    const fetchData = async () => {
-      try {
+    let wsConnection: ReturnType<typeof createWebSocket> | null = null;
+    let mounted = true;
+
+    const initializeOrderbook = async () => {
+      if (!mounted) return;
+
+      try {        
         setLoading(true);
         setError(null);
+        
+        // Fetch initial data
         const data = await getOrderbook(symbol);
+        if (!mounted) return;
+        
         setOrderbook(data);
+        setLoading(false);
+
+        // Wait for initial data to be set before starting WebSocket
+        setTimeout(() => {
+          if (!mounted) return;
+
+          wsConnection = createWebSocket(symbol, {
+            onDepth: (depthData) => {
+              if (!mounted) return;
+              setError(null);
+              
+              setOrderbook(prevOrderbook => {
+                const processOrders = (orders: [string, string][]): OrderbookEntry[] => {
+                  let runningTotal = 0;
+                  return orders.map(([price, qty]) => {
+                    runningTotal += parseFloat(qty);
+                    return {
+                      price,
+                      quantity: qty,
+                      total: runningTotal.toFixed(6)
+                    };
+                  });
+                };
+
+                return {
+                  lastUpdateId: depthData.lastUpdateId,
+                  bids: processOrders(depthData.bids),
+                  asks: processOrders(depthData.asks.reverse())
+                };
+              });
+              
+              if (!wsInitialized) {
+                setWsInitialized(true);
+              }
+            },
+            onError: (err) => {
+              if (!mounted) return;
+              console.error('WebSocket error:', err);
+              setError('Connection error. Please refresh.');
+              setWsInitialized(false);
+
+              // Auto reconnect after error
+              if (mounted && !wsInitialized) {
+                setTimeout(() => {
+                  if (mounted) {
+                    initializeOrderbook();
+                  }
+                }, 2000);
+              }
+            }
+          });
+        }, 500); // 500ms delay before WebSocket initialization
+
       } catch (err) {
-        console.error('Error fetching orderbook:', err);
+        if (!mounted) return;
+        console.error('Error initializing orderbook:', err);
         setError('Failed to load orderbook data');
-      } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    // Start initialization
+    initializeOrderbook();
 
-    // Set up WebSocket for real-time updates
-    const ws = createWebSocket(symbol, {
-      onDepth: (depthData) => {
-        setOrderbook(prevOrderbook => {
-          // Process and calculate totals for bids and asks
-          const processOrders = (orders: [string, string][]): OrderbookEntry[] => {
-            let runningTotal = 0;
-            return orders.map(([price, qty]) => {
-              runningTotal += parseFloat(qty);
-              return {
-                price,
-                quantity: qty,
-                total: runningTotal.toFixed(6)
-              };
-            });
-          };
-          
-          return {
-            lastUpdateId: depthData.lastUpdateId,
-            bids: processOrders(depthData.bids),
-            asks: processOrders(depthData.asks.reverse())
-          };
-        });
-      },
-      onError: (err) => {
-        console.error('WebSocket error:', err);
-        setError('Connection error. Please refresh.');
-      }
-    });
-
+    // Cleanup function
     return () => {
-      ws.close();
+      mounted = false;
+      if (wsConnection) {
+        wsConnection.close();
+      }
     };
   }, [symbol]);
 

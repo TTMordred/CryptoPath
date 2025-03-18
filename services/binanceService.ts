@@ -65,8 +65,9 @@ const INITIAL_RETRY_DELAY = 1000;
 
 const fetchWithCache = async <T>(endpoint: string, params: Record<string, string> = {}): Promise<T> => {
   const queryString = new URLSearchParams(params).toString();
-  const url = `${BINANCE_API_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
-  const cacheKey = url;
+  const binanceUrl = `${BINANCE_API_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(binanceUrl)}`;
+  const cacheKey = binanceUrl;
 
   // Check cache
   const cachedData = cache[cacheKey];
@@ -84,7 +85,7 @@ const fetchWithCache = async <T>(endpoint: string, params: Record<string, string
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
-      const response = await fetch(url);
+      const response = await fetch(proxyUrl);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`API error: ${response.status} ${errorText}`);
@@ -100,7 +101,7 @@ const fetchWithCache = async <T>(endpoint: string, params: Record<string, string
       
       return data as T;
     } catch (error) {
-      console.error(`Error fetching ${url} (attempt ${attempt + 1}/${RETRY_ATTEMPTS}):`, error);
+      console.error(`Error fetching ${binanceUrl} (attempt ${attempt + 1}/${RETRY_ATTEMPTS}):`, error);
       lastError = error as Error;
       
       // If it's the last attempt, throw the error
