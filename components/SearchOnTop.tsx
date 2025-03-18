@@ -44,41 +44,70 @@ const SearchOnTop = () => {
   useEffect(() => {
     const fetchPrices = async () => {
       try {
-        // Fetch crypto prices from CoinGecko
-        const priceResponse = await fetch(
-          'https://api.coingecko.com/api/v3/simple/price?ids=ethereum,binancecoin&vs_currencies=usd&include_24hr_change=true'
-        );
-        const priceData = await priceResponse.json();
+        // Format price data helper function
+        const formatPriceData = (price: string, priceChange: string) => {
+          const formattedPrice = parseFloat(price).toLocaleString(undefined, { 
+            minimumFractionDigits: 2, 
+            maximumFractionDigits: 2 
+          });
+          
+          const changeValue = parseFloat(priceChange);
+          const formattedChange = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
+          
+          return {
+            price: formattedPrice,
+            change: formattedChange
+          };
+        };
+
+        // Fetch crypto prices from Binance API
+        const [ethResponse, bnbResponse] = await Promise.allSettled([
+          fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT'),
+          fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BNBUSDT')
+        ]);
+
+        const ethData = ethResponse.status === 'fulfilled' && await ethResponse.value.json();
+        const bnbData = bnbResponse.status === 'fulfilled' && await bnbResponse.value.json();
+
+        // Calculate prices and percentage changes
+        const newPrices = {
+          eth: ethData ? formatPriceData(
+            ethData.lastPrice, 
+            (parseFloat(ethData.priceChangePercent)).toString()
+          ) : { price: '0.00', change: '0.00%' },
+          
+          bnb: bnbData ? formatPriceData(
+            bnbData.lastPrice, 
+            (parseFloat(bnbData.priceChangePercent)).toString()
+          ) : { price: '0.00', change: '0.00%' }
+        };
         
-        setCryptoPrices({
-          eth: { 
-            price: priceData.ethereum.usd.toLocaleString(), 
-            change: `${priceData.ethereum.usd_24h_change >= 0 ? '+' : ''}${priceData.ethereum.usd_24h_change.toFixed(2)}%` 
-          },
-          bnb: { 
-            price: priceData.binancecoin.usd.toLocaleString(), 
-            change: `${priceData.binancecoin.usd_24h_change >= 0 ? '+' : ''}${priceData.binancecoin.usd_24h_change.toFixed(2)}%` 
-          }
-        });
+        setCryptoPrices(newPrices);
 
         // Fetch gas prices from Etherscan API
-        const gasResponse = await fetch('/api/etherscan?module=gastracker&action=gasoracle');
-        const gasData = await gasResponse.json();
-        
-        if (gasData.status === "1") {
-          setGasPrice({ 
-            price: gasData.result.ProposeGasPrice, 
-            speed: 'Standard'
-          });
+        try {
+          const gasResponse = await fetch('/api/etherscan?module=gastracker&action=gasoracle');
+          const gasData = await gasResponse.json();
+          
+          if (gasData.status === "1") {
+            setGasPrice({ 
+              price: gasData.result.ProposeGasPrice, 
+              speed: 'Standard'
+            });
+          }
+        } catch (gasError) {
+          console.error("Error fetching gas price data:", gasError);
+          // Keep the previous gas price value
         }
       } catch (error) {
         console.error("Error fetching market data:", error);
+        // If the API request fails, we'll keep the previous values
       }
     };
 
     fetchPrices();
-    // Refresh data every 60 seconds
-    const interval = setInterval(fetchPrices, 60000);
+    // Refresh data every 30 seconds (Binance API has higher rate limits than CoinGecko)
+    const interval = setInterval(fetchPrices, 30000);
     return () => clearInterval(interval);
   }, []);
 
