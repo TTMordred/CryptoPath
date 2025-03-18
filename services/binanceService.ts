@@ -59,6 +59,10 @@ export const STABLECOINS = ['USDT', 'USDC', 'BUSD', 'DAI', 'TUSD', 'UST', 'USDP'
 /**
  * Fetch data with caching
  */
+// Retry configuration
+const RETRY_ATTEMPTS = 3;
+const INITIAL_RETRY_DELAY = 1000;
+
 const fetchWithCache = async <T>(endpoint: string, params: Record<string, string> = {}): Promise<T> => {
   const queryString = new URLSearchParams(params).toString();
   const url = `${BINANCE_API_URL}${endpoint}${queryString ? '?' + queryString : ''}`;
@@ -70,26 +74,44 @@ const fetchWithCache = async <T>(endpoint: string, params: Record<string, string
     return cachedData.data as T;
   }
 
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API error: ${response.status} ${errorText}`);
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt++) {
+    try {
+      // Add exponential backoff delay after first attempt
+      if (attempt > 0) {
+        const delay = INITIAL_RETRY_DELAY * Math.pow(2, attempt - 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`API error: ${response.status} ${errorText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Store in cache
+      cache[cacheKey] = {
+        data,
+        timestamp: Date.now()
+      };
+      
+      return data as T;
+    } catch (error) {
+      console.error(`Error fetching ${url} (attempt ${attempt + 1}/${RETRY_ATTEMPTS}):`, error);
+      lastError = error as Error;
+      
+      // If it's the last attempt, throw the error
+      if (attempt === RETRY_ATTEMPTS - 1) {
+        throw new Error(`Failed after ${RETRY_ATTEMPTS} attempts: ${lastError.message}`);
+      }
     }
-    
-    const data = await response.json();
-    
-    // Store in cache
-    cache[cacheKey] = {
-      data,
-      timestamp: Date.now()
-    };
-    
-    return data as T;
-  } catch (error) {
-    console.error(`Error fetching ${url}:`, error);
-    throw error;
   }
+
+  // This should never be reached due to the throw above, but TypeScript needs it
+  throw lastError;
 };
 
 /**
@@ -245,182 +267,210 @@ export const getMultipleSymbolsPriceTicker = async (symbols: string[]): Promise<
 /**
  * Create a WebSocket connection for real-time updates with error handling and fallback
  */
-export const createWebSocket = (symbol: string, callbacks: {
+interface WebSocketMessage {
+  data: string;
+  type: string;
+  target: WebSocket;
+}
+
+interface WebSocketCallbacks {
   onTrade?: (trade: any) => void;
   onKline?: (kline: any) => void;
   onDepth?: (depth: any) => void;
-  onError?: (error: any) => void;
-}) => {
-  // Check if WebSocket is available in the current environment
+  onError?: (error: Error) => void;
+}
+
+interface WSData {
+  e?: string;
+  k?: any;
+  data?: any;
+  stream?: string;
+  result?: string;
+}
+
+export const createWebSocket = (symbol: string, callbacks: WebSocketCallbacks) => {
+  // WebSocket configuration
+  const RECONNECT_DELAY = 3000; // Reduced initial delay
+  const MAX_RECONNECT_ATTEMPTS = 10; // Increased max attempts
+  const HEARTBEAT_INTERVAL = 30000;
+  const CONNECTION_TIMEOUT = 10000; // 10 second connection timeout
+  
+  let ws: WebSocket | null = null;
+  let reconnectAttempts = 0;
+  let heartbeatInterval: NodeJS.Timeout;
+  let reconnectTimeout: NodeJS.Timeout;
+  let connectionTimeout: NodeJS.Timeout;
+  let isReconnecting = false;
+  let isClosed = false;
+
+  // Check if WebSocket is available
   if (typeof window === 'undefined' || !window.WebSocket) {
     console.warn("WebSocket not available in this environment");
-    // Call onError with informative message
     if (callbacks.onError) {
       callbacks.onError(new Error("WebSocket not available"));
     }
-    // Return a dummy object with the expected interface
-    return {
-      close: () => {}
-    };
+    return { close: () => {} };
   }
 
-  // Lowercase for the stream name as per Binance docs
   const symbolLower = symbol.toLowerCase();
+  let currentInterval = '1m';
   
-  // Combine multiple streams
-  const streams = [
+  const getStreams = (interval: string = '1m') => [
     `${symbolLower}@trade`,
-    `${symbolLower}@kline_1m`,
+    `${symbolLower}@kline_${interval}`,
     `${symbolLower}@depth20@100ms`
   ].join('/');
-  
-  // Create WebSocket connection with proper error handling
-  let ws: WebSocket;
-  let connectionFailed = false;
-  
-  try {
-    ws = new WebSocket(`${WEBSOCKET_URL}/${streams}`);
-  } catch (error) {
-    console.error("Failed to create WebSocket:", error);
-    // Call onError with the actual error
-    if (callbacks.onError) {
-      callbacks.onError(error);
-    }
-    // Return a dummy object with the expected interface
-    return {
-      close: () => {}
-    };
-  }
-  
-  // Generate mock data for fallback
-  const generateMockData = () => {
-    if (connectionFailed) {
-      // Mock trade data
-      if (callbacks.onTrade) {
-        const mockPrice = Math.random() * 1000 + 2000; // Random price between 2000-3000
-        callbacks.onTrade({
-          e: "trade",
-          p: mockPrice.toFixed(2),
-          q: (Math.random() * 2).toFixed(4),
-          T: Date.now()
-        });
-      }
-      
-      // Mock kline data
-      if (callbacks.onKline) {
-        const basePrice = Math.random() * 1000 + 2000;
-        callbacks.onKline({
-          e: "kline",
-          k: {
-            t: Date.now() - 60000, // Start time
-            T: Date.now(), // End time
-            s: symbol,
-            i: "1m", // Interval
-            o: basePrice.toFixed(2), // Open price
-            c: (basePrice + Math.random() * 10 - 5).toFixed(2), // Close price
-            h: (basePrice + Math.random() * 15).toFixed(2), // High price
-            l: (basePrice - Math.random() * 15).toFixed(2), // Low price
-            v: (Math.random() * 100).toFixed(2), // Volume
-            n: Math.floor(Math.random() * 100), // Number of trades
-            q: (Math.random() * 200000).toFixed(2) // Quote volume
-          }
-        });
-      }
-      
-      // Mock depth data
-      if (callbacks.onDepth) {
-        const basePrice = Math.random() * 1000 + 2000;
-        const mockDepth = {
-          lastUpdateId: Date.now(),
-          bids: Array.from({length: 10}, (_, i) => {
-            const price = (basePrice - i * 0.5).toFixed(2);
-            const quantity = (Math.random() * 5).toFixed(4);
-            return [price, quantity];
-          }),
-          asks: Array.from({length: 10}, (_, i) => {
-            const price = (basePrice + (i + 1) * 0.5).toFixed(2);
-            const quantity = (Math.random() * 5).toFixed(4);
-            return [price, quantity];
-          })
-        };
-        callbacks.onDepth(mockDepth);
-      }
-    }
-  };
-  
-  // Use mock data if WebSocket fails
-  let mockDataInterval: NodeJS.Timeout;
 
-  ws.onopen = () => {
-    console.log(`WebSocket connection opened for ${symbol}`);
-    connectionFailed = false;
-    
-    // Clear any existing mock data interval
-    if (mockDataInterval) {
-      clearInterval(mockDataInterval);
+  const updateSubscription = (socket: WebSocket, newInterval: string) => {
+    if (socket.readyState === WebSocket.OPEN) {
+      // Unsubscribe from current interval
+      socket.send(JSON.stringify({
+        method: 'UNSUBSCRIBE',
+        params: [`${symbolLower}@kline_${currentInterval}`],
+        id: 2
+      }));
+
+      // Subscribe to new interval
+      socket.send(JSON.stringify({
+        method: 'SUBSCRIBE',
+        params: [`${symbolLower}@kline_${newInterval}`],
+        id: 3
+      }));
+
+      currentInterval = newInterval;
     }
   };
 
-  ws.onmessage = (event) => {
+  const clearTimers = () => {
+    if (heartbeatInterval) clearInterval(heartbeatInterval);
+    if (reconnectTimeout) clearTimeout(reconnectTimeout);
+  };
+
+  const setupHeartbeat = (socket: WebSocket) => {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ method: "ping" }));
+      }
+    }, HEARTBEAT_INTERVAL);
+  };
+
+  const handleMessage = (event: MessageEvent) => {
     try {
-      const data = JSON.parse(event.data);
+      const data: WSData = JSON.parse(event.data);
       
-      switch (data.e) {
-        case 'trade':
-          if (callbacks.onTrade) callbacks.onTrade(data);
-          break;
-        case 'kline':
-          if (callbacks.onKline) callbacks.onKline(data);
-          break;
-        default:
-          // Handle depth (orderbook) updates
-          if (data.stream?.includes('depth') && callbacks.onDepth) {
-            callbacks.onDepth(data.data);
-          }
-          break;
+      // Handle pong response
+      if (data.result === 'pong') return;
+
+      if (data.e === 'trade' && callbacks.onTrade) {
+        callbacks.onTrade(data);
+      } else if (data.e === 'kline' && callbacks.onKline) {
+        callbacks.onKline(data);
+      } else if (data.stream?.includes('depth') && callbacks.onDepth) {
+        callbacks.onDepth(data.data);
       }
     } catch (error) {
       console.error('Error processing WebSocket message:', error);
     }
   };
 
-  ws.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    connectionFailed = true;
-    
-    // Start generating mock data
-    if (!mockDataInterval) {
-      mockDataInterval = setInterval(generateMockData, 2000);
-    }
-    
-    if (callbacks.onError) {
-      callbacks.onError(new Error("WebSocket connection failed"));
+  const connect = () => {
+    try {
+      if (ws?.readyState === WebSocket.OPEN) {
+        ws.close();
+      }
+
+      ws = new WebSocket(`${WEBSOCKET_URL}/${getStreams(currentInterval)}`);
+
+      // Set connection timeout
+      connectionTimeout = setTimeout(() => {
+        if (ws && ws.readyState !== WebSocket.OPEN) {
+          ws.close();
+          if (callbacks.onError) {
+            callbacks.onError(new Error('Connection timeout'));
+          }
+        }
+      }, CONNECTION_TIMEOUT);
+
+      ws.onopen = () => {
+        clearTimeout(connectionTimeout);
+        console.log(`WebSocket connected for ${symbol}`);
+        reconnectAttempts = 0;
+        isReconnecting = false;
+        if (ws) {
+          setupHeartbeat(ws);
+          // Send initial subscription message
+          ws.send(JSON.stringify({
+            method: 'SUBSCRIBE',
+            params: [`${symbol.toLowerCase()}@trade`, `${symbol.toLowerCase()}@kline_1m`],
+            id: 1
+          }));
+        }
+      };
+
+      ws.onmessage = handleMessage;
+
+      ws.onerror = (error: Event) => {
+        console.error('WebSocket error:', error);
+        if (callbacks.onError) {
+          callbacks.onError(new Error('WebSocket connection error'));
+        }
+        // Attempt to reconnect on error if not already reconnecting
+        if (!isReconnecting && !isClosed) {
+          ws?.close(); // This will trigger onclose and reconnection
+        }
+      };
+
+      ws.onclose = () => {
+        clearTimers();
+        clearTimeout(connectionTimeout);
+        
+        if (!isClosed && !isReconnecting && reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          isReconnecting = true;
+          reconnectAttempts++;
+          
+          const delay = RECONNECT_DELAY * Math.pow(1.5, reconnectAttempts - 1); // Gentler exponential backoff
+          console.log(`WebSocket reconnecting... Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS} (delay: ${delay}ms)`);
+          
+          reconnectTimeout = setTimeout(() => {
+            connect();
+          }, delay);
+          
+          if (callbacks.onError) {
+            callbacks.onError(new Error(`Connection lost, attempting to reconnect (${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`));
+          }
+        } else if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.error('Max reconnection attempts reached');
+          if (callbacks.onError) {
+            callbacks.onError(new Error('Failed to establish stable connection'));
+          }
+          // Reset reconnection state to allow manual reconnection attempts
+          reconnectAttempts = 0;
+          isReconnecting = false;
+        }
+      };
+    } catch (error) {
+      console.error("Failed to create WebSocket:", error);
+      if (callbacks.onError) {
+        callbacks.onError(new Error('Failed to create WebSocket connection'));
+      }
     }
   };
 
-  ws.onclose = () => {
-    console.log(`WebSocket connection closed for ${symbol}`);
-    connectionFailed = true;
-    
-    // Start generating mock data if not already
-    if (!mockDataInterval) {
-      mockDataInterval = setInterval(generateMockData, 2000);
-    }
-  };
+  // Initial connection
+  connect();
 
   return {
     close: () => {
+      isClosed = true;
+      clearTimers();
+      
       if (ws && ws.readyState !== WebSocket.CLOSED) {
         try {
           ws.close();
-        } catch (e) {
-          console.error("Error closing WebSocket:", e);
+        } catch (error) {
+          console.error("Error closing WebSocket:", error);
         }
-      }
-      
-      // Clear the mock data interval
-      if (mockDataInterval) {
-        clearInterval(mockDataInterval);
       }
     }
   };

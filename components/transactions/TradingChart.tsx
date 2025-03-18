@@ -64,6 +64,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
   const lastUpdateTimeRef = useRef<string>(new Date().toLocaleTimeString());
   const chartRef = useRef<HTMLDivElement>(null);
   const chartContainerRef = useRef<HTMLDivElement>(null);
+  const ws = useRef<any>(null);
   
   // Theme colors based on selected theme - more professional and closer to Binance's style
   const chartTheme = useMemo(() => ({
@@ -127,8 +128,9 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
     fetchData();
     
     // Set up WebSocket for real-time price updates
-    const ws = createWebSocket(symbol, {
+    ws.current = createWebSocket(symbol, {
       onTrade: (trade) => {
+        if (!trade || !trade.p) return;
         const newPrice = trade.p;
         
         // Update last price and direction
@@ -202,13 +204,32 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
     });
     
     return () => {
-      ws.close();
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
     };
   }, [symbol, interval]);
 
   // Handle interval change
-  const handleIntervalChange = (newInterval: string) => {
-    setInterval(newInterval);
+  const handleIntervalChange = async (newInterval: string) => {
+    setLoading(true);
+    try {
+      // Get initial data for new interval
+      const data = await getKlineData(symbol, newInterval);
+      setChartData(data);
+      setInterval(newInterval);
+      
+      // Update WebSocket subscription
+      if (ws.current?.updateInterval) {
+        ws.current.updateInterval(newInterval);
+      }
+    } catch (error) {
+      console.error('Failed to change interval:', error);
+      setError('Failed to update chart interval');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Toggle fullscreen mode
@@ -421,6 +442,15 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
     }
   };
 
+  // Fix the labelFormatter to avoid div inside p hydration error
+  const labelFormatter = (label: string) => {
+    const item = formattedChartData.find(item => item.timestamp === label);
+    if (item) {
+      return `${label} • Change: ${item.change.startsWith('-') ? '▼' : '▲'} ${item.change}%`;
+    }
+    return label;
+  };
+
   // Render appropriate chart based on type
   const renderChart = () => {
     if (loading) {
@@ -509,20 +539,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 labelStyle={{ color: chartTheme.textColor }}
                 itemStyle={{ color: chartTheme.tooltip.text }}
                 formatter={tooltipFormatter}
-                labelFormatter={(label) => {
-                  const item = formattedChartData.find(item => item.timestamp === label);
-                  if (item) {
-                    return (
-                      <>
-                        <div className="font-bold mb-1">{label}</div>
-                        <div className={`text-xs ${item.change.startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
-                          Change: {item.change}%
-                        </div>
-                      </>
-                    );
-                  }
-                  return label;
-                }}
+                labelFormatter={labelFormatter}
               />
               <Area 
                 type="monotone" 
@@ -634,20 +651,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 labelStyle={{ color: chartTheme.textColor }}
                 itemStyle={{ color: chartTheme.tooltip.text }}
                 formatter={tooltipFormatter}
-                labelFormatter={(label) => {
-                  const item = formattedChartData.find(item => item.timestamp === label);
-                  if (item) {
-                    return (
-                      <>
-                        <div className="font-bold mb-1">{label}</div>
-                        <div className={`text-xs ${item.change.startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
-                          Change: {item.change}%
-                        </div>
-                      </>
-                    );
-                  }
-                  return label;
-                }}
+                labelFormatter={labelFormatter}
               />
               <Line 
                 type="monotone" 
@@ -759,73 +763,57 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 labelStyle={{ color: chartTheme.textColor }}
                 itemStyle={{ color: chartTheme.tooltip.text }}
                 formatter={tooltipFormatter}
-                labelFormatter={(label) => {
-                  const item = formattedChartData.find(item => item.timestamp === label);
-                  if (item) {
-                    return (
-                      <>
-                        <div className="font-bold mb-1">{label}</div>
-                        <div className={`text-xs ${item.change.startsWith('-') ? 'text-red-500' : 'text-green-500'}`}>
-                          Change: {item.change}%
-                        </div>
-                      </>
-                    );
-                  }
-                  return label;
-                }}
+                labelFormatter={labelFormatter}
               />
-              {/* High-Low line (wick) */}
-              <Bar 
-                dataKey="high-low" 
-                fill="transparent"
-                stroke="#888"
-                strokeWidth={1}
-                yAxisId="price"
-                shape={(props: any) => {
-                  const { x, y, width, height, payload } = props;
-                  const centerX = x + width / 2;
-                  const high = y + height * (1 - (payload.high - chartBounds.min) / (chartBounds.max - chartBounds.min));
-                  const low = y + height * (1 - (payload.low - chartBounds.min) / (chartBounds.max - chartBounds.min));
-                  return (
-                    <line 
-                      x1={centerX} 
-                      y1={high} 
-                      x2={centerX} 
-                      y2={low} 
-                      stroke={payload.color === 'green' ? chartTheme.greenCandle : chartTheme.redCandle} 
-                      strokeWidth={1} 
-                    />
-                  );
-                }}
-              />
-              {/* Open-Close body */}
-              <Bar 
-                dataKey="open-close" 
-                name="Price"
+              {/* Single Bar for candlesticks */}
+              <Bar
+                dataKey="high"
                 yAxisId="price"
                 isAnimationActive={false}
                 shape={(props: any) => {
                   const { x, y, width, height, payload } = props;
-                  const barWidth = width * 0.7;
-                  const barX = x + (width - barWidth) / 2;
+                  const { open, close, high, low } = payload;
                   
-                  // Calculate y positions based on price and domain
-                  const openY = y + height * (1 - (payload.open - chartBounds.min) / (chartBounds.max - chartBounds.min));
-                  const closeY = y + height * (1 - (payload.close - chartBounds.min) / (chartBounds.max - chartBounds.min));
+                  // Calculate positions
+                  const domain = chartBounds.max - chartBounds.min;
+                  const getY = (price: number) => y + height * (1 - (price - chartBounds.min) / domain);
                   
-                  const barHeight = Math.abs(closeY - openY) || 1;
-                  const barY = Math.min(openY, closeY);
+                  const candleX = x;
+                  const candleWidth = width * 0.8;
+                  const wickX = x + width / 2;
+                  
+                  const highY = getY(high);
+                  const lowY = getY(low);
+                  const openY = getY(open);
+                  const closeY = getY(close);
+                  
+                  const candleHeight = Math.abs(closeY - openY) || 2;
+                  const candleY = Math.min(closeY, openY);
+                  const color = close >= open ? chartTheme.greenCandle : chartTheme.redCandle;
                   
                   return (
-                    <rect 
-                      x={barX} 
-                      y={barY} 
-                      width={barWidth} 
-                      height={barHeight} 
-                      fill={payload.color === 'green' ? chartTheme.greenCandle : chartTheme.redCandle}
-                    />
+                    <g>
+                      {/* Wick */}
+                      <line
+                        x1={wickX}
+                        y1={highY}
+                        x2={wickX}
+                        y2={lowY}
+                        stroke={color}
+                        strokeWidth={1}
+                      />
+                      {/* Candle body */}
+                      <rect
+                        x={candleX}
+                        y={candleY}
+                        width={candleWidth}
+                        height={candleHeight}
+                        fill={color}
+                        stroke={color}
+                      />
+                    </g>
                   );
-                }} 
+                }}
               />
               
               {/* Technical indicators */}
@@ -887,7 +875,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
   };
 
   return (
-    <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] relative overflow-hidden">
+    <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] relative overflow-hidden hover:border-amber-500/50 transition-all duration-300">
       <CardHeader className="p-4 pb-2">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-2">
@@ -895,29 +883,32 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               {/* Crypto name with animated price */}
               <CardTitle className="text-lg text-white flex items-center gap-2">
                 <span className="text-xl">{baseAsset}/{quoteAsset}</span>
-                {lastPrice && (
-                  <motion.span 
-                    key={lastPrice}
-                    initial={{ opacity: 0.6, y: priceDirection === 'up' ? 10 : -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`text-xl font-mono font-bold ${
-                      priceDirection === 'up' 
-                        ? 'text-green-400 price-up' 
-                        : priceDirection === 'down' 
-                          ? 'text-red-400 price-down' 
-                          : priceColor
-                    }`}
-                  >
-                    {formatPrice(lastPrice)}
-                  </motion.span>
-                )}
+                <div className="relative inline-block min-w-[120px] h-[30px]">
+                  {lastPrice && (
+                    <motion.div
+                      key={lastPrice}
+                      initial={{ opacity: 0, x: priceDirection === 'up' ? -20 : 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: priceDirection === 'up' ? 20 : -20 }}
+                      transition={{ duration: 0.2 }}
+                      className={`absolute left-0 text-xl font-mono font-bold ${
+                        priceDirection === 'up'
+                          ? 'text-green-400 price-up'
+                          : priceDirection === 'down'
+                            ? 'text-red-400 price-down'
+                            : priceColor
+                      }`}
+                    >
+                      {formatPrice(lastPrice)}
+                    </motion.div>
+                  )}
+                </div>
               </CardTitle>
               
-              {/* Market data */}
+              {/* Market data with improved design */}
               {tickerData && (
-                <div className="flex gap-4 mt-1 text-sm">
-                  <span className={`${priceColor} flex items-center`}>
+                <div className="flex gap-4 mt-1 text-sm overflow-x-auto pb-1 scrollbar-thin">
+                  <span className={`${priceColor} flex items-center whitespace-nowrap`}>
                     {parseFloat(tickerData.priceChangePercent) >= 0 ? (
                       <TrendingUp className="h-3 w-3 mr-1" />
                     ) : (
@@ -926,13 +917,13 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                     {parseFloat(tickerData.priceChangePercent) > 0 ? '+' : ''}
                     {tickerData.priceChangePercent}%
                   </span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-400 whitespace-nowrap">
                     24h High: <span className="text-white">{formatPrice(tickerData.highPrice)}</span>
                   </span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-400 whitespace-nowrap">
                     24h Low: <span className="text-white">{formatPrice(tickerData.lowPrice)}</span>
                   </span>
-                  <span className="text-gray-400">
+                  <span className="text-gray-400 whitespace-nowrap">
                     24h Vol: <span className="text-white">{formatNumber(tickerData.volume)} {baseAsset}</span>
                   </span>
                 </div>
@@ -940,14 +931,14 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
             </div>
           </div>
           
-          {/* Chart controls */}
+          {/* Chart controls with improved styling */}
           <div className="flex items-center gap-2 w-full md:w-auto flex-wrap md:flex-nowrap">
             {/* Chart type selector */}
-            <div className="flex border border-gray-700 rounded-md overflow-hidden">
+            <div className="flex border border-gray-700 rounded-md overflow-hidden backdrop-blur-sm bg-black/30">
               <Button 
                 variant="ghost" 
                 size="sm"
-                className={`px-3 ${chartType === 'candlestick' ? 'bg-gray-700 text-white' : 'bg-transparent text-gray-400'}`}
+                className={`px-3 ${chartType === 'candlestick' ? 'bg-amber-500/20 text-amber-400' : 'bg-transparent text-gray-400'}`}
                 onClick={() => setChartType('candlestick')}
                 title="Candlestick Chart"
               >
@@ -956,7 +947,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               <Button 
                 variant="ghost" 
                 size="sm"
-                className={`px-3 ${chartType === 'line' ? 'bg-gray-700 text-white' : 'bg-transparent text-gray-400'}`}
+                className={`px-3 ${chartType === 'line' ? 'bg-amber-500/20 text-amber-400' : 'bg-transparent text-gray-400'}`}
                 onClick={() => setChartType('line')}
                 title="Line Chart"
               >
@@ -965,7 +956,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`px-3 ${chartType === 'area' ? 'bg-gray-700 text-white' : 'bg-transparent text-gray-400'}`}
+                className={`px-3 ${chartType === 'area' ? 'bg-amber-500/20 text-amber-400' : 'bg-transparent text-gray-400'}`}
                 onClick={() => setChartType('area')}
                 title="Area Chart"
               >
@@ -978,7 +969,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               value={interval}
               onValueChange={handleIntervalChange}
             >
-              <SelectTrigger className="w-[80px] bg-gray-800/50 border-gray-700 text-white h-9">
+              <SelectTrigger className="w-[80px] bg-gray-800/50 border-gray-700 text-white h-9 hover:border-amber-500/50">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5 text-gray-400" />
                   <SelectValue />
@@ -989,7 +980,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                   <SelectItem 
                     key={int.value} 
                     value={int.value}
-                    className="text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 focus:text-white"
+                    className="text-gray-300 hover:bg-amber-500/20 focus:bg-amber-500/20 focus:text-white"
                   >
                     {int.label}
                   </SelectItem>
@@ -997,19 +988,22 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               </SelectContent>
             </Select>
 
-            {/* Settings button */}
+            {/* Settings button - improved style */}
             <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="icon"
-                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white"
+                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
                 >
                   <Settings className="h-4 w-4" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-72 bg-gray-800 border-gray-700 text-white p-0">
-                <div className="p-2 text-gray-300 text-sm font-medium border-b border-gray-700">Chart Settings</div>
+                <div className="p-2 text-amber-400 text-sm font-medium border-b border-gray-700 flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Chart Settings
+                </div>
                 <div className="p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="show-volume" className="text-sm text-gray-300">
@@ -1077,13 +1071,13 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
               </PopoverContent>
             </Popover>
 
-            {/* Indicators button */}
+            {/* Indicators button - improved style */}
             <Popover>
               <PopoverTrigger asChild>
                 <Button 
                   variant="outline" 
                   size="icon"
-                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white"
+                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
@@ -1142,7 +1136,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
                 <Button 
                   variant="outline" 
                   size="icon"
-                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white"
+                  className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
                 >
                   <HelpCircle className="h-4 w-4" />
                 </Button>
@@ -1165,7 +1159,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
             <Button
               variant="outline" 
               size="icon"
-              className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white"
+              className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
               onClick={toggleFullscreen}
             >
               <Maximize2 className="h-4 w-4" />
@@ -1175,7 +1169,7 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
             <Button
               variant="outline" 
               size="icon"
-              className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white"
+              className="h-9 w-9 bg-gray-800/50 border-gray-700 text-white hover:border-amber-500/50 hover:bg-amber-500/10"
               onClick={refreshChartData}
               disabled={loading}
             >
@@ -1220,25 +1214,43 @@ export default function TradingChart({ symbol, baseAsset, quoteAsset }: TradingC
         }
         
         @keyframes price-up {
-          0% { background-color: rgba(34, 197, 94, 0.2); color: #22c55e; }
-          100% { background-color: transparent; }
+          0% {
+            opacity: 0.7;
+            transform: scale(1.05);
+            text-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+            text-shadow: none;
+          }
         }
         
         @keyframes price-down {
-          0% { background-color: rgba(239, 68, 68, 0.2); color: #ef4444; }
-          100% { background-color: transparent; }
+          0% {
+            opacity: 0.7;
+            transform: scale(1.05);
+            text-shadow: 0 0 8px rgba(239, 68, 68, 0.5);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+            text-shadow: none;
+          }
         }
         
         .price-up {
-          animation: price-up 1.5s ease-out;
+          animation: price-up 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           padding: 2px 6px;
           border-radius: 4px;
+          will-change: transform, opacity;
         }
         
         .price-down {
-          animation: price-down 1.5s ease-out;
+          animation: price-down 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           padding: 2px 6px;
           border-radius: 4px;
+          will-change: transform, opacity;
         }
       `}</style>
     </Card>
