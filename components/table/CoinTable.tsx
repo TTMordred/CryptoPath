@@ -99,7 +99,7 @@ const CoinTable = () => {
     <section id="market-table" className="py-16">
       <div className="container">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-500 to-indigo-600 bg-clip-text text-transparent">Cryptocurrency Market Data</h2>
+          <h2 className="text-2xl font-bold mb-3 bg-gradient-to-r from-[#f6b355] to-[#f6b355]/70 bg-clip-text text-transparent">Cryptocurrency Market Data</h2>
           <p className="text-muted-foreground">
             Comprehensive view of circulation, market cap, and price data for top cryptocurrencies.
           </p>
