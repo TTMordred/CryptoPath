@@ -50,7 +50,7 @@ const particlesConfig = {
     },
   },
   interactivity: {
-    detect_on: "canvas", // Changed from "window" to "canvas" for better performance
+    detect_on: "window", // Changed from "window" to "canvas" for better performance
     events: {
       onhover: {
         enable: true,
@@ -125,9 +125,9 @@ const ParticlesBackground = () => {
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: 1, // Changed from -1 to 0
+          zIndex: -1, // Changed from -1 to 0
           backgroundColor: "transparent", // Changed from #000000 to transparent
-          pointerEvents: "auto", // Changed from auto to none
+          pointerEvents: "none", // Changed from auto to none
         }}
         data-loaded={scriptLoaded ? "true" : "false"}
       />
