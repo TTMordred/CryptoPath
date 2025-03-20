@@ -1,9 +1,12 @@
+
 'use client';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
+import { toast } from 'sonner';
+import { supabase } from '@/src/integrations/supabase/client';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -19,36 +22,17 @@ export default function SignupPage() {
   const [confirmPasswordError, setConfirmPasswordError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  
-
-  // Helper functions: using localStorage to store users (as in your original code)
+  // Helper function for email validation
   const validateEmail = (email: string) => {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email.toLowerCase());
   };
 
-  const getUsers = () => {
-    if (typeof window !== 'undefined') {
-      const usersJSON = localStorage.getItem('users');
-      return usersJSON ? JSON.parse(usersJSON) : [];
-    }
-    return [];
-  };
-
-  const isEmailExists = (email: string) => {
-    const users = getUsers();
-    return users.some((user: { email: string }) => user.email === email);
-  };
-
-  const saveUser = (user: { name: string; email: string; password: string }) => {
-    const users = getUsers();
-    users.push(user);
-    localStorage.setItem('users', JSON.stringify(users));
-  };
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
     // Reset error messages
     setNameError('');
     setEmailError('');
@@ -61,37 +45,62 @@ export default function SignupPage() {
       setNameError('Please enter your full name.');
       valid = false;
     }
+    
     if (!validateEmail(email)) {
       setEmailError('Please enter a valid email address.');
       valid = false;
-    } else if (isEmailExists(email)) {
-      setEmailError('Email already exists.');
-      valid = false;
     }
+    
     if (password.length < 8) {
       setPasswordError('Password must be at least 8 characters long.');
       valid = false;
     }
+    
     if (password !== confirmPassword) {
       setConfirmPasswordError('Passwords do not match.');
       valid = false;
     }
 
     if (valid) {
-      const newUser = {
-        name: name.trim(),
-        email: email.trim(),
-        password: password,
-      };
-      saveUser(newUser);
-      alert('Sign up successful!');
-      router.push('/login'); // or redirect to login if you prefer
+      setIsLoading(true);
+      
+      try {
+        // Register the user with Supabase Auth
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: name.trim(),
+            },
+          },
+        });
+
+        if (error) {
+          if (error.message.includes('email')) {
+            setEmailError(error.message);
+          } else if (error.message.includes('password')) {
+            setPasswordError(error.message);
+          } else {
+            toast.error(error.message);
+          }
+          return;
+        }
+
+        toast.success('Sign up successful! Please check your email for verification.');
+        router.push('/login');
+      } catch (error) {
+        console.error('Signup error:', error);
+        toast.error('An unexpected error occurred. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
   return (
     <>
-      <div className = "relative">
+      <div className="relative">
         <ParticlesBackground/>
       {/* Signup Form */}
       <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
@@ -120,6 +129,7 @@ export default function SignupPage() {
                         className="w-full px-3 py-2 border border-white bg-black text-white rounded-md"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
+                        disabled={isLoading}
                       />
                       {nameError && <span className="text-red-500 text-sm">{nameError}</span>}
                     </div>
@@ -135,6 +145,7 @@ export default function SignupPage() {
                         className="w-full px-3 py-2 border border-white bg-black text-white rounded-md"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                        disabled={isLoading}
                       />
                       {emailError && <span className="text-red-500 text-sm">{emailError}</span>}
                     </div>
@@ -150,11 +161,13 @@ export default function SignupPage() {
                           className="w-full px-3 py-2 border border-white bg-black text-white rounded-md pr-10"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
+                          disabled={isLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+                          disabled={isLoading}
                         >
                           {showPassword ? (
                             <svg
@@ -216,11 +229,13 @@ export default function SignupPage() {
                           className="w-full px-3 py-2 border border-white bg-black text-white rounded-md pr-10"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
+                          disabled={isLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+                          disabled={isLoading}
                         >
                           {showConfirmPassword ? (
                             <svg
@@ -274,9 +289,12 @@ export default function SignupPage() {
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200"
+                      className={`w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200 ${
+                        isLoading ? 'opacity-70 cursor-not-allowed' : ''
+                      }`}
+                      disabled={isLoading}
                     >
-                      Sign Up
+                      {isLoading ? 'Creating Account...' : 'Sign Up'}
                     </button>
                     <div className="text-center text-sm text-white">
                       Already have an account?{' '}

@@ -1,60 +1,86 @@
 // components/NFT/NFTTabs.tsx
-import { ReactNode } from 'react';
+import React from 'react';
 
-// Sửa type props để đảm bảo type safety
-type TabButtonProps = {
-  children: ReactNode;
-  active: boolean;
-  onClick: () => void;
-  count?: number;
-};
-
-const TabButton = ({ children, active, onClick, count }: TabButtonProps) => (
-  <button
-    onClick={onClick}
-    className={`px-4 py-2 flex items-center gap-2 border-b-2 transition-colors ${
-      active
-        ? 'border-orange-500 text-orange-400'
-        : 'border-transparent text-gray-400 hover:text-gray-200'
-    }`}
-  >
-    {children}
-  </button>
-);
-
-// Sửa type cho component NFTTabs
-type NFTTabsProps = {
-  activeTab: 'market' | 'owned' | 'listings';
-  setActiveTab: (tab: 'market' | 'owned' | 'listings') => void;
+interface NFTTabsProps {
+  activeTab: 'market' | 'owned' | 'listings' | 'mint' | 'whitelist';
+  setActiveTab: (tab: 'market' | 'owned' | 'listings' | 'mint' | 'whitelist') => void;
   balances: { market: number; owned: number; listings: number };
-};
+  showMintTab: boolean;
+  showWhitelistTab: boolean;
+}
 
-export default function NFTTabs({ activeTab, setActiveTab, balances }: NFTTabsProps) {
+export default function NFTTabs({ 
+  activeTab, 
+  setActiveTab, 
+  balances,
+  showMintTab,
+  showWhitelistTab 
+}: NFTTabsProps) {
   return (
-    <div className="flex gap-4 mb-8 border-b border-gray-800">
-      <TabButton
-        active={activeTab === 'market'}
+    <div className="flex flex-wrap gap-4 mb-8 border-b border-orange-400/20 pb-4">
+      {/* Market Tab */}
+      <button
         onClick={() => setActiveTab('market')}
-        count={balances.market}
+        className={`px-6 py-2 rounded-full transition-all ${
+          activeTab === 'market'
+            ? 'bg-orange-400 text-black font-bold'
+            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+        }`}
       >
-        Marketplace
-      </TabButton>
-      
-      <TabButton
-        active={activeTab === 'owned'}
+        Market ({balances.market})
+      </button>
+
+      {/* Owned Tab */}
+      <button
         onClick={() => setActiveTab('owned')}
-        count={balances.owned}
+        className={`px-6 py-2 rounded-full transition-all ${
+          activeTab === 'owned'
+            ? 'bg-orange-400 text-black font-bold'
+            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+        }`}
       >
         My NFTs ({balances.owned})
-      </TabButton>
+      </button>
 
-      <TabButton
-        active={activeTab === 'listings'}
+      {/* Listings Tab */}
+      <button
         onClick={() => setActiveTab('listings')}
-        count={balances.listings}
+        className={`px-6 py-2 rounded-full transition-all ${
+          activeTab === 'listings'
+            ? 'bg-orange-400 text-black font-bold'
+            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+        }`}
       >
         My Listings ({balances.listings})
-      </TabButton>
+      </button>
+
+      {/* Mint Tab */}
+      {showMintTab && (
+        <button
+          onClick={() => setActiveTab('mint')}
+          className={`px-6 py-2 rounded-full transition-all ${
+            activeTab === 'mint'
+              ? 'bg-orange-400 text-black font-bold'
+              : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+          }`}
+        >
+          Mint
+        </button>
+      )}
+
+      {/* Whitelist Tab */}
+      {showWhitelistTab && (
+        <button
+          onClick={() => setActiveTab('whitelist')}
+          className={`px-6 py-2 rounded-full transition-all ${
+            activeTab === 'whitelist'
+              ? 'bg-orange-400 text-black font-bold'
+              : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+          }`}
+        >
+          Whitelist
+        </button>
+      )}
     </div>
   );
 }

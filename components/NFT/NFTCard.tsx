@@ -15,7 +15,7 @@ interface NFTCardProps {
     isListed?: boolean;
   };
   mode: 'market' | 'owned' | 'listing';
-  onAction: (tokenId: string, price?: string) => void; // Thêm optional param
+  onAction: (tokenId: string, price?: string) => void;
   processing?: boolean;
 }
 
@@ -25,30 +25,40 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
   const [imgError, setImgError] = useState(false);
   const [isSeller, setIsSeller] = useState(false);
 
-  // Theo dõi thay đổi account và seller
+  // Helper to format the price (removes trailing zeros like 23.0000 -> 23)
+  const formatPrice = (price: string) => parseFloat(price).toString();
+
+  // Check if the current wallet address is the seller
   useEffect(() => {
-    const checkSeller = () => {
-      const sellerMatch = nft.seller?.toLowerCase() === account?.toLowerCase();
-      setIsSeller(!!sellerMatch); // Thêm ép kiểu boolean
-    };
-    checkSeller();
+    const sellerMatch = nft.seller?.toLowerCase() === account?.toLowerCase();
+    setIsSeller(!!sellerMatch);
   }, [account, nft.seller]);
 
-  // Xử lý URL ảnh từ IPFS
+  const [isImageLoading, setIsImageLoading] = useState(true);
+  
+  // Convert ipfs:// URL to a gateway URL with fallbacks
   const formatImageUrl = (ipfsUrl?: string) => {
     if (!ipfsUrl) return '/fallback-nft.png';
     if (ipfsUrl.startsWith('http')) return ipfsUrl;
+    
     const cid = ipfsUrl.replace('ipfs://', '').split('/')[0];
-    return `https://gateway.pinata.cloud/ipfs/${cid}`;
+    const gateways = [
+      `https://gateway.pinata.cloud/ipfs/${cid}`,
+      `https://cloudflare-ipfs.com/ipfs/${cid}`,
+      `https://ipfs.io/ipfs/${cid}`
+    ];
+    
+    // Try multiple gateways if one fails
+    return gateways[Math.floor(Math.random() * gateways.length)];
   };
 
-  // Hiển thị nút hành động
+  // Render the appropriate action button with solid color styling
   const getActionButton = () => {
     if (processing) {
       return (
         <button
           disabled
-          className="w-full bg-gray-600 text-gray-400 py-2.5 rounded-lg flex items-center justify-center gap-2"
+          className="w-full bg-gray-600 text-gray-300 py-2.5 rounded-xl flex items-center justify-center gap-2 focus:outline-none"
         >
           <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full" />
           Processing...
@@ -62,13 +72,13 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
           <button
             onClick={() => onAction(nft.id, nft.price)}
             className={`w-full ${
-              isSeller 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700'
-            } text-white py-2.5 rounded-lg transition-all`}
+              isSeller
+                ? 'bg-gray-600 cursor-not-allowed'
+                : 'bg-green-600 hover:bg-green-700'
+            } text-white py-2.5 rounded-xl transition-all focus:outline-none`}
             disabled={isSeller}
           >
-            {isSeller ? 'Your Listing' : `Buy for ${parseFloat(nft.price || '0').toFixed(4)} PATH`}
+            {isSeller ? 'Your Listing' : `Buy for ${formatPrice(nft.price || '0')} PATH`}
           </button>
         );
 
@@ -87,7 +97,7 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
         return (
           <button
             onClick={() => setShowListForm(true)}
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2.5 rounded-lg transition-all"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl transition-all focus:outline-none"
           >
             List for Sale
           </button>
@@ -97,7 +107,7 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
         return isSeller ? (
           <button
             onClick={() => onAction(nft.id)}
-            className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-2.5 rounded-lg transition-all"
+            className="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl transition-all focus:outline-none"
             data-testid="cancel-listing-button"
           >
             Cancel Listing
@@ -111,45 +121,79 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
   };
 
   return (
-    <div className="group relative bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 w-full">
-      {/* Phần hình ảnh */}
+    <div
+      className="
+        group relative
+        bg-white/5 
+        rounded-[10px]
+        border border-gray-800
+        backdrop-blur-[4px]
+        overflow-hidden
+        shadow-md
+        hover:shadow-xl
+        transition-all
+        duration-300
+        w-full
+      "
+    >
+      {/* Image section */}
       <div className="relative aspect-square">
+        {isImageLoading && (
+          <div className="absolute inset-0 bg-gray-800 animate-pulse flex items-center justify-center">
+            <div className="w-8 h-8 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
         <Image
           src={imgError ? '/fallback-nft.png' : formatImageUrl(nft.image)}
           alt={nft.name || 'Unnamed NFT'}
           fill
-          className="object-cover transition-transform duration-300 group-hover:scale-105"
-          onError={() => setImgError(true)}
+          className={`
+            object-cover transition-all duration-300
+            group-hover:scale-105
+            ${isImageLoading ? 'opacity-0' : 'opacity-100'}
+          `}
+          onError={() => {
+            setImgError(true);
+            setIsImageLoading(false);
+          }}
+          onLoad={() => setIsImageLoading(false)}
           quality={85}
           priority
         />
+        {imgError && (
+          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center text-gray-400 text-sm">
+            Failed to load image
+          </div>
+        )}
       </div>
 
-      {/* Phần thông tin */}
-      <div className="p-4 space-y-4">
-        <h3 className="text-lg font-semibold text-white truncate">
+      {/* Info section */}
+      <div className="p-4">
+        <h3 className="text-xl font-bold text-white truncate mb-2">
           {nft.name || 'Unnamed NFT'}
         </h3>
 
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="space-y-1">
-            <span className="text-gray-400">Price</span>
-            <div className="text-green-400 font-medium">
+        <div className="mb-3">
+          <p className="text-gray-300 text-sm">
+            Price:{' '}
+            <span className="text-green-400 font-semibold">
               {mode === 'owned' && !nft.isListed ? (
                 'Not Listed'
               ) : (
                 <>
-                  {parseFloat(nft.price || '0').toFixed(4)}
+                  {formatPrice(nft.price || '0')}
                   <span className="text-xs ml-1">PATH</span>
                 </>
               )}
-            </div>
-          </div>
+            </span>
+          </p>
+        </div>
 
+        <div className="grid grid-cols-2 gap-3 text-sm mb-4">
           {nft.seller && (
-            <div className="space-y-1">
-              <span className="text-gray-400">Seller</span>
-              <span 
+            <div>
+              <span className="text-gray-400">Seller: </span>
+              <span
                 className="text-blue-300 font-mono text-xs truncate"
                 title={nft.seller}
               >
@@ -159,10 +203,10 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
           )}
 
           {nft.owner && (
-            <div className="col-span-2 space-y-1">
-              <span className="text-gray-400">Owner</span>
-              <span 
-                className="text-purple-300 font-mono text-xs truncate"
+            <div className="col-span-2">
+              <span className="text-gray-400">Owner: </span>
+              <span
+                className="text-purple-400 font-mono text-xs truncate"
                 title={nft.owner}
               >
                 {`${nft.owner.slice(0, 6)}...${nft.owner.slice(-4)}`}
@@ -171,12 +215,12 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
           )}
         </div>
 
-        {/* Nút hành động */}
-        {getActionButton()}
+        {/* Action button */}
+        <div className="mb-2">{getActionButton()}</div>
 
-        {/* Badge trạng thái */}
+        {/* Badge if listed */}
         {mode === 'owned' && nft.isListed && (
-          <div className="text-center text-yellow-400 py-1.5 text-sm border border-yellow-400/20 rounded-md animate-pulse">
+          <div className="text-center text-yellow-400 py-1 text-sm border border-yellow-400/20 rounded-md animate-pulse">
             Currently Listed
           </div>
         )}
