@@ -329,7 +329,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                       axisLine={false}
                       tickFormatter={(value) => `${value.toLocaleString()}`}
                       tick={{ fill: '#9ca3af' }}
-                      width={80} // Increase width to ensure numbers are fully visible
+                      width={90} // Increase width to ensure numbers are fully visible
                       padding={{ top: 20 }}
                     />
                     <Tooltip 
