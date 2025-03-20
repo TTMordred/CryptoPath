@@ -28,6 +28,9 @@ export default {
           "sans-serif",
         ],
       },
+      screens:{
+        '2xl': '1400px',
+      },
       colors: {
         // Từ tệp thứ hai
         background: "var(--background)",
