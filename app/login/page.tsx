@@ -257,7 +257,7 @@ function LoginPageContent() {
         <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
           <div id="form-container" className="w-full max-w-sm md:max-w-3xl">
             <div className="card bg-transparent rounded-md shadow-lg overflow-hidden">
-              <div className="card-content p-6 md:p-10 bg-white/5 rounded-[20px] border-[#f6b355] border-2 backdrop-blur-sm">
+              <div className="card-content p-6 md:p-10 bg-white/5 rounded-[20px]  backdrop-blur-sm">
                 <form onSubmit={handleSubmit}>
                   <div className="flex flex-col gap-6">
                     <div className="flex flex-col items-center text-center">
@@ -274,7 +274,7 @@ function LoginPageContent() {
                         type="email"
                         placeholder="m@example.com"
                         required
-                        className="w-full px-3 py-2 border-[#f6b355] border rounded-[20px] bg-black text-white"
+                        className="w-full px-3 py-2  border rounded-[20px] bg-black text-white"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}
@@ -290,7 +290,7 @@ function LoginPageContent() {
                           id="password"
                           type={showPassword ? 'text' : 'password'}
                           required
-                          className="w-full px-3 py-2 border-[#f6b355] border rounded-[20px] bg-black text-white pr-10"
+                          className="w-full px-3 py-2 border rounded-[20px] bg-black text-white pr-10"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
@@ -298,7 +298,7 @@ function LoginPageContent() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#f6b355]"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center "
                           disabled={isLoading}
                         >
                           {showPassword ? (
@@ -348,7 +348,7 @@ function LoginPageContent() {
                     </div>
                     <button
                       type="submit"
-                      className={`w-full bg-white text-black py-2 px-4 border-[#f6b355] border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      className={`w-full bg-white text-black py-2 px-4  border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                       disabled={isLoading}
                     >
                       Login
@@ -359,7 +359,7 @@ function LoginPageContent() {
                     <div className="flex gap-2">
                       <button
                         id="google-login"
-                        className="flex items-center justify-center w-full border-[#f6b355] border rounded-[20px] py-2 px-4 hover:bg-[#f6b355]/70 transition-transform duration-200 hover:-translate-y-1"
+                        className="flex items-center justify-center w-full  border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
                         onClick={async () => {
                           setIsLoading(true);
                           try {
@@ -394,7 +394,7 @@ function LoginPageContent() {
                         type="button"
                         onClick={handleWalletConnect}
                         disabled={connecting || isLoading}
-                        className="flex items-center justify-center w-full border-[#f6b355] border rounded-[20px] py-2 px-4 hover:bg-[#f6b355]/70 transition-transform duration-200 hover:-translate-y-1"
+                        className="flex items-center justify-center w-full ] border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"

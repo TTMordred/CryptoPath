@@ -120,7 +120,7 @@ export default function SignupPage() {
         <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
           <div id="form-container" className="w-full max-w-sm md:max-w-3xl">
             <div className="card bg-transparent rounded-md shadow-lg overflow-hidden">
-              <div className="card-content bg-white/5 rounded-[20px] border-[#f6b355] border-2 backdrop-blur-sm">
+              <div className="card-content bg-white/5 rounded-[20px]  backdrop-blur-sm">
                 <div className="form-container p-6 md:p-10">
                   <form onSubmit={handleSubmit}>
                     <div className="flex flex-col gap-6">
@@ -140,7 +140,7 @@ export default function SignupPage() {
                           type="text"
                           placeholder="John Doe"
                           required
-                          className="w-full px-3 py-2 bg-black border-[#f6b355] border rounded-[20px] text-white"
+                          className="w-full px-3 py-2 bg-black  border rounded-[20px] text-white"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
                           disabled={isLoading}
@@ -156,7 +156,7 @@ export default function SignupPage() {
                           type="email"
                           placeholder="m@example.com"
                           required
-                          className="w-full px-3 py-2 bg-black border-[#f6b355] border rounded-[20px] text-white"
+                          className="w-full px-3 py-2 bg-black  border rounded-[20px] text-white"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           disabled={isLoading}
@@ -172,7 +172,7 @@ export default function SignupPage() {
                             id="password"
                             type={showPassword ? 'text' : 'password'}
                             required
-                            className="w-full px-3 py-2 bg-black border-[#f6b355] border rounded-[20px] text-white pr-10"
+                            className="w-full px-3 py-2 bg-black  border rounded-[20px] text-white pr-10"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             disabled={isLoading}
@@ -180,7 +180,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#f6b355]"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
                             disabled={isLoading}
                           >
                             {showPassword ? (
@@ -237,7 +237,7 @@ export default function SignupPage() {
                             id="confirm-password"
                             type={showConfirmPassword ? 'text' : 'password'}
                             required
-                            className="w-full px-3 py-2 bg-black border-[#f6b355] border rounded-[20px] text-white pr-10"
+                            className="w-full px-3 py-2 bg-black  border rounded-[20px] text-white pr-10"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             disabled={isLoading}
@@ -245,7 +245,7 @@ export default function SignupPage() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#f6b355]"
+                            className="absolute inset-y-0 right-0 pr-3 flex items-center "
                             disabled={isLoading}
                           >
                             {showConfirmPassword ? (
@@ -297,7 +297,7 @@ export default function SignupPage() {
                       </div>
                       <button
                         type="submit"
-                        className={`w-full bg-white text-black py-2 px-4 border-[#f6b355] border rounded-[20px] hover:bg-gray-200 ${
+                        className={`w-full bg-white text-black py-2 px-4  border rounded-[20px] hover:bg-gray-200 ${
                           isLoading ? 'opacity-70 cursor-not-allowed' : ''
                         }`}
                         disabled={isLoading}
