@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import Link from 'next/link'
-import { Eye, ChevronLeft, ChevronRight, Download, Copy } from 'lucide-react'
+import { Eye, Download, Copy } from 'lucide-react'
 import { toast, useToast } from "@/components/ui/use-toast"
-import { ethers } from 'ethers';
+import { ethers } from 'ethers'
 
 interface CoinOption {
   id: string;
@@ -31,86 +31,84 @@ interface Transaction {
 }
 
 export default function NetworkTransactionTable({ selectedCoin }: NetworkTransactionTableProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [isMobile, setIsMobile] = useState(false);
-  const { toast } = useToast();
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [isMobile, setIsMobile] = useState(false)
+  const { toast } = useToast()
 
   const copyToClipboard = async (text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(text)
       toast({
         title: "Copied!",
         description: "Address copied to clipboard",
-      });
+      })
     } catch (err) {
-      console.error('Failed to copy:', err);
+      console.error('Failed to copy:', err)
     }
-  };
+  }
 
   const truncateAddress = (address: string) => {
-    return `${address.slice(0, 6)}...${address.slice(-4)}`;
-
-  };
+    return `${address.slice(0, 6)}...${address.slice(-4)}`
+  }
 
   const getRelativeTime = (timestamp: number | string) => {
-    const ts = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
-    const now = Date.now();
-    const diff = now - ts;
+    const ts = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000
+    const now = Date.now()
+    const diff = now - ts
 
-    if (diff < 0) return "Just now";
-    const seconds = Math.floor(diff / 1000);
-    if (seconds < 60) return `${seconds} secs ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} mins ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hrs ago`;
-    const days = Math.floor(hours / 24);
-    return `${days} days ago`;
-  };
+    if (diff < 0) return "Just now"
+    const seconds = Math.floor(diff / 1000)
+    if (seconds < 60) return `${seconds} secs ago`
+    const minutes = Math.floor(seconds / 60)
+    if (minutes < 60) return `${minutes} mins ago`
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours} hrs ago`
+    const days = Math.floor(hours / 24)
+    return `${days} days ago`
+  }
 
   useEffect(() => {
     const fetchTransactions = async () => {
       try {
-        setIsLoading(true);
-        setError(null);
+        setIsLoading(true)
+        setError(null)
 
-        let response;
+        let response
         if (selectedCoin) {
           // Fetch token transactions
-          response = await fetch(`/api/token-transactions?coinId=${selectedCoin.id}&page=${page}&offset=50`);
+          response = await fetch(`/api/token-transactions?coinId=${selectedCoin.id}&page=${page}&offset=50`)
         } else {
           // Fetch latest block transactions (default to ETH)
-          const blockResponse = await fetch('/api/etherscan?module=proxy&action=eth_blockNumber');
-          if (!blockResponse.ok) throw new Error('Failed to fetch latest block');
-          const blockData = await blockResponse.json();
+          const blockResponse = await fetch('/api/etherscan?module=proxy&action=eth_blockNumber')
+          if (!blockResponse.ok) throw new Error('Failed to fetch latest block')
+          const blockData = await blockResponse.json()
           
           response = await fetch(
             `/api/etherscan?module=proxy&action=eth_getBlockByNumber&tag=${blockData.result}&boolean=true`
-          );
+          )
         }
 
         if (!response.ok) {
-          throw new Error('Failed to fetch transactions');
+          throw new Error('Failed to fetch transactions')
         }
 
-        const data = await response.json();
-
+        const data = await response.json()
 
         if (data.error) {
-          throw new Error(data.error);
+          throw new Error(data.error)
         }
 
-        let formattedTransactions: Transaction[];
+        let formattedTransactions: Transaction[]
         if (selectedCoin) {
           // Token transactions are already formatted from the API
-          formattedTransactions = data;
+          formattedTransactions = data
         } else {
           // Format ETH transactions from block data
           formattedTransactions = data.result.transactions.slice(0, 50).map((tx: any) => {
-            const timestamp = parseInt(data.result.timestamp, 16);
+            const timestamp = parseInt(data.result.timestamp, 16)
             return {
               hash: tx.hash,
               method: tx.input === '0x' ? 'Transfer' : 'Contract Interaction',
@@ -122,42 +120,85 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
               gasPrice: tx.gasPrice,
               gasUsed: tx.gas,
               timestamp
-            };
-          });
+            }
+          })
         }
 
-        setTransactions(formattedTransactions);
+        setTransactions(formattedTransactions)
       } catch (error) {
-        console.error('Error fetching transactions:', error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch transactions');
+        console.error('Error fetching transactions:', error)
+        setError(error instanceof Error ? error.message : 'Failed to fetch transactions')
         toast({
           title: "Error",
           description: "Failed to fetch transactions. Please try again later.",
           variant: "destructive",
-        });
+        })
       } finally {
-        setIsLoading(false);
+        setIsLoading(false)
       }
-    };
+    }
 
-    fetchTransactions();
-    const interval = selectedCoin ? null : setInterval(fetchTransactions, 15000);
+    fetchTransactions()
+    const interval = selectedCoin ? null : setInterval(fetchTransactions, 15000)
     return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [selectedCoin, page]);
+      if (interval) clearInterval(interval)
+    }
+  }, [selectedCoin, page])
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+      setIsMobile(window.innerWidth < 768)
+    }
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // --- CSV Download Function ---
+  const downloadCSV = () => {
+    if (!transactions.length) return
+
+    // Define the headers that match the displayed table columns
+    const headers = ["Txn Hash", "Method", "Block", "Age", "From", "To", "Value"]
+    const csvRows = []
+    csvRows.push(headers.join(","))
+
+    // Build rows for each transaction (enclosing fields in quotes to handle commas)
+    transactions.forEach(tx => {
+      const row = [
+        `"${tx.hash}"`,
+        `"${tx.method}"`,
+        `"${tx.block || ""}"`,
+        `"${tx.age || getRelativeTime(tx.timestamp)}"`,
+        `"${tx.from}"`,
+        `"${tx.to}"`,
+        `"${tx.value}"`
+      ]
+      csvRows.push(row.join(","))
+    })
+
+    const csvString = csvRows.join("\n")
+    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.setAttribute("download", "transaction_history.csv")
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+  // --- End CSV Download Function ---
 
   return (
     <div className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+      {/* CSV Download Button */}
+      <div className="flex justify-end mb-4">
+        <Button onClick={downloadCSV} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+          <Download size={16} />
+          {!isMobile && "Download CSV"}
+        </Button>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-white/5">
@@ -274,5 +315,5 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
         </TableBody>
       </Table>
     </div>
-  );
-} 
+  )
+}
