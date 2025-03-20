@@ -13,17 +13,24 @@
 ```bash
 # Clone the repository
 git clone https://github.com/TTMordred/CryptoPath.git
+```
 
 # Navigate to project directory
+```
 cd cryptopath
+```
 
 # Install dependencies
+```s
 npm install
 npm install next --legacy-peer-deps
+```
 
 # Set up environment variables
-touch .env.local
 ```s
+touch .env.local
+```
+
 Populate `.env.local` with:
 ```dotenv
 ETHERSCAN_API_KEY=YOUR_API_KEY
