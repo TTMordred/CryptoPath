@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { fetchHistoricalData, fetchAvailableCoins, CryptoMarketData, CoinOption, TOKEN_CONTRACTS } from "@/services/cryptoService";
+import { fetchAvailableCoins, CoinOption, TOKEN_CONTRACTS } from "@/services/cryptoService";
 import { Loader2, AlertCircle, RefreshCcw, TrendingUp, ChevronDown } from "lucide-react";
 import {
   Select,
@@ -141,21 +141,22 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
         setLoading(true);
         setError(null);
 
-        const coinData = await fetchHistoricalData(selectedCoin.id, 30);
-        
+        // Use Binance API for fetching historical data
+        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=1d&limit=30`);
+        const data = await response.json();
+
         if (!mounted) return;
 
-        if (!coinData.prices || !coinData.total_volumes || 
-            coinData.prices.length === 0 || coinData.total_volumes.length === 0) {
+        if (!data || data.length === 0) {
           throw new Error('No data available for this coin');
         }
 
-        const chartData: ChartData[] = coinData.prices.map((price, index) => {
-          const date = new Date(price[0]);
+        const chartData: ChartData[] = data.map((item: any) => {
+          const date = new Date(item[0]);
           return {
             date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            price: Number(price[1].toFixed(2)),
-            volume: Number((coinData.total_volumes[index][1] / 1000000).toFixed(2))
+            price: Number(item[4]), // Closing price
+            volume: Number(item[5]) // Volume
           };
         });
 
@@ -225,7 +226,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
           )}
           {volumeValue && (
             <p className="text-[#22d3ee] font-medium">
-              Volume: {volumeValue.value.toFixed(0)}M
+              Volume: {volumeValue.value.toLocaleString()}
             </p>
           )}
         </div>
@@ -272,18 +273,18 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                       value={coin.id}
                       className="text-gray-300 hover:bg-gray-700/50 focus:bg-gray-700/50 focus:text-white transition-colors duration-200"
                     >
-            <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                         <span className="text-[#F5B056]">{coin.symbol}</span>
                         <span className="text-gray-400">-</span>
                         <span>{coin.name}</span>
                       </div>
                     </SelectItem>
                   ))}
-            </div>
+                </div>
               </SelectContent>
             </Select>
-        </div>
-      </CardHeader>
+          </div>
+        </CardHeader>
         <CardContent className="p-6 pt-0">
           <AnimatePresence mode="wait">
             {loading ? (
@@ -300,9 +301,9 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                 className="h-[400px]"
               >
                 <Chart width="100%" height="100%">
-            <LineChart data={data}>
+                  <LineChart data={data}>
                     {chartConfig.gradients}
-              <XAxis 
+                    <XAxis 
                       dataKey="date"
                       stroke="#666"
                       tickLine={false}
@@ -326,42 +327,42 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                       stroke="#666"
                       tickLine={false}
                       axisLine={false}
-                      tickFormatter={(value) => `${value.toFixed(0)}M`}
+                      tickFormatter={(value) => `${value.toLocaleString()}`}
                       tick={{ fill: '#9ca3af' }}
                       width={70}
                       padding={{ top: 20 }}
                     />
-              <Tooltip 
-                content={chartConfig.customTooltip}
-                cursor={{ stroke: '#666', strokeWidth: 1 }}
-              />
-              <Line
+                    <Tooltip 
+                      content={chartConfig.customTooltip}
+                      cursor={{ stroke: '#666', strokeWidth: 1 }}
+                    />
+                    <Line
                       yAxisId="left"
-                type="monotone"
+                      type="monotone"
                       dataKey="price"
-                stroke="#3b82f6"
-                strokeWidth={2}
+                      stroke="#3b82f6"
+                      strokeWidth={2}
                       dot={false}
                       activeDot={{ r: 8, strokeWidth: 2 }}
                       name="price"
-              />
-              <Line
+                    />
+                    <Line
                       yAxisId="right"
-                type="monotone"
+                      type="monotone"
                       dataKey="volume"
-                stroke="#22d3ee"
-                strokeWidth={2}
+                      stroke="#22d3ee"
+                      strokeWidth={2}
                       dot={false}
                       activeDot={{ r: 8, strokeWidth: 2 }}
                       name="volume"
-              />
-            </LineChart>
+                    />
+                  </LineChart>
                 </Chart>
               </motion.div>
             )}
           </AnimatePresence>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
 
       <AnimatePresence>
         {selectedCoin && (
@@ -381,5 +382,5 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
 };
 RevenueGraph.displayName = "RevenueGraph";
 
-export default RevenueGraph; 
+export default RevenueGraph;
 
