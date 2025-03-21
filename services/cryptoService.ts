@@ -1,4 +1,4 @@
-  // CoinGecko API service
+// CoinGecko API service
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -371,6 +371,12 @@ export const fetchAvailableCoins = async (): Promise<CoinOption[]> => {
       `${COINGECKO_API_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false`
     );
     const data = await response.json();
+    
+    // Ensure data is in the expected format
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid data format received from API');
+    }
+
     return data.map((coin: any) => ({
       id: coin.id,
       symbol: coin.symbol.toUpperCase(),
@@ -386,22 +392,10 @@ export const fetchAvailableCoins = async (): Promise<CoinOption[]> => {
 export const TOKEN_CONTRACTS: { [key: string]: string } = {
   'ethereum': 'ETH', // Native ETH
   'usd-coin': '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
-  'tether': '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
   'wrapped-bitcoin': '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
   'chainlink': '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
   'dai': '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
   'shiba-inu': '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', // SHIB
   'uniswap': '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
   'aave': '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', // AAVE
-  'maker': '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2', // MKR
-  'compound': '0xc00e94Cb662C3520282E6f5717214004A7f26888', // COMP
-  'yearn-finance': '0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e', // YFI
-  'sushi': '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2', // SUSHI
-  'curve-dao-token': '0xD533a949740bb3306d119CC777fa900bA034cd52', // CRV
-  'synthetix': '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F', // SNX
-  '1inch': '0x111111111117dC0aa78b770fA6A738034120C302', // 1INCH
-  'loopring': '0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD', // LRC
-  'enjincoin': '0xF629cBd94d3791C9250152BD8dfBDF380E2a3B9c', // ENJ
-  'decentraland': '0x0F5D2fB29fb7d3CFeE444a200298f468908cC942', // MANA
-  'the-sandbox': '0x3845badAde8e6dFF049820680d1F14bD3903a5d0' // SAND
 };
