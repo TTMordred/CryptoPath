@@ -79,7 +79,16 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
-  const [availableCoins, setAvailableCoins] = useState<CoinOption[]>([]);
+  const [availableCoins, setAvailableCoins] = useState<CoinOption[]>([
+    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
+    { id: 'usd-coin', symbol: 'USDC', name: 'USDC' },
+    { id: 'wrapped-bitcoin', symbol: 'WBTC', name: 'Wrapped Bitcoin' },
+    { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
+    { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu' },
+    { id: 'uniswap', symbol: 'UNI', name: 'Uniswap' },
+    { id: 'dai', symbol: 'DAI', name: 'Dai' },
+    { id: 'aave', symbol: 'AAVE', name: 'Aave' },
+  ]);
   const [loadingCoins, setLoadingCoins] = useState(true);
 
   // Memoize handlers
@@ -105,8 +114,8 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
         const coins = await fetchAvailableCoins();
         if (!mounted) return;
         
-        // Filter coins to only those with contract addresses
-        const supportedCoins = coins.filter(coin => TOKEN_CONTRACTS[coin.id]);
+        // Filter coins to only those with contract addresses and remove Tether
+        const supportedCoins = coins.filter(coin => TOKEN_CONTRACTS[coin.id] && coin.id !== 'tether');
         setAvailableCoins(supportedCoins);
         
         if (supportedCoins.length > 0) {
@@ -329,7 +338,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                       axisLine={false}
                       tickFormatter={(value) => `${value.toLocaleString()}`}
                       tick={{ fill: '#9ca3af' }}
-                      width={90} // Increase width to ensure numbers are fully visible
+                      width={100} // Increase width to ensure numbers are fully visible
                       padding={{ top: 20 }}
                     />
                     <Tooltip 
