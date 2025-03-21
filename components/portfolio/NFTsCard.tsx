@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { Image, ChevronRight, ChevronLeft } from "lucide-react";
+import { Image, ChevronRight, ChevronLeft, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 
@@ -20,6 +20,7 @@ interface NFTsCardProps {
 
 const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedNFT, setSelectedNFT] = useState<NFT | null>(null);
   const nftsPerPage = 2;
 
   const indexOfLastNFT = currentPage * nftsPerPage;
@@ -33,6 +34,14 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
 
   const prevPage = () => {
     if (currentPage > 1) setCurrentPage(currentPage - 1);
+  };
+
+  const handleNFTClick = (nft: NFT) => {
+    setSelectedNFT(nft);
+  };
+
+  const closeModal = () => {
+    setSelectedNFT(null);
   };
 
   return (
@@ -60,26 +69,22 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
           currentNFTs.map((nft, index) => (
             <div
               key={index}
-              className="flex p-3 border border-shark-600 rounded-lg hover:border-amber/30 transition-all duration-300 bg-shark-800/30"
+              className="flex p-3 border border-[#f6b355] rounded-[20px] hover:border-amber/30 transition-all duration-300 bg-shark-800/30 items-center cursor-pointer"
+              onClick={() => handleNFTClick(nft)}
             >
-              <div className="h-24 w-24 rounded-md overflow-hidden bg-shark-600 relative">
+              <div className="h-20 w-20 flex-shrink-0 rounded-md overflow-hidden bg-shark-600 relative">
                 {nft.imageUrl ? (
                   <img
                     src={nft.imageUrl}
                     alt={nft.name}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover object-center"
                     loading="lazy"
                     onError={(e) => {
-                      const target = e.target as HTMLImageElement | null;
-                      if (target) {
-                        target.style.display = "none";
-                        const nextSibling = target.nextSibling as HTMLElement | null;
-                        if (nextSibling) {
-                          nextSibling.style.display = "block";
-                        }
-                      }
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const placeholder = target.nextSibling as HTMLElement;
+                      if (placeholder) placeholder.style.display = "flex";
                     }}
-                    
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-shark-700 text-shark-400">
@@ -91,19 +96,18 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                   style={{ animation: "shimmer 2s infinite" }}
                 />
               </div>
-              <div className="ml-3 flex-1">
-                <h4 className="text-gray-200 font-medium overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="ml-3 flex-1 min-w-0">
+                <h4 className="text-gray-200 font-medium text-sm truncate">
                   {nft.name || `#${nft.tokenId}`}
                 </h4>
-                <p className="text-amber text-xs mb-2">{nft.collectionName || "Unknown Collection"}</p>
-                <p
-                  className="text-gray-400 text-xs overflow-hidden"
-                  style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
-                >
+                <p className="text-amber text-xs mb-1 truncate">
+                  {nft.collectionName || "Unknown Collection"}
+                </p>
+                <p className="text-gray-400 text-xs line-clamp-2">
                   {nft.description || "No description available"}
                 </p>
-                <p className="text-gray-500 text-xs mt-1">
-                  Token ID: {nft.tokenId.length > 8 ? `${nft.tokenId.substring(0, 8)}...` : nft.tokenId}
+                <p className="text-gray-500 text-xs mt-1 truncate">
+                  Token ID: {nft.tokenId}
                 </p>
               </div>
             </div>
@@ -123,7 +127,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
             size="sm"
             onClick={prevPage}
             disabled={currentPage === 1}
-            className="text-gray-400 border-shark-600 hover:text-amber hover:border-amber/40 bg-transparent"
+            className="text-gray-400 border-[#f6b355] rounded-[20px] hover:text-amber hover:border-amber/40 bg-transparent"
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Prev
@@ -133,11 +137,69 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
             size="sm"
             onClick={nextPage}
             disabled={currentPage === totalPages}
-            className="text-gray-400 border-shark-600 hover:text-amber hover:border-amber/40 bg-transparent"
+            className="text-gray-400 border-[#f6b355] rounded-[20px] hover:text-amber hover:border-amber/40 bg-transparent"
           >
             Next
             <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
+        </div>
+      )}
+
+      {/* Modal hiển thị thông tin chi tiết NFT */}
+      {selectedNFT && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] p-4">
+          <div
+            className="backdrop-blur-md bg-white/10  p-6 max-w-md w-full h-[calc(100%-40px)] border border-shark-600 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent scrollbar-thumb-rounded-full"
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-gray-200 text-lg font-medium">NFT Details</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeModal}
+                className="text-gray-400 hover:text-amber"
+              >
+                <X className="h-6 w-6" strokeWidth={3} />
+              </Button>
+            </div>
+            <div className="flex flex-col items-center">
+              {selectedNFT.imageUrl ? (
+                <img
+                  src={selectedNFT.imageUrl}
+                  alt={selectedNFT.name}
+                  className="w-full max-h-64 object-contain rounded-md mb-4"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = "none";
+                    const placeholder = target.nextSibling as HTMLElement;
+                    if (placeholder) placeholder.style.display = "flex";
+                  }}
+                />
+              ) : (
+                <div className="w-full h-64 flex items-center justify-center bg-shark-700 text-shark-400 rounded-md mb-4">
+                  <Image className="h-12 w-12" />
+                </div>
+              )}
+              <div className="w-full text-left">
+                <h4 className="text-gray-200 font-medium text-lg">
+                  {selectedNFT.name || `#${selectedNFT.tokenId}`}
+                </h4>
+                <p className="text-amber text-sm mb-2">
+                  {selectedNFT.collectionName || "Unknown Collection"}
+                </p>
+                <p className="text-gray-400 text-sm mb-2">
+                  {selectedNFT.description || "No description available"}
+                </p>
+                <p className="text-gray-500 text-sm">
+                  <span className="font-medium">Token ID:</span> {selectedNFT.tokenId}
+                </p>
+                <p className="text-gray-500 text-sm truncate">
+                  <span className="font-medium">Contract:</span> {selectedNFT.contract}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

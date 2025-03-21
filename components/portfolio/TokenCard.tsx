@@ -21,7 +21,7 @@ interface TokensCardProps {
 
 const TokensCard: React.FC<TokensCardProps> = ({ tokens, isLoading }) => {
   const [currentPage, setCurrentPage] = useState(1);
-  const tokensPerPage = 3; // Giới hạn 5 token mỗi trang
+  const tokensPerPage = 3; // Giới hạn 3 token mỗi trang
 
   // Tính toán chỉ số token hiển thị trên trang hiện tại
   const indexOfLastToken = currentPage * tokensPerPage;
