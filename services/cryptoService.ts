@@ -1,3 +1,4 @@
+
 // CoinGecko API service with error handling and fallbacks
 const COINGECKO_API_BASE = 'https://api.coingecko.com/api/v3';
 
@@ -456,22 +457,27 @@ export const fetchChainAnalytics = async (coinId: string): Promise<ChainAnalytic
  */
 export async function fetchAvailableCoins(): Promise<CoinOption[]> {
   try {
-    const proxyUrl = process.env.NODE_ENV === 'development' 
-      ? '/api/proxy?url=https://api.coingecko.com/api/v3/coins/list'
-      : 'https://api.coingecko.com/api/v3/coins/list';
 
-    const response = await fetch(proxyUrl, {
-      signal: AbortSignal.timeout(5000) // 5 second timeout
-    });
+    const response = await fetchWithRetry(
+      `${COINGECKO_API_BASE}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=50&page=1&sparkline=false`
+    );
+    const data = await response.json();
     
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
+    // Ensure data is in the expected format
+    if (!Array.isArray(data)) {
+      throw new Error('Invalid data format received from API');
     }
-    
-    const coins = await response.json();
-    return coins.slice(0, 50); // Limit to first 50 coins
+
+    return data.map((coin: any) => ({
+      id: coin.id,
+      symbol: coin.symbol.toUpperCase(),
+      name: coin.name
+    }));
+
   } catch (error) {
     console.warn("Using mock coin list due to fetch error:", error);
     return MOCK_COINS;
   }
+
 }
+
