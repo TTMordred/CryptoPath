@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BINANCE_API_URL = 'https://api.binance.com/api/v3';
+const BINANCE_API_URL = 'https://data-api.binance.vision/api/v3';
 
 interface BinanceKline {
   openTime: number;

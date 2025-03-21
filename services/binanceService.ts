@@ -46,7 +46,7 @@ export interface MarketTicker {
 }
 
 // Constants
-const BINANCE_API_URL = 'https://api.binance.com/api/v3';
+const BINANCE_API_URL = 'https://data-api.binance.vision/api/v3';
 const WEBSOCKET_URL = 'wss://stream.binance.com:9443/ws';
 const CACHE_DURATION = 60000; // 1 minute cache
 
