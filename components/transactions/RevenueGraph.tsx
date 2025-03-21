@@ -151,7 +151,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
         setError(null);
 
         // Use Binance API for fetching historical data
-        const response = await fetch(`https://api.binance.com/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=1d&limit=30`);
+        const response = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=1d&limit=30`);
         const data = await response.json();
 
         if (!mounted) return;
