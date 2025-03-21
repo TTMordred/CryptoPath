@@ -1,14 +1,33 @@
-
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Loader2, Clock, AlertTriangle, Info, Lock, Unlock, ZoomIn, ZoomOut,
+  Maximize2, Minimize2, ArrowLeftRight, ExternalLink, Sparkles, History
+} from "lucide-react";
+import { ErrorCard } from "@/components/ui/error-card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
 
-// Dynamically import ForceGraph2D (without generic type arguments)
-const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { ssr: false });
+// Only apply timeout for non-Infura providers - Infura needs unlimited time
+const ETHERSCAN_TIMEOUT = 120000; // 120 seconds timeout for Etherscan
+
+// Dynamically import ForceGraph2D with custom options
+const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[400px]">
+      <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+    </div>
+  )
+});
 
 interface Transaction {
   id: string;
@@ -16,9 +35,14 @@ interface Transaction {
   to: string;
   value: string;
   timestamp: string;
+  gas?: number;
+  gasPrice?: number;
+  blockNumber?: number;
+  nonce?: number;
+  input?: string;
 }
 
-// Define our node type with our custom properties.
+// Define our node type with our custom properties
 export interface GraphNode {
   id: string;
   label: string;
@@ -32,78 +56,518 @@ export interface GraphNode {
   fy?: number;
 }
 
+interface GraphLink {
+  source: string | GraphNode; 
+  target: string | GraphNode; 
+  value: number;
+  transaction?: Transaction; // Store the full transaction for showing details
+  color?: string;
+  curvature?: number;
+  highlighted?: boolean;
+}
+
 interface GraphData {
   nodes: GraphNode[];
-  links: { source: string; target: string; value: number }[];
+  links: GraphLink[];
 }
 
-const getRandomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+interface TransactionDetailsProps {
+  transaction?: Transaction;
+  isOpen: boolean;
+  onClose: () => void;
+  network: string;
+}
 
+// Enhanced random color generation with better contrast
+const getRandomColor = () => {
+  // Predefined colors with good contrast on dark backgrounds
+  const colors = [
+    "#f59e0b", // amber-500
+    "#10b981", // emerald-500
+    "#3b82f6", // blue-500
+    "#8b5cf6", // violet-500
+    "#ec4899", // pink-500
+    "#14b8a6", // teal-500
+    "#f97316", // orange-500
+    "#a855f7", // purple-500
+  ];
+  
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Format addresses for display
 function shortenAddress(address: string): string {
-  return `${address.slice(0, 3)}...${address.slice(-2)}`;
+  if (!address) return "Unknown";
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-// A mock function to get a name for an address (replace with your actual logic)
-function getNameForAddress(address: string): string | null {
-  const mockNames: { [key: string]: string } = {
-    "0x1234567890123456789012345678901234567890": "Alice",
-    "0x0987654321098765432109876543210987654321": "Bob",
+// Format currency values
+function formatValue(value: string): string {
+  if (!value) return "0 ETH";
+  
+  // If value is already formatted, return as is
+  if (value.includes("ETH") || value.includes("$")) return value;
+  
+  // Format numbers with commas
+  const num = parseFloat(value);
+  if (isNaN(num)) return value;
+  
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 6
+  }).format(num) + " ETH";
+}
+
+// Transaction details modal component with improved UI
+const TransactionDetails = ({ transaction, isOpen, onClose, network }: TransactionDetailsProps) => {
+  if (!transaction) return null;
+
+  const formatDate = (timestamp: string) => {
+    try {
+      return new Date(timestamp).toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    } catch (e) {
+      return timestamp;
+    }
   };
-  return mockNames[address] || null;
-}
+  
+  const copyToClipboard = (text: string, type: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${type} copied to clipboard`);
+  };
+  
+  // Get block explorer URL based on network
+  const getBlockExplorerUrl = (txHash: string) => {
+    if (network === 'optimism') {
+      return `https://optimistic.etherscan.io/tx/${txHash}`;
+    } else if (network === 'arbitrum') {
+      return `https://arbiscan.io/tx/${txHash}`;
+    } else {
+      // Default to Ethereum mainnet
+      return `https://etherscan.io/tx/${txHash}`;
+    }
+  };
+  
+  // Get block explorer name based on network
+  const getBlockExplorerName = () => {
+    if (network === 'optimism') {
+      return 'Optimistic Etherscan';
+    } else if (network === 'arbitrum') {
+      return 'Arbiscan';
+    } else {
+      return 'Etherscan';
+    }
+  };
+  
+  // Determine if this is an inbound or outbound transaction
+  const getTransactionDirection = () => {
+    // This would need the current address we're viewing to determine
+    // For now we'll just show a generic icon
+    return <ArrowLeftRight className="h-4 w-4 text-amber-500" />;
+  };
 
-export default function TransactionGraph() {
+  return (
+    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <DialogContent className="bg-gray-900 border border-amber-500/20 text-white max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="text-amber-400 flex items-center gap-2">
+            {getTransactionDirection()}
+            Transaction Details
+          </DialogTitle>
+          <DialogDescription className="text-gray-400">
+            Transaction {shortenAddress(transaction.id)}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-2">
+          {/* Transaction type - visual indicator */}
+          <div className="flex items-center justify-center">
+            <div className="flex items-center gap-3 border border-gray-800 px-4 py-3 rounded-lg bg-gray-800/50">
+              <div className="flex flex-col items-center">
+                <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
+                  <span className="text-xs font-bold">From</span>
+                </div>
+                <div className="text-sm mt-1 font-mono text-gray-400">{shortenAddress(transaction.from)}</div>
+              </div>
+              
+              <div className="h-[2px] w-12 bg-gradient-to-r from-red-500/50 to-green-500/50 relative">
+                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-amber-500 rounded-full"></div>
+              </div>
+              
+              <div className="flex flex-col items-center">
+                <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">
+                  <span className="text-xs font-bold">To</span>
+                </div>
+                <div className="text-sm mt-1 font-mono text-gray-400">{shortenAddress(transaction.to)}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <div className="text-sm text-gray-400">Transaction Hash</div>
+            <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
+              <code className="text-amber-400 font-mono break-all text-xs">{transaction.id}</code>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => copyToClipboard(transaction.id, "Hash")}
+                className="h-6 w-6 hover:bg-gray-800"
+              >
+                <Lock className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="text-sm text-gray-400">From</div>
+              <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
+                <code className="text-red-400 font-mono truncate text-xs">{transaction.from}</code>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => copyToClipboard(transaction.from, "From address")}
+                  className="h-6 w-6 hover:bg-gray-800"
+                >
+                  <Unlock className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="text-sm text-gray-400">To</div>
+              <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
+                <code className="text-green-400 font-mono truncate text-xs">{transaction.to}</code>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => copyToClipboard(transaction.to, "To address")}
+                  className="h-6 w-6 hover:bg-gray-800"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <div className="text-sm text-gray-400">Value</div>
+              <div className="rounded-md bg-gray-950 p-2 text-sm font-medium text-white">
+                <span className="text-amber-400">{formatValue(transaction.value)}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-1">
+              <div className="text-sm text-gray-400">Timestamp</div>
+              <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
+                {formatDate(transaction.timestamp)}
+              </div>
+            </div>
+          </div>
+          
+          {(transaction.blockNumber || transaction.gas) && (
+            <div className="grid grid-cols-2 gap-4">
+              {transaction.blockNumber && (
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-400">Block Number</div>
+                  <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
+                    #{transaction.blockNumber.toLocaleString()}
+                  </div>
+                </div>
+              )}
+              
+              {transaction.gas && (
+                <div className="space-y-1">
+                  <div className="text-sm text-gray-400">Gas</div>
+                  <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
+                    {transaction.gas.toLocaleString()}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => window.open(getBlockExplorerUrl(transaction.id), '_blank')}
+                >
+                  <Info className="mr-2 h-4 w-4" />
+                  View on {getBlockExplorerName()}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>See full transaction details in the block explorer</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+function TransactionGraph() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const address = searchParams.get("address");
   const network = searchParams.get("network") || "mainnet";
+  const provider = searchParams.get("provider") || "etherscan";
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<"timeout" | "network" | "api" | "notFound" | "unknown">("unknown");
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [loadingTimeElapsed, setLoadingTimeElapsed] = useState(0);
+  const timeElapsedIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | undefined>(undefined);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const graphRef = useRef<any>(null);
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
+  const [lastClickedLink, setLastClickedLink] = useState<string | null>(null);
+  
+  // UI controls state
+  const [zoomLevel, setZoomLevel] = useState(1);
+  const [showNodeLabels, setShowNodeLabels] = useState(true);
+  const [showTransactionHints, setShowTransactionHints] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
     if (address) {
+      // ... existing loading logic ...
       setLoading(true);
       setError(null);
+      setLoadingProgress(0);
+      setLoadingTimeElapsed(0);
+      
+      // Create a new AbortController for this request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // For Infura, we don't use any timeouts to prevent AbortErrors
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+      
+      // Only set timeout for non-Infura providers
+      let timeoutId: NodeJS.Timeout | null = null;
+      
+      if (provider !== 'infura') {
+        // Set up timeout only for non-Infura providers
+        timeoutId = setTimeout(() => {
+          if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+            setErrorType("timeout");
+            setError(`The request took too long to complete (${ETHERSCAN_TIMEOUT/1000}s). Please try switching to Infura.`);
+            setLoading(false);
+            
+            // Clear intervals
+            if (progressIntervalRef.current) {
+              clearInterval(progressIntervalRef.current);
+              progressIntervalRef.current = null;
+            }
+            
+            if (timeElapsedIntervalRef.current) {
+              clearInterval(timeElapsedIntervalRef.current);
+              timeElapsedIntervalRef.current = null;
+            }
+          }
+        }, ETHERSCAN_TIMEOUT);
+      }
+      
+      // Set up a progress interval to show simulated loading progress
+      progressIntervalRef.current = setInterval(() => {
+        setLoadingProgress(prev => {
+          // Even slower progress for Infura - never make it look like it's almost done
+          const incrementRate = provider === 'infura' ? 0.01 : 0.05;
+          const maxProgress = provider === 'infura' ? 80 : 95; // Cap at 80% for Infura
+          const newProgress = prev + (maxProgress - prev) * incrementRate;
+          return Math.min(newProgress, maxProgress);
+        });
+      }, 1000);
+      
+      // Set up time elapsed counter
+      timeElapsedIntervalRef.current = setInterval(() => {
+        setLoadingTimeElapsed(prev => prev + 1);
+      }, 1000);
       
       // Get the base URL dynamically
       const baseUrl = typeof window !== 'undefined' 
         ? window.location.origin 
         : process.env.NEXT_PUBLIC_URL || '';
         
-      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&offset=50`)
-        .then((res) => res.json())
-        .then((data: unknown) => {
+      console.log(`Fetching transactions for ${address} on ${network} using ${provider}...`);
+        
+      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&provider=${provider}&offset=50`, { signal })
+        .then((res) => {
+          if (!res.ok) {
+            if (res.status === 404) {
+              setErrorType("notFound");
+              throw new Error(`No transaction data found for this address on ${network}`);
+            } else {
+              setErrorType("api");
+              throw new Error(`API responded with status: ${res.status}`);
+            }
+          }
+          return res.json();
+        })
+        .then((data: any) => {
+          // ... existing data processing logic ...
           if (!Array.isArray(data)) {
+            setErrorType("api");
             throw new Error((data as any).error || "Unexpected API response");
           }
+          
           const transactions = data as Transaction[];
+          
+          // Set loading progress to 100%
+          setLoadingProgress(100);
+          
+          if (transactions.length === 0) {
+            // Create a simple graph with just the address
+            const singleNode = {
+              id: address,
+              label: shortenAddress(address),
+              color: "#f5b056", // Match theme color
+              type: "both",
+            };
+            
+            setGraphData({
+              nodes: [singleNode],
+              links: [],
+            });
+            
+            return;
+          }
+          
+          // Special case for Bitcoin or other networks
+          const isBitcoinOrSpecial = network === 'bitcoin' || 
+                                    transactions.some(tx => tx.from === "Bitcoin Transaction" || 
+                                                           !tx.from || !tx.to ||
+                                                           tx.from === "Unknown");
+          
+          if (isBitcoinOrSpecial) {
+            const nodes = new Map<string, GraphNode>();
+            const links: GraphLink[] = [];
+            
+            // Create a simplified view with the address in the center
+            nodes.set(address, {
+              id: address,
+              label: shortenAddress(address),
+              color: network === 'bitcoin' ? "#f7931a" : "#f5b056", // Bitcoin orange or default
+              type: "both",
+            });
+            
+            // Add transaction nodes around it
+            transactions.forEach((tx, index) => {
+              if (!tx.id) return; // Skip if no transaction ID
+              
+              const txNodeId = `tx-${tx.id.substring(0, 8)}`;
+              nodes.set(txNodeId, {
+                id: txNodeId,
+                label: shortenAddress(tx.id),
+                color: getRandomColor(),
+                type: "transaction",
+              });
+              
+              // Connect address to transaction
+              links.push({
+                source: address,
+                target: txNodeId,
+                value: 1,
+                transaction: tx,
+                color: '#f5b05660' // Semi-transparent amber
+              });
+            });
+            
+            setGraphData({
+              nodes: Array.from(nodes.values()),
+              links,
+            });
+            
+            return;
+          }
+          
+          // Regular EVM chain transaction graph
           const nodes = new Map<string, GraphNode>();
-          const links: GraphData["links"] = [];
+          const links: GraphLink[] = [];
+
+          // Add the main address first with a distinctive color
+          nodes.set(address, {
+            id: address,
+            label: shortenAddress(address),
+            color: "#f5b056", // Theme amber color
+            type: "both", 
+          });
 
           transactions.forEach((tx) => {
+            // Skip transactions with invalid addresses
+            if (!tx.from || !tx.to || tx.from === "Bitcoin Transaction" || 
+                tx.from === "Unknown" || tx.to === "Unknown") {
+              return;
+            }
+            
             if (!nodes.has(tx.from)) {
-              const name = getNameForAddress(tx.from);
               nodes.set(tx.from, {
                 id: tx.from,
-                label: name || shortenAddress(tx.from),
-                color: getRandomColor(),
+                label: shortenAddress(tx.from),
+                color: tx.from === address ? "#f5b056" : getRandomColor(),
                 type: tx.from === address ? "out" : "in",
               });
             }
+            
             if (!nodes.has(tx.to)) {
-              const name = getNameForAddress(tx.to);
               nodes.set(tx.to, {
                 id: tx.to,
-                label: name || shortenAddress(tx.to),
-                color: getRandomColor(),
+                label: shortenAddress(tx.to),
+                color: tx.to === address ? "#f5b056" : getRandomColor(),
                 type: tx.to === address ? "in" : "out",
               });
             }
+            
+            // Extract numeric value from the value string
+            let value = 1; // Default value
+            if (tx.value) {
+              const valueMatch = tx.value.match(/[\d.]+/);
+              if (valueMatch) {
+                value = parseFloat(valueMatch[0]);
+                // Cap the value to a reasonable range for visualization
+                value = Math.min(Math.max(value * 0.5, 0.5), 3);
+              }
+            }
+            
+            // Determine if this is incoming or outgoing
+            const isOutgoing = tx.from.toLowerCase() === address.toLowerCase();
+            const isIncoming = tx.to.toLowerCase() === address.toLowerCase();
+            
+            // Add some curvature to distinguish between bidirectional links
+            const curvature = Math.random() * 0.3 + 0.1; // Random curvature between 0.1 and 0.4
+            
             links.push({
               source: tx.from,
               target: tx.to,
-              value: Number.parseFloat(tx.value),
+              value: value,
+              transaction: tx,
+              curvature: curvature,
+              color: isOutgoing ? 'rgba(239, 68, 68, 0.6)' : // red for outgoing
+                      isIncoming ? 'rgba(34, 197, 94, 0.6)' : // green for incoming
+                      'rgba(255, 255, 255, 0.3)', // white for others
             });
           });
 
@@ -113,36 +577,208 @@ export default function TransactionGraph() {
           });
         })
         .catch((err) => {
+          // ... existing error handling logic ...
           console.error("Error fetching transaction data for graph:", err);
-          setError(err.message || "Failed to fetch transaction data for graph");
+          
+          if (err.name === 'AbortError') {
+            console.debug("Request aborted", { provider, network, timeElapsed: loadingTimeElapsed });
+            
+            // Special handling for unexpected aborts - shouldn't happen with Infura
+            if (provider === 'infura') {
+              setErrorType("api");
+              setError("The request to Infura was unexpectedly terminated. Please try again.");
+            } else {
+              setErrorType("timeout");
+              setError(`Request timed out after ${loadingTimeElapsed} seconds. Try switching to Infura which can handle longer searches.`);
+            }
+          } else if (err.message.includes('fetch') || err.message.includes('network')) {
+            setErrorType("network");
+            setError("Network error. Please check your internet connection.");
+          } else if (err.message.includes('not found') || err.message.includes('No transaction data')) {
+            setErrorType("notFound");
+            setError(err.message || "No transactions found for this address");
+            
+            // Create a fallback simple graph with just the address
+            const fallbackNode = {
+              id: address,
+              label: shortenAddress(address),
+              color: "#f5b056", // Match theme color
+              type: "both",
+            };
+            
+            setGraphData({
+              nodes: [fallbackNode],
+              links: [],
+            });
+          } else {
+            setErrorType("api");
+            setError(err.message || "Failed to fetch transaction data for graph");
+          }
         })
-        .finally(() => setLoading(false));
+        .finally(() => {
+          // Clear timeout if it exists
+          if (timeoutId !== null) {
+            clearTimeout(timeoutId);
+          }
+          
+          setLoading(false);
+          
+          // Clear the intervals
+          if (progressIntervalRef.current) {
+            clearInterval(progressIntervalRef.current);
+            progressIntervalRef.current = null;
+          }
+          
+          if (timeElapsedIntervalRef.current) {
+            clearInterval(timeElapsedIntervalRef.current);
+            timeElapsedIntervalRef.current = null;
+          }
+        });
     }
-  }, [address, network]);
+    
+    return () => {
+      // Cleanup function - make sure to abort any in-progress requests when unmounting
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      
+      // Clear intervals
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+      
+      if (timeElapsedIntervalRef.current) {
+        clearInterval(timeElapsedIntervalRef.current);
+      }
+    };
+  }, [address, network, provider]);
+  
+  // Show transaction hint on first render
+  useEffect(() => {
+    if (graphData && graphData.links.length > 0 && !showTransactionHints) {
+      setTimeout(() => {
+        toast.info(
+          "Click on any transaction line to view details",
+          {
+            duration: 5000,
+            icon: <Sparkles className="text-amber-400" />,
+          }
+        );
+        setShowTransactionHints(true);
+      }, 2000);
+    }
+  }, [graphData, showTransactionHints]);
 
-  // Update onNodeClick to accept both the node and the MouseEvent.
+  // Update onNodeClick to match the expected signature
   const handleNodeClick = useCallback(
-    (node: { [others: string]: any }, event: MouseEvent) => {
-      const n = node as GraphNode;
-      router.push(`/search/?address=${n.id}&network=${network}`);
+    (node: any, event: MouseEvent) => {
+      if (node.id && typeof node.id === 'string' && node.id.startsWith('tx-')) {
+        return; // Skip clicks on transaction nodes
+      }
+      
+      router.push(`/search/?address=${node.id}&network=${network}&provider=${provider}`);
     },
-    [router, network]
+    [router, network, provider]
   );
+  
+  // Handle link/edge click to show transaction details
+  const handleLinkClick = useCallback(
+    (link: any, event: MouseEvent) => {
+      if (link.transaction) {
+        setSelectedTransaction(link.transaction);
+        setIsDialogOpen(true);
+        setLastClickedLink(link.transaction.id);
+        
+        // Highlight the clicked link
+        if (graphData) {
+          const updatedLinks = graphData.links.map(l => ({
+            ...l,
+            highlighted: l.transaction?.id === link.transaction?.id
+          }));
+          
+          setGraphData({
+            nodes: [...graphData.nodes],
+            links: updatedLinks
+          });
+          
+          // Add a visual effect to the clicked link (pulsing)
+          setTimeout(() => {
+            if (graphRef.current) {
+              graphRef.current.refresh();
+            }
+          }, 100);
+        }
+      }
+    },
+    [graphData]
+  );
+  
+  // Handle link hover
+  const handleLinkHover = useCallback(
+    (link: GraphLink | null) => {
+      if (link?.transaction) {
+        setHoveredLink(link.transaction.id);
+        
+        // Change cursor to pointer when hovering over a link
+        if (canvasRef.current) {
+          canvasRef.current.style.cursor = 'pointer';
+        }
+      } else {
+        setHoveredLink(null);
+        
+        // Reset cursor
+        if (canvasRef.current) {
+          canvasRef.current.style.cursor = 'default';
+        }
+      }
+    },
+    []
+  );
+  
+  // Get canvas ref from ForceGraph
+  const handleCanvasRef = useCallback((canvas: HTMLCanvasElement) => {
+    canvasRef.current = canvas;
+    
+    // Add tooltip hint on canvas
+    if (canvas) {
+      canvas.title = "Click on any transaction line to view details";
+    }
+  }, []);
 
-  // Update nodes to reflect their transaction type ("both" if a node has both incoming and outgoing links)
+  // Update nodes to reflect their transaction type
   useEffect(() => {
     if (graphData) {
       const updatedNodes: GraphNode[] = graphData.nodes.map((node) => {
-        const incoming = graphData.links.filter(link => link.target === node.id);
-        const outgoing = graphData.links.filter(link => link.source === node.id);
+        // Skip transaction nodes
+        if (node.id.startsWith('tx-')) {
+          return node;
+        }
+        
+        const incoming = graphData.links.filter(link => {
+          const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+          return targetId === node.id;
+        });
+        
+        const outgoing = graphData.links.filter(link => {
+          const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+          return sourceId === node.id;
+        });
+        
         if (incoming.length > 0 && outgoing.length > 0) {
-          // Explicitly assert that the type is the literal "both"
+          // Both incoming and outgoing transactions
           return { ...node, type: "both" as "both" };
+        } else if (incoming.length > 0) {
+          // Only incoming transactions
+          return { ...node, type: "in" as "in" };
+        } else if (outgoing.length > 0) {
+          // Only outgoing transactions
+          return { ...node, type: "out" as "out" };
         }
         return node;
       });
+      
       if (JSON.stringify(updatedNodes) !== JSON.stringify(graphData.nodes)) {
-        // Use the existing graphData rather than a functional update.
+        // Use the existing graphData rather than a functional update
         setGraphData({
           ...graphData,
           nodes: updatedNodes,
@@ -150,22 +786,95 @@ export default function TransactionGraph() {
       }
     }
   }, [graphData]);
+  
+  // Handle zoom controls
+  const handleZoomIn = () => {
+    if (graphRef.current) {
+      const currentZoom = graphRef.current.zoom();
+      graphRef.current.zoom(currentZoom * 1.2, 400); // 20% zoom in with 400ms animation
+      setZoomLevel(prevZoom => prevZoom * 1.2);
+    }
+  };
+  
+  const handleZoomOut = () => {
+    if (graphRef.current) {
+      const currentZoom = graphRef.current.zoom();
+      graphRef.current.zoom(currentZoom / 1.2, 400); // 20% zoom out with 400ms animation
+      setZoomLevel(prevZoom => prevZoom / 1.2);
+    }
+  };
+  
+  const handleResetZoom = () => {
+    if (graphRef.current) {
+      graphRef.current.zoom(1, 800); // Reset to zoom level 1 with 800ms animation
+      setZoomLevel(1);
+      
+      // Also center the graph
+      if (address && graphRef.current.centerAt) {
+        // Find the main address node
+        const mainNode = graphData?.nodes.find(node => node.id === address);
+        if (mainNode) {
+          // Center on the main address node
+          setTimeout(() => {
+            graphRef.current.centerAt(mainNode.x, mainNode.y, 1000);
+          }, 100);
+        } else {
+          // If we can't find the main node, just recenter the graph
+          graphRef.current.zoomToFit(800);
+        }
+      }
+    }
+  };
+  
+  // Handle fullscreen toggle
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
 
   if (loading) {
     return (
-      <Card className="h-[500px] flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <Card className="h-[600px] flex flex-col items-center justify-center bg-gray-900 border border-amber-500/20">
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-4" />
+        <div className="text-center">
+          <p className="text-sm text-gray-300 mb-1">
+            {provider === 'infura' 
+              ? 'Loading transaction graph from Infura...' 
+              : 'Loading transaction graph...'}
+          </p>
+          <div className="w-64 h-2 bg-gray-800 rounded-full mt-2 mb-1 overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-300 ease-out"
+              style={{ width: `${loadingProgress}%` }}
+            ></div>
+          </div>
+          <p className="text-sm text-amber-400">{Math.round(loadingProgress)}%</p>
+          
+          <div className="mt-4 text-xs text-gray-400 flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span>Time elapsed: {loadingTimeElapsed}s</span>
+          </div>
+          
+          {provider === 'infura' && (
+            <div className="mt-4 max-w-sm px-4">
+              <p className="text-xs text-amber-400">
+                <AlertTriangle className="inline h-3 w-3 mr-1" />
+                Infura searches have no timeout and may take several minutes to complete for complex wallets. Please be patient.
+              </p>
+              {loadingTimeElapsed > 30 && (
+                <p className="mt-2 text-xs text-amber-500">
+                  Still searching... Infura queries can take a long time for addresses with many transactions.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
       </Card>
     );
   }
 
-  if (error) {
+  if (error && !graphData) {
     return (
-      <Card className="h-[500px]">
-        <CardContent className="h-full flex items-center justify-center">
-          <p className="text-center text-red-500">Error: {error}</p>
-        </CardContent>
-      </Card>
+      <ErrorCard type={errorType} message={error} />
     );
   }
 
@@ -174,15 +883,77 @@ export default function TransactionGraph() {
   }
 
   return (
-    <Card className="h-[540px] bg-gray-900">
-      <CardHeader>
-        <CardTitle>Transaction Graph</CardTitle>
+    <Card className={`bg-gray-900/95 backdrop-blur-sm border border-amber-500/20 ${isFullscreen ? 'fixed top-0 left-0 right-0 bottom-0 z-50 h-screen w-screen rounded-none' : 'h-[593px]'}`}>
+      <CardHeader className="bg-black/20 border-b border-amber-500/10">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-medium flex items-center gap-2">
+            <span className="text-amber-400">Transaction Graph</span>
+            {graphData.links.length > 0 ? (
+              <Badge variant="outline" className="ml-2 text-xs bg-amber-500/10 border-amber-500/30 text-amber-400">
+                {graphData.links.length} {graphData.links.length === 1 ? 'Transaction' : 'Transactions'}
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="ml-2 text-xs bg-gray-800 border-gray-700 text-gray-400">
+                No Transactions
+              </Badge>
+            )}
+          </CardTitle>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={handleZoomIn}
+              title="Zoom In"
+            >
+              <ZoomIn size={16} />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={handleZoomOut}
+              title="Zoom Out"
+            >
+              <ZoomOut size={16} />
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={handleResetZoom}
+              title="Reset Zoom"
+            >
+              <span className="text-xs">1:1</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-gray-400 hover:text-white hover:bg-gray-800"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </Button>
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="h-[calc(100%-60px)]">
+      <CardContent className={`p-0 ${isFullscreen ? 'h-[calc(100vh-116px)]' : 'h-[calc(100%-116px)]'}`}>
         <ForceGraph2D
+          ref={graphRef}
           graphData={graphData}
           nodeLabel={((node: GraphNode) => node.id) as any}
           nodeColor={((node: GraphNode) => node.color) as any}
+          linkColor={(link) => (link as any as GraphLink).color || 'rgba(255, 255, 255, 0.2)'}
+          linkCurvature={(link) => (link as any as GraphLink).curvature || 0}
+          linkDirectionalParticles={3}
+          linkDirectionalParticleWidth={2}
+          linkDirectionalParticleSpeed={0.005}
+          linkWidth={(link) => (link as any as GraphLink).value || 1}
           nodeCanvasObject={
             ((node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
               if (node.x == null || node.y == null) return;
@@ -191,32 +962,60 @@ export default function TransactionGraph() {
               ctx.font = `${fontSize}px Sans-Serif`;
               ctx.textAlign = "center";
               ctx.textBaseline = "middle";
+              
+              // Draw node
               ctx.beginPath();
-              ctx.arc(x, y, type === "both" ? 4 : 3, 0, 2 * Math.PI, false);
-              ctx.fillStyle =
-                type === "in"
-                  ? "rgba(0, 255, 0, 0.5)"
-                  : type === "out"
-                  ? "rgba(255, 0, 0, 0.5)"
-                  : "rgba(255, 255, 0, 0.5)";
+              const nodeSize = type === "both" ? 5 : 3;
+              ctx.arc(x, y, nodeSize, 0, 2 * Math.PI, false);
+              
+              const isMainNode = node.id === address;
+              
+              // Node fill style based on type
+              if (isMainNode) {
+                // Gradient fill for the main node
+                const gradient = ctx.createRadialGradient(x, y, 0, x, y, nodeSize * 1.5);
+                gradient.addColorStop(0, "#F5B056");
+                gradient.addColorStop(1, "#D97706");
+                ctx.fillStyle = gradient;
+              } else {
+                ctx.fillStyle = 
+                  type === "in"
+                    ? "rgba(34, 197, 94, 0.8)" // Incoming - green
+                    : type === "out"
+                    ? "rgba(239, 68, 68, 0.8)" // Outgoing - red
+                    : "rgba(245, 176, 86, 0.8)"; // Transaction - amber
+              }
               ctx.fill();
+              
+              // Draw label
               ctx.fillStyle = "white";
-              ctx.fillText(label, x, y);
+              ctx.fillText(label, x, y + nodeSize + 4);
             }) as any
           }
-          nodeRelSize={6}
-          linkWidth={1}
-          linkColor={() => "rgb(255, 255, 255)"}
-          linkDirectionalParticles={2}
-          linkDirectionalParticleWidth={3}
-          linkDirectionalParticleSpeed={0.005}
-          d3VelocityDecay={0.3}
-          d3AlphaDecay={0.01}
           onNodeClick={handleNodeClick}
-          width={580}
-          height={440}
+          onLinkClick={handleLinkClick}
+          width={isFullscreen ? window.innerWidth : 580}
+          height={isFullscreen ? window.innerHeight - 116 : 510}
         />
       </CardContent>
+      <CardFooter className="bg-black/20 border-t border-amber-500/10 flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-gray-400 hover:text-white hover:bg-gray-800"
+          onClick={toggleFullscreen}
+        >
+          {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+        </Button>
+      </CardFooter>
+      <TransactionDetails 
+        transaction={selectedTransaction} 
+        isOpen={isDialogOpen} 
+        onClose={() => setIsDialogOpen(false)} 
+        network={network}
+      />
     </Card>
   );
 }
+
+export default TransactionGraph;

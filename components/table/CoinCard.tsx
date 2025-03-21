@@ -32,7 +32,7 @@ const CoinCard: React.FC<CoinCardProps> = ({ coin, onCardClick }) => {
     <Link
       href={`/coin/${coin.id}`}
       onClick={handleCardClick}
-      className="crypto-card p-5 flex flex-col h-full pulse-glow cursor-pointer relative glass-dark rounded-xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(245,176,86,0.4)] hover:border-orange-500/80 hover:-translate-y-2"
+      className="crypto-card p-5 border-2 border-[#f6b355]/30 flex flex-col h-full pulse-glow cursor-pointer relative glass-dark rounded-xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(245,176,86,0.4)] hover:border-orange-500/80 hover:-translate-y-2"
     >
       <style jsx>{`
         .crypto-card {

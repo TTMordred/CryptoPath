@@ -15,6 +15,28 @@ import "./globals.css";
 import { Toaster } from 'react-hot-toast'; // Toast notification system
 import { WalletProvider } from '@/components/Faucet/walletcontext'; // Blockchain wallet context
 import { AuthProvider } from '@/lib/context/AuthContext'; // Authentication context
+import { DebugBadge } from "@/components/ui/debug-badge";
+import { SettingsProvider } from "@/components/context/SettingsContext"; // Add this import
+import SearchOnTop from "@/components/SearchOnTop";
+import { Inter, Exo_2, Quantico } from 'next/font/google';
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+});
+
+const exo2 = Exo_2({
+  subsets: ['latin'],
+  variable: '--font-exo2',
+});
+
+const quantico = Quantico({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-quantico',
+});
+
+export const dynamic = 'force-dynamic';
 
 /**
  * Geist Sans font configuration
@@ -39,8 +61,8 @@ const geistMono = Geist_Mono({
  * [existing comment preserved]
  */
 export const metadata: Metadata = { 
-  title: "CryptoPath",
-  description: "Create by members of group 3 - Navigate the world of blockchain with CryptoPath",
+  title: "CryptoPath - Blockchain Explorer",
+  description: "A comprehensive tool for exploring blockchain data",
   icons: {
     icon: "/favicon.ico",
   },
@@ -72,23 +94,37 @@ export const metadata: Metadata = {
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body>
-        {/* AuthProvider - Manages user authentication state */}
-        <AuthProvider>
-          {/* WalletProvider - Manages blockchain wallet connections and state */}
-          <WalletProvider>
-            {/* QueryProvider - Handles data fetching and caching */}
-            <QueryProvider>
-              {/* Application UI components */}
-              <SplashScreen /> {/* Initial loading screen */}
-              <Header /> {/* Global navigation */}
-              {children} {/* Page-specific content */}
-              <Toaster position="top-center" /> {/* Toast notification container */}
-              <Footer /> {/* Global footer */}
-            </QueryProvider>
-          </WalletProvider>
-        </AuthProvider>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} ${exo2.variable} ${quantico.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Add meta tags for better mobile experience */}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+      </head>
+      <body className="font-sans bg-black text-white min-h-screen">
+        <main className="min-h-screen bg-[url('/images/bg-gradient.png')] bg-cover bg-no-repeat bg-top">
+          {/* AuthProvider - Manages user authentication state */}
+          <AuthProvider>
+            {/* Add SettingsProvider here */}
+            <SettingsProvider>
+              {/* WalletProvider - Manages blockchain wallet connections and state */}
+              <WalletProvider>
+                {/* QueryProvider - Handles data fetching and caching */}
+                <QueryProvider>
+                  {/* Application UI components */}
+                  <SplashScreen /> {/* Initial loading screen */}
+                  <SearchOnTop />
+                  <Header /> {/* Global navigation */}
+                  {children} {/* Page-specific content */}
+                  <Toaster position="top-center" /> {/* Toast notification container */}
+                  <Footer /> {/* Global footer */}
+                  
+                  {/* Debug Badge - Only shows in development when needed */}
+                  <DebugBadge position="bottom-right" />
+                </QueryProvider>
+              </WalletProvider>
+            </SettingsProvider>
+          </AuthProvider>
+        </main>
+        <Toaster />
       </body>
     </html>
   );

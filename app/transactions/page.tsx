@@ -6,6 +6,7 @@ import ParticlesBackground from '@/components/ParticlesBackground';
 import RevenueGraph from '@/components/transactions/RevenueGraph';
 import WalletCharts from '@/components/transactions/WalletCharts';
 import TransactionSection from '@/components/transactions/TransactionSection';
+import TradingViewLayout from '@/components/transactions/TradingViewLayout';
 import { Card, CardContent } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { CoinOption } from "@/services/cryptoService";
@@ -49,6 +50,13 @@ export default function TransactionExplorer() {
           <div className="mb-6">
             <Suspense fallback={<LoadingCard>Loading wallet charts...</LoadingCard>}>
               <WalletCharts />
+            </Suspense>
+          </div>
+          
+          {/* Binance Trading View - New Component */}
+          <div className="mb-6">
+            <Suspense fallback={<LoadingCard>Loading trading view...</LoadingCard>}>
+              <TradingViewLayout />
             </Suspense>
           </div>
 

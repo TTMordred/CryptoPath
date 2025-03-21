@@ -1,132 +1,83 @@
 'use client';
+
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
 import { toast } from 'sonner';
-import { supabase } from '@/src/integrations/supabase/client';
-import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
+import { supabase} from '@/src/integrations/supabase/client';
+import { PostgrestError } from '@supabase/supabase-js';
+import { Web3OnboardProvider, init, useConnectWallet} from '@web3-onboard/react';
+
 import injectedModule from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import coinbaseModule from '@web3-onboard/coinbase';
-import infinityWalletModule from '@web3-onboard/infinity-wallet'
-import safeModule from '@web3-onboard/gnosis'
-import trezorModule from '@web3-onboard/trezor'
-import magicModule from '@web3-onboard/magic'
+import infinityWalletModule from '@web3-onboard/infinity-wallet';
+import safeModule from '@web3-onboard/gnosis';
+import trezorModule from '@web3-onboard/trezor';
+import magicModule from '@web3-onboard/magic';
 import dcentModule from '@web3-onboard/dcent';
-import sequenceModule from '@web3-onboard/sequence'
-import tahoModule from '@web3-onboard/taho'
-import trustModule from '@web3-onboard/trust'
-import okxModule from '@web3-onboard/okx'
+import sequenceModule from '@web3-onboard/sequence';
+import tahoModule from '@web3-onboard/taho';
+import trustModule from '@web3-onboard/trust';
+import okxModule from '@web3-onboard/okx';
 import frontierModule from '@web3-onboard/frontier';
 import { useAuth } from '@/lib/context/AuthContext';
-import { hashSync, genSaltSync, compareSync } from 'bcryptjs';
+import { useSettings } from '@/components/context/SettingsContext';
 
-const dcent = dcentModule();
-
-const saltRounds = 10;
-
-const hashPassword = (password: string) => {
-  const salt = genSaltSync(saltRounds);
-  const hashedPassword = hashSync(password, salt);
-  return hashedPassword;
-};
-const INFURA_KEY = process.env.NEXT_PUBLIC_INFURA_KEY; // Replace with your Infura key
-
-// Initialize WalletConnect with projectId
-const walletConnect = walletConnectModule({
-  projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID, // Replace with your WalletConnect project ID
-  optionalChains: [1, 137] // Optional: specify chains you want to support
-});
-
-const injected = injectedModule();
-const coinbase = coinbaseModule();
-const infinityWallet = infinityWalletModule()
-const safe = safeModule()
-const sequence = sequenceModule()
-const taho = tahoModule() // Previously named Tally Ho wallet
-const trust = trustModule()
-const okx = okxModule()
-const frontier = frontierModule()
-const trezorOptions = {
-  email: 'test@test.com',
-  appUrl: 'https://www.blocknative.com'
+// Định nghĩa kiểu cho profile
+interface Profile {
+  id: string;
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  updated_at: string;
+  auth_provider: string | null;
+  profile_image: string | null;
+  background_image: string | null;
+  wallets: { address: string; is_default: boolean }[] | null;
 }
 
-const trezor = trezorModule(trezorOptions)
+// Định nghĩa kiểu cho account
+interface Account {
+  address: `0x${string}`;
+  ens: string | null;
+}
 
-const magic = magicModule({
-  apiKey: 'pk_live_E9B0C0916678868E'
-})
+// Web3-Onboard configuration
+const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129';
+const walletConnect = walletConnectModule({
+  projectId: 'b773e42585868b9b143bb0f1664670f1',
+  optionalChains: [1, 137],
+});
 
-const wallets = [infinityWallet,
-  sequence,
-  injected,
-  trust,
-  okx,
-  frontier,
-  taho,
-  coinbase,
-  dcent,
+const wallets = [
+  infinityWalletModule(),
+  sequenceModule(),
+  injectedModule(),
+  trustModule(),
+  okxModule(),
+  frontierModule(),
+  tahoModule(),
+  coinbaseModule(),
+  dcentModule(),
   walletConnect,
-  safe,
-  magic];
+  safeModule(),
+  magicModule({ apiKey: 'pk_live_E9B0C0916678868E' }),
+  trezorModule({ email: 'test@test.com', appUrl: 'https://www.blocknative.com' }),
+];
 
 const chains = [
-  {
-    id: '0x1',
-    token: 'ETH',
-    label: 'Ethereum Mainnet',
-    rpcUrl: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
-  },
-  {
-    id: 11155111,
-    token: 'ETH',
-    label: 'Sepolia',
-    rpcUrl: 'https://rpc.sepolia.org/'
-  },
-  {
-    id: '0x13881',
-    token: 'MATIC',
-    label: 'Polygon - Mumbai',
-    rpcUrl: 'https://matic-mumbai.chainstacklabs.com',
-  },
-  {
-    id: '0x38',
-    token: 'BNB',
-    label: 'Binance',
-    rpcUrl: 'https://bsc-dataseed.binance.org/'
-  },
-  {
-    id: '0xA',
-    token: 'OETH',
-    label: 'OP Mainnet',
-    rpcUrl: 'https://mainnet.optimism.io'
-  },
-  {
-    id: '0xA4B1',
-    token: 'ARB-ETH',
-    label: 'Arbitrum',
-    rpcUrl: 'https://rpc.ankr.com/arbitrum'
-  },
-  {
-    id: '0xa4ec',
-    token: 'ETH',
-    label: 'Celo',
-    rpcUrl: 'https://1rpc.io/celo'
-  },
-  {
-    id: 666666666,
-    token: 'DEGEN',
-    label: 'Degen',
-    rpcUrl: 'https://rpc.degen.tips'
-  },
-  {
-    id: 2192,
-    token: 'SNAX',
-    label: 'SNAX Chain',
-    rpcUrl: 'https://mainnet.snaxchain.io'
-  }
+  { id: '0x1', token: 'ETH', label: 'Ethereum Mainnet', rpcUrl: `https://mainnet.infura.io/v3/${INFURA_KEY}` },
+  { id: '11155111', token: 'ETH', label: 'Sepolia', rpcUrl: 'https://rpc.sepolia.org/' },
+  { id: '0x13881', token: 'MATIC', label: 'Polygon - Mumbai', rpcUrl: 'https://matic-mumbai.chainstacklabs.com' },
+  { id: '0x38', token: 'BNB', label: 'Binance', rpcUrl: 'https://bsc-dataseed.binance.org/' },
+  { id: '0xA', token: 'OETH', label: 'OP Mainnet', rpcUrl: 'https://mainnet.optimism.io' },
+  { id: '0xA4B1', token: 'ARB-ETH', label: 'Arbitrum', rpcUrl: 'https://rpc.ankr.com/arbitrum' },
+  { id: '0xa4ec', token: 'ETH', label: 'Celo', rpcUrl: 'https://1rpc.io/celo' },
+  { id: '666666666', token: 'DEGEN', label: 'Degen', rpcUrl: 'https://rpc.degen.tips' },
+  { id: '2192', token: 'SNAX', label: 'SNAX Chain', rpcUrl: 'https://mainnet.snaxchain.io' },
 ];
 
 const appMetadata = {
@@ -138,76 +89,100 @@ const appMetadata = {
   ],
 };
 
-const web3Onboard = init({
-  wallets,
-  chains,
-  appMetadata,
-});
+const web3Onboard = init({ wallets, chains, appMetadata });
+
+// Debounce utility với kiểu TypeScript
+const debounce = <T extends (...args: any[]) => void>(func: T, wait: number) => {
+  let timeout: NodeJS.Timeout | undefined;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
 
 function LoginPageContent() {
   const router = useRouter();
-  const { signInWithWalletConnect, signIn } = useAuth();
+  const { signInWithWalletConnect } = useAuth();
+  const { updateProfile, addWallet, syncWithSupabase } = useSettings();
 
-  // Form state
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  // Wallet state
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [emailError, setEmailError] = useState<string>('');
+  const [passwordError, setPasswordError] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [{ wallet, connecting }, connect, disconnect] = useConnectWallet();
-  const [isLoggedOut, setIsLoggedOut] = useState(false);
-
-  interface Account {
-    address: string;
-    ens: string | null;
-  }
-
-  const formatWalletAddress = (walletAddress: string) => {
-    if (!walletAddress) return "";
-    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
-  };
-  
+  const [isLoggedOut, setIsLoggedOut] = useState<boolean>(false);
   const [account, setAccount] = useState<Account | null>(null);
 
-  // Handle wallet connection
+  const formatWalletAddress = (walletAddress: string): string => {
+    if (!walletAddress) return '';
+    return `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
+  };
+
+  useEffect(() => {
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) router.push('/');
+    };
+    checkExistingSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) router.push('/');
+      else if (event === 'SIGNED_OUT') setIsLoggedOut(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
   useEffect(() => {
     if (wallet?.provider && !isLoggedOut) {
       const { address, ens } = wallet.accounts[0];
-      setAccount({
-        address,
-        ens: ens?.name || null,
-      });
-      
-      // Store wallet authentication details in Supabase using our custom AuthContext method
+      setAccount({ address, ens: ens?.name || null });
+
       const authenticateWithWallet = async () => {
         try {
           setIsLoading(true);
-          
-          // Use our custom auth context method to sign in with wallet
           const { data, error } = await signInWithWalletConnect(address);
-          
-          if (error) {
-            console.error('Wallet auth error:', error);
-            toast.error(`Failed to authenticate with wallet: ${error.message}`);
-            return;
-          }
-          
+          if (error) throw new Error(error.message);
+
+          if (!data || !data.session) throw new Error('No session data returned from sign-in');
+
+          updateProfile({
+            username: ens?.name || formatWalletAddress(address),
+            profileImage: null,
+            backgroundImage: null,
+          });
+          addWallet(address);
+          await syncWithSupabase();
+
+          // Cập nhật wallets trong profiles với cấu trúc đúng
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: data.session.user.id,
+              username: ens?.name || formatWalletAddress(address),
+              wallets: [{ address, is_default: true }], // Đảm bảo khớp kiểu { address: string; is_default: boolean }
+              updated_at: new Date().toISOString(),
+            });
+
+          if (profileError) throw new Error(profileError.message);
+
           toast.success('Successfully authenticated with wallet');
           router.push('/');
-        } catch (error: any) {
-          console.error('Error authenticating with wallet:', error);
-          toast.error(`Authentication failed: ${error?.message || 'Unknown error'}`);
+        } catch (error: unknown) {
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          console.error('Wallet authentication error:', error);
+          toast.error(`Authentication failed: ${message}`);
         } finally {
           setIsLoading(false);
         }
       };
-      
+
       authenticateWithWallet();
     }
-  }, [wallet, router, isLoggedOut, signInWithWalletConnect]);
+  }, [wallet, router, isLoggedOut, signInWithWalletConnect, updateProfile, addWallet, syncWithSupabase]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -216,72 +191,64 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
       if (error) {
-        if (error.message.includes('email')) {
-          setEmailError(error.message);
-        } else if (error.message.includes('password')) {
-          setPasswordError(error.message);
-        } else {
-          toast.error(error.message);
-        }
+        if (error.message.includes('email')) setEmailError(error.message);
+        else if (error.message.includes('password')) setPasswordError(error.message);
+        else toast.error(error.message);
         return;
       }
 
-      // Fetch user profile information
-      const { data: profileData } = await supabase
+      if (!data.user || !data.session) {
+        toast.error('Login failed: No user data returned.');
+        return;
+      }
+
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
         .single();
 
-      // Store only non-sensitive display information in localStorage
-      const publicUserData = {
-        name: profileData?.display_name || data.user.email?.split('@')[0],
-        isLoggedIn: true,
-        // No need to include password field since it's not used
-      };
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        toast.error('Failed to load profile data.');
+        return;
+      }
 
-      // Generate a separate token instead of using password
-      const userIdentifier = data.user.id || '';
-      const hashedIdentifier = hashSync(userIdentifier, 10);
-      localStorage.setItem('userAuth', hashedIdentifier);
+      updateProfile({
+        username: profileData.username || email.split('@')[0],
+        profileImage: profileData.profile_image || null,
+        backgroundImage: profileData.background_image || null,
+      });
+      await syncWithSupabase();
 
-      // If you need to store some authentication token or identifier
-      const userToken = data.session?.access_token || '';
-      localStorage.setItem('userToken', userToken);
-
-      // Store the display info
-      localStorage.setItem('userDisplayInfo', JSON.stringify(publicUserData));
-      
       toast.success('Login successful!');
       router.push('/');
-    } catch (error) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Login error:', error);
-      toast.error('An unexpected error occurred. Please try again.');
+      toast.error(`An unexpected error occurred: ${message}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleWalletConnect = async () => {
+  const handleWalletConnect = debounce(async () => {
     if (!wallet) {
-      connect(); // Connect wallet if not connected
+      await connect();
     } else {
-      // Handle wallet disconnect
-      disconnect({ label: wallet.label });
+      await disconnect({ label: wallet.label });
       setAccount(null);
       setIsLoggedOut(true);
-      
-      // Sign out of Supabase auth
       await supabase.auth.signOut();
-      
-      // Clear local storage
-      localStorage.removeItem('currentUser');
       router.push('/login');
     }
-  };
+  }, 1000);
 
   return (
     <>
@@ -290,7 +257,7 @@ function LoginPageContent() {
         <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
           <div id="form-container" className="w-full max-w-sm md:max-w-3xl">
             <div className="card bg-transparent rounded-md shadow-lg overflow-hidden">
-              <div className="card-content p-6 md:p-10">
+              <div className="card-content p-6 md:p-10 bg-white/5 rounded-[20px]  backdrop-blur-sm">
                 <form onSubmit={handleSubmit}>
                   <div className="flex flex-col gap-6">
                     <div className="flex flex-col items-center text-center">
@@ -301,15 +268,13 @@ function LoginPageContent() {
                       </p>
                     </div>
                     <div className="grid gap-2">
-                      <label htmlFor="email" className="text-sm font-medium text-white">
-                        Email
-                      </label>
+                      <label htmlFor="email" className="text-sm font-medium text-white">Email</label>
                       <input
                         id="email"
                         type="email"
                         placeholder="m@example.com"
                         required
-                        className="w-full px-3 py-2 border border-white rounded-md bg-black text-white"
+                        className="w-full px-3 py-2  border rounded-[20px] bg-black text-white"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}
@@ -318,16 +283,14 @@ function LoginPageContent() {
                     </div>
                     <div className="grid gap-2">
                       <div className="flex items-center">
-                        <label htmlFor="password" className="text-sm font-medium text-white">
-                          Password
-                        </label>
+                        <label htmlFor="password" className="text-sm font-medium text-white">Password</label>
                       </div>
                       <div className="relative">
                         <input
                           id="password"
                           type={showPassword ? 'text' : 'password'}
                           required
-                          className="w-full px-3 py-2 border border-white rounded-md bg-black text-white pr-10"
+                          className="w-full px-3 py-2 border rounded-[20px] bg-black text-white pr-10"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           disabled={isLoading}
@@ -335,7 +298,7 @@ function LoginPageContent() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-white"
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center "
                           disabled={isLoading}
                         >
                           {showPassword ? (
@@ -350,8 +313,7 @@ function LoginPageContent() {
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5
-                                  c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774"
+                                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774"
                               />
                               <path
                                 strokeLinecap="round"
@@ -371,9 +333,7 @@ function LoginPageContent() {
                               <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5
-                                  c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639
-                                  C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
                               />
                               <path
                                 strokeLinecap="round"
@@ -384,72 +344,46 @@ function LoginPageContent() {
                           )}
                         </button>
                       </div>
-                      {passwordError && (
-                        <span className="text-red-500 text-sm">{passwordError}</span>
-                      )}
+                      {passwordError && <span className="text-red-500 text-sm">{passwordError}</span>}
                     </div>
                     <button
                       type="submit"
-                      className={`w-full bg-white text-black py-2 px-4 rounded-md hover:bg-gray-200 ${
-                        isLoading ? 'opacity-70 cursor-not-allowed' : ''
-                      }`}
+                      className={`w-full bg-white text-black py-2 px-4  border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                       disabled={isLoading}
                     >
-                      {isLoading ? 'Logging in...' : 'Login'}
+                      Login
                     </button>
                     <div className="text-center text-sm">
                       <span className="bg-black px-2 text-gray-400">Or continue with</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      {/* Social login buttons (icons only) */}
-                      <button className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800">
-                        {/* Apple icon */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          className="w-5 h-5 text-white"
-                        >
-                          <path
-                            d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 
-                              1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 
-                              1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857"
-                            fill="currentColor"
-                          />
-                        </svg>
-                        <span className="sr-only">Login with Apple</span>
-                      </button>
+                    <div className="flex gap-2">
                       <button
                         id="google-login"
-                        className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
+                        className="flex items-center justify-center w-full  border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
                         onClick={async () => {
                           setIsLoading(true);
                           try {
-                            const { data, error } = await supabase.auth.signInWithOAuth({
+                            const { error } = await supabase.auth.signInWithOAuth({
                               provider: 'google',
-                              options: {
-                                redirectTo: `${window.location.origin}/`,
-                              },
+                              options: { redirectTo: `${window.location.origin}/` },
                             });
                             if (error) throw error;
-                          } catch (error) {
+                          } catch (error: unknown) {
+                            const message = error instanceof Error ? error.message : 'Unknown error';
                             console.error('Google login error:', error);
-                            toast.error('Google login failed. Please try again.');
+                            toast.error(`Google login failed: ${message}`);
                           } finally {
                             setIsLoading(false);
                           }
                         }}
                       >
-                        {/* Google icon */}
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
                           className="w-5 h-5 text-white"
                         >
                           <path
-                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4
-                              -4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307
-                              C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12
-                              c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
+                            d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
                             fill="currentColor"
                           />
                         </svg>
@@ -460,7 +394,7 @@ function LoginPageContent() {
                         type="button"
                         onClick={handleWalletConnect}
                         disabled={connecting || isLoading}
-                        className="flex items-center justify-center w-full border border-white rounded-md py-2 px-4 hover:bg-gray-800"
+                        className="flex items-center justify-center w-full ] border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -468,10 +402,7 @@ function LoginPageContent() {
                           className="w-5 h-5 text-white"
                         >
                           <path
-                            d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12
-                              m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9
-                              m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25
-                              A2.25 2.25 0 0 0 3 6v3"
+                            d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3"
                             fill="currentColor"
                           />
                         </svg>
@@ -480,9 +411,7 @@ function LoginPageContent() {
                     </div>
                     <div className="text-center text-sm text-white">
                       Don't have an account?{' '}
-                      <Link href="/signup" className="text-white underline ml-1">
-                        Sign up
-                      </Link>
+                      <Link href="/signup" className="text-white underline ml-1">Sign up</Link>
                     </div>
                   </div>
                 </form>
@@ -490,13 +419,9 @@ function LoginPageContent() {
             </div>
             <div className="mt-6 text-center text-xs text-gray-400">
               By clicking continue, you agree to our{' '}
-              <a href="#" className="underline text-white">
-                Terms of Service
-              </a>{' '}
+              <a href="#" className="underline text-white">Terms of Service</a>{' '}
               and{' '}
-              <a href="#" className="underline text-white">
-                Privacy Policy
-              </a>.
+              <a href="#" className="underline text-white">Privacy Policy</a>.
             </div>
           </div>
         </div>
@@ -512,20 +437,3 @@ export default function LoginPage() {
     </Web3OnboardProvider>
   );
 }
-
-// For context
-type UserContextType = {
-  user: {
-    name: any;
-    isLoggedIn: boolean;
-    password: string; // Add the password property
-  };
-  // other context properties...
-};
-
-// For reducer
-type UserState = {
-  name: any;
-  isLoggedIn: boolean;
-  password: string; // Add the password property
-};
