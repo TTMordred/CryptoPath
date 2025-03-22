@@ -586,7 +586,7 @@ const LandingPage = () => {
       </section>
 
       {/* New Features Section */}
-      <div className="bg-black py-20 px-4">
+      <div className="py-20 px-4">
         <div className="container mx-auto">
           <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-aos="fade-up">
             Platform <span className="text-[#F5B056]">Features</span>

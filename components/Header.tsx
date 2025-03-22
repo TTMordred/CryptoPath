@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/legacy/image";
+import Image from "next/image"; // Changed from legacy/image to standard image
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSettings } from "@/components/context/SettingsContext";
@@ -163,17 +163,20 @@ const Header = () => {
     <>
       <header className="flex items-center bg-black h-16 px-4">
         <div className="text-white mr-auto ml-4 text-2xl xl:text-3xl font-bold">
-          <h1 className="ml-0 xl:ml-8">
-            <Link href="/">
-              <Image
-                src="/Img/logo/logo2.png"
-                alt="CryptoPath Logo"
-                width={75}
-                height={75}
-                className="inline-block mr-2"
-              />
-              Crypto<span className="text-[#F5B056]">
-                Path<sub>©</sub>
+          <h1 className="ml-0 xl:ml-8 flex items-center">
+            <Link href="/" className="flex items-center">
+              <div className="relative w-14 h-14 mr-2">
+                <Image
+                  src="/Img/logo/logo2.png"
+                  alt="CryptoPath Logo"
+                  fill
+                  sizes="(max-width: 768px) 40px, 56px"
+                  style={{ objectFit: 'contain' }}
+                  priority
+                />
+              </div>
+              <span>
+                Crypto<span className="text-[#F5B056]">Path<sub>©</sub></span>
               </span>
             </Link>
           </h1>
