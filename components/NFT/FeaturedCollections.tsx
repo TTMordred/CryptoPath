@@ -40,6 +40,19 @@ export default function FeaturedCollections({ collections = [] }: FeaturedCollec
       category: 'Art'
     },
     {
+      id: '0x3cd266509d127d0eac42f4474f57d0526804b44e',
+      name: 'Buildspace',
+      description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
+      image: 'https://tokens.buildspace.so/assets/CH4f447780-07cf-408a-8f4c-253a8b4e8bae-359/render.mp4',
+      bannerImage: 'https://buildspace.so/assets/buildspace-banner.png',
+      floorPrice: '0.05',
+      volume24h: '15.75',
+      totalItems: 10000,
+      owners: 4200,
+      verified: true,
+      category: 'Education'
+    },
+    {
       id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
       name: 'Mutant Ape Yacht Club',
       description: 'The MUTANT APE YACHT CLUB is a collection of up to 20,000 Mutant Apes that can only be created by exposing an existing Bored Ape to a vial of MUTANT SERUM.',
