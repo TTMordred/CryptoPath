@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Check, ChevronDown } from 'lucide-react';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import { ChevronDown, Check } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
 export interface Network {
@@ -22,6 +22,7 @@ interface NetworkSelectorProps {
   selectedNetwork: string;
   onNetworkChange: (networkId: string) => void;
   className?: string;
+  disableTestnets?: boolean;
 }
 
 const networks: Network[] = [
@@ -60,7 +61,8 @@ const networks: Network[] = [
 export default function NetworkSelector({ 
   selectedNetwork, 
   onNetworkChange,
-  className = ''
+  className = '',
+  disableTestnets = false
 }: NetworkSelectorProps) {
   const [network, setNetwork] = useState<Network | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -74,6 +76,11 @@ export default function NetworkSelector({
     onNetworkChange(networkId);
     setIsOpen(false);
   };
+
+  // Filter networks based on testnet flag
+  const filteredNetworks = disableTestnets 
+    ? networks.filter(n => !n.testnet)
+    : networks;
 
   if (!network) return null;
 
@@ -109,7 +116,7 @@ export default function NetworkSelector({
               Select Network
             </h3>
             <div className="space-y-1 mt-1">
-              {networks.map((n) => (
+              {filteredNetworks.map((n) => (
                 <DropdownMenuItem
                   key={n.id}
                   className={`flex items-center justify-between rounded-lg p-2 cursor-pointer
@@ -130,7 +137,7 @@ export default function NetworkSelector({
                         {n.name}
                       </span>
                       {n.testnet && (
-                        <span className="ml-2 rounded-full bg-gray-800 px-1.5 py-0.5 text-xs text-gray-400">
+                        <span className="ml-2 rounded-full bg-gray-800 px-2 py-0.5 text-xs">
                           testnet
                         </span>
                       )}

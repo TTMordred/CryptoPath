@@ -206,3 +206,38 @@ export const formatCurrency = (amount: number, chainId: string, decimals: number
   const symbol = getCurrencySymbol(chainId);
   return `${amount.toFixed(decimals)} ${symbol}`;
 };
+
+/**
+ * Convert hex chain ID to decimal
+ * @param hexChainId The chain ID in hex format (e.g., '0x1')
+ * @returns The chain ID in decimal format (e.g., 1)
+ */
+export const chainIdToDecimal = (hexChainId: string): number => {
+  return parseInt(hexChainId, 16);
+};
+
+/**
+ * Convert decimal chain ID to hex format
+ * @param decimalChainId The chain ID in decimal format (e.g., 1)
+ * @returns The chain ID in hex format (e.g., '0x1')
+ */
+export const decimalToChainId = (decimalChainId: number): string => {
+  return `0x${decimalChainId.toString(16)}`;
+};
+
+/**
+ * Get configuration for all supported networks
+ * @returns Array of chain configurations
+ */
+export const getSupportedNetworks = (): ChainConfig[] => {
+  return Object.values(chainConfigs);
+};
+
+/**
+ * Check if a chain is supported
+ * @param chainId The chain ID to check
+ * @returns Boolean indicating if the chain is supported
+ */
+export const isChainSupported = (chainId: string): boolean => {
+  return !!chainConfigs[chainId];
+};
