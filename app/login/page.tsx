@@ -140,9 +140,9 @@ function LoginPageContent() {
           setIsLoading(true);
           const { data, error } = await signInWithWalletConnect(address);
           if (error) throw new Error(error.message);
-
+      
           if (!data || !data.session) throw new Error('No session data returned from sign-in');
-
+      
           updateProfile({
             username: ens?.name || formatWalletAddress(address),
             profileImage: null,
@@ -150,7 +150,7 @@ function LoginPageContent() {
           });
           addWallet(address);
           await syncWithSupabase();
-
+      
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert({
@@ -159,21 +159,20 @@ function LoginPageContent() {
               wallets: [{ address, is_default: true }],
               updated_at: new Date().toISOString(),
             });
-
+      
           if (profileError) throw new Error(profileError.message);
-
-          toast.success('Successfully authenticated with wallet');
+      
           router.push('/');
+          window.location.reload();
         } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : 'Unknown error';
           console.error('Wallet authentication error:', error);
-          toast.error(`Authentication failed: ${message}`);
         } finally {
           setIsLoading(false);
         }
       };
-
+      
       authenticateWithWallet();
+      
     }
   }, [wallet, router, isLoggedOut, signInWithWalletConnect, updateProfile, addWallet, syncWithSupabase]);
 
@@ -348,7 +347,7 @@ function LoginPageContent() {
                     </div>
                     <button
                       type="submit"
-                      className={`w-full bg-white text-black py-2 px-4 border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      className={`w-full bg-white text-black py-2 px-4 border rounded-[20px] hover:bg-gray-200 ${isLoading ? '' : ''}`}
                       disabled={isLoading}
                     >
                       Login
