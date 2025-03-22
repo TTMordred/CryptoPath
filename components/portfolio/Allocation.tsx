@@ -27,7 +27,7 @@ const AllocationChart: React.FC<AllocationChartProps> = ({ tokens, ethBalance, i
       return [];
     }
 
-    // Danh sách màu cố định, đảm bảo mỗi coin có màu riêng biệt
+    // Danh sách màu cố định
     const colors = [
       "#f6b355", // ETH
       "#FF6B6B", // Token 1
@@ -45,11 +45,11 @@ const AllocationChart: React.FC<AllocationChartProps> = ({ tokens, ethBalance, i
       if (uniqueTokens.has(token.symbol) || token.value <= 0) return;
 
       uniqueTokens.set(token.symbol, true);
-      const colorIndex = assets.length; // Đảm bảo màu không trùng với ETH hoặc token khác
+      const colorIndex = assets.length;
       assets.push({
         name: token.symbol,
         value: token.value,
-        color: colors[colorIndex % colors.length], // Lấy màu từ danh sách
+        color: colors[colorIndex % colors.length],
       });
     });
 
@@ -107,7 +107,11 @@ const AllocationChart: React.FC<AllocationChartProps> = ({ tokens, ethBalance, i
                 labelLine={false}
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="transparent" />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.color}
+                    stroke={entry.color} // Đặt stroke khớp với fill
+                  />
                 ))}
               </Pie>
               <Tooltip

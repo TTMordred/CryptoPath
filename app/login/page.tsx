@@ -4,11 +4,9 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
-import { toast } from 'sonner';
-import { supabase} from '@/src/integrations/supabase/client';
-import { PostgrestError } from '@supabase/supabase-js';
-import { Web3OnboardProvider, init, useConnectWallet} from '@web3-onboard/react';
-
+import toast from 'react-hot-toast'; // Thay đổi import từ sonner sang react-hot-toast
+import { supabase } from '@/src/integrations/supabase/client';
+import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
 import injectedModule from '@web3-onboard/injected-wallets';
 import walletConnectModule from '@web3-onboard/walletconnect';
 import coinbaseModule from '@web3-onboard/coinbase';
@@ -25,7 +23,6 @@ import frontierModule from '@web3-onboard/frontier';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useSettings } from '@/components/context/SettingsContext';
 
-// Định nghĩa kiểu cho profile
 interface Profile {
   id: string;
   username: string | null;
@@ -39,13 +36,11 @@ interface Profile {
   wallets: { address: string; is_default: boolean }[] | null;
 }
 
-// Định nghĩa kiểu cho account
 interface Account {
   address: `0x${string}`;
   ens: string | null;
 }
 
-// Web3-Onboard configuration
 const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129';
 const walletConnect = walletConnectModule({
   projectId: 'b773e42585868b9b143bb0f1664670f1',
@@ -91,7 +86,6 @@ const appMetadata = {
 
 const web3Onboard = init({ wallets, chains, appMetadata });
 
-// Debounce utility với kiểu TypeScript
 const debounce = <T extends (...args: any[]) => void>(func: T, wait: number) => {
   let timeout: NodeJS.Timeout | undefined;
   return (...args: Parameters<T>) => {
@@ -157,13 +151,12 @@ function LoginPageContent() {
           addWallet(address);
           await syncWithSupabase();
 
-          // Cập nhật wallets trong profiles với cấu trúc đúng
           const { error: profileError } = await supabase
             .from('profiles')
             .upsert({
               id: data.session.user.id,
               username: ens?.name || formatWalletAddress(address),
-              wallets: [{ address, is_default: true }], // Đảm bảo khớp kiểu { address: string; is_default: boolean }
+              wallets: [{ address, is_default: true }],
               updated_at: new Date().toISOString(),
             });
 
@@ -191,20 +184,41 @@ function LoginPageContent() {
     setIsLoading(true);
 
     try {
+      if (!email) {
+        setEmailError('Please enter your email');
+        toast.error('Please enter your email');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!password) {
+        setPasswordError('Please enter your password');
+        toast.error('Please enter your password');
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
-        if (error.message.includes('email')) setEmailError(error.message);
-        else if (error.message.includes('password')) setPasswordError(error.message);
-        else toast.error(error.message);
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Invalid email or password');
+          setEmailError('Invalid email or password');
+          setPasswordError('Invalid email or password');
+        } else {
+          toast.error(error.message);
+          setEmailError(error.message);
+        }
+        setIsLoading(false);
         return;
       }
 
       if (!data.user || !data.session) {
         toast.error('Login failed: No user data returned.');
+        setIsLoading(false);
         return;
       }
 
@@ -217,6 +231,7 @@ function LoginPageContent() {
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         toast.error('Failed to load profile data.');
+        setIsLoading(false);
         return;
       }
 
@@ -228,7 +243,7 @@ function LoginPageContent() {
       await syncWithSupabase();
 
       toast.success('Login successful!');
-      router.push('/');
+      setTimeout(() => router.push('/'), 2000); // Delay để thấy thông báo
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Login error:', error);
@@ -250,6 +265,23 @@ function LoginPageContent() {
     }
   }, 1000);
 
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Google login error:', error);
+      toast.error(`Google login failed: ${message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="relative">
@@ -257,7 +289,7 @@ function LoginPageContent() {
         <div className="bg-transparent flex min-h-screen flex-col items-center justify-center p-6 relative z-10">
           <div id="form-container" className="w-full max-w-sm md:max-w-3xl">
             <div className="card bg-transparent rounded-md shadow-lg overflow-hidden">
-              <div className="card-content p-6 md:p-10 bg-white/5 rounded-[20px]  backdrop-blur-sm">
+              <div className="card-content p-6 md:p-10 bg-white/5 rounded-[20px] backdrop-blur-sm">
                 <form onSubmit={handleSubmit}>
                   <div className="flex flex-col gap-6">
                     <div className="flex flex-col items-center text-center">
@@ -274,7 +306,7 @@ function LoginPageContent() {
                         type="email"
                         placeholder="m@example.com"
                         required
-                        className="w-full px-3 py-2  border rounded-[20px] bg-black text-white"
+                        className="w-full px-3 py-2 border rounded-[20px] bg-black text-white"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         disabled={isLoading}
@@ -282,9 +314,7 @@ function LoginPageContent() {
                       {emailError && <span className="text-red-500 text-sm">{emailError}</span>}
                     </div>
                     <div className="grid gap-2">
-                      <div className="flex items-center">
-                        <label htmlFor="password" className="text-sm font-medium text-white">Password</label>
-                      </div>
+                      <label htmlFor="password" className="text-sm font-medium text-white">Password</label>
                       <div className="relative">
                         <input
                           id="password"
@@ -298,48 +328,18 @@ function LoginPageContent() {
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
-                          className="absolute inset-y-0 right-0 pr-3 flex items-center "
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center"
                           disabled={isLoading}
                         >
                           {showPassword ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth="1.5"
-                              stroke="currentColor"
-                              className="w-5 h-5"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0"
-                              />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 溯16.338 7.244 19.5 12 19.5c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0" />
                             </svg>
                           ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth="1.5"
-                              stroke="currentColor"
-                              className="w-5 h-5"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                              />
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                           )}
                         </button>
@@ -348,7 +348,7 @@ function LoginPageContent() {
                     </div>
                     <button
                       type="submit"
-                      className={`w-full bg-white text-black py-2 px-4  border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      className={`w-full bg-white text-black py-2 px-4 border rounded-[20px] hover:bg-gray-200 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
                       disabled={isLoading}
                     >
                       Login
@@ -359,23 +359,9 @@ function LoginPageContent() {
                     <div className="flex gap-2">
                       <button
                         id="google-login"
-                        className="flex items-center justify-center w-full  border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
-                        onClick={async () => {
-                          setIsLoading(true);
-                          try {
-                            const { error } = await supabase.auth.signInWithOAuth({
-                              provider: 'google',
-                              options: { redirectTo: `${window.location.origin}/` },
-                            });
-                            if (error) throw error;
-                          } catch (error: unknown) {
-                            const message = error instanceof Error ? error.message : 'Unknown error';
-                            console.error('Google login error:', error);
-                            toast.error(`Google login failed: ${message}`);
-                          } finally {
-                            setIsLoading(false);
-                          }
-                        }}
+                        className="flex items-center justify-center w-full border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
+                        onClick={handleGoogleLogin}
+                        disabled={isLoading}
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -394,7 +380,7 @@ function LoginPageContent() {
                         type="button"
                         onClick={handleWalletConnect}
                         disabled={connecting || isLoading}
-                        className="flex items-center justify-center w-full ] border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
+                        className="flex items-center justify-center w-full border rounded-[20px] py-2 px-4 hover: transition-transform duration-200 hover:-translate-y-1"
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
