@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import axios from 'axios';
 
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
 
@@ -11,6 +12,7 @@ const CHAIN_ID_TO_NETWORK: Record<string, string> = {
   '0xa': 'optimism-mainnet',
   '0xa4b1': 'arbitrum-mainnet',
   '0x38': 'bsc-mainnet',
+  '0x61': 'bsc-testnet',
 };
 
 interface AlchemyNFTResponse {
@@ -26,6 +28,144 @@ interface CollectionMetadata {
   description: string;
   imageUrl: string;
 }
+
+// Real Ethereum collections
+const mockCollections = [
+  {
+    id: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+    name: 'Bored Ape Yacht Club',
+    description: 'The Bored Ape Yacht Club is a collection of 10,000 unique Bored Ape NFTs— unique digital collectibles living on the Ethereum blockchain.',
+    imageUrl: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=1000',
+    bannerImageUrl: 'https://i.seadn.io/gae/i5dYZRkVCUK97bfprQ3WXyrT9BnLSZtVKGJlKQ919uaUB0sxbngVCioaiyu9r6snqfi2aaTyIvv6DHm4m2R3y7hMajbsv14pSZK8mhs?auto=format&dpr=1&w=3840',
+    floorPrice: '30.5',
+    totalSupply: '10000',
+    chain: '0x1',
+    verified: true,
+    category: 'Art & Collectibles'
+  },
+  {
+    id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
+    name: 'Mutant Ape Yacht Club',
+    description: 'The MUTANT APE YACHT CLUB is a collection of up to 20,000 Mutant Apes that can only be created by exposing an existing Bored Ape to a vial of MUTANT SERUM.',
+    imageUrl: 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPF6rLh2D4Xw?auto=format&dpr=1&w=1000',
+    bannerImageUrl: 'https://i.seadn.io/gae/MPBRMl-Gs1sFZ6Z3uH5IxQKbCXlC2v9VdaI8fzWLOxUV8y-LzWoMzuRkz0HzLSCY0dHEBzplKAAPfMKYr2nanSI6S6yttS4JEU3l?auto=format&dpr=1&w=3840',
+    floorPrice: '10.2',
+    totalSupply: '19423',
+    chain: '0x1',
+    verified: true,
+    category: 'Art & Collectibles'
+  },
+  {
+    id: '0xed5af388653567af2f388e6224dc7c4b3241c544',
+    name: 'Azuki',
+    description: 'Azuki starts with a collection of 10,000 avatars that give you membership access to The Garden: a corner of the internet where artists, builders, and web3 enthusiasts meet to create a decentralized future.',
+    imageUrl: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=1000',
+    bannerImageUrl: 'https://i.seadn.io/gae/O0XkiR_Z2--OPa_RA6FhXrR16yBOgIJqSLdHTGA0-LAhyzjSYcb3WEPaCYZHeh19JIUEAUazofVKXcY2qOylWCdoeBN6IfGZLJ3I4A?auto=format&dpr=1&w=3840',
+    floorPrice: '8.75',
+    totalSupply: '10000',
+    chain: '0x1',
+    verified: true,
+    category: 'PFP'
+  },
+  {
+    id: '0x34d85c9cdeb23fa97cb08333b511ac86e1c4e258',
+    name: 'Otherdeed for Otherside',
+    description: 'Otherdeeds are the key to claiming land in Otherside. Each have a unique blend of environment and sediment – some with resources, some with powerful artifacts.',
+    imageUrl: 'https://i.seadn.io/gae/yIm-M5-BpSDdTEIJRt5D6xphizhIdozXjqSITgK4phWq7MmAU3qE7Nw7POGCiPGyhtJ3ZFP8iJ29TFl-RLcGBWX5qI4-ZcnCPcsY4zI?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gae/E_XVuM4_sRYvQpnzGefSfcP3aC5dJeUxNvEDXBT2BiBjOE_MQjmXlUxr8Mt8z9JQjLP8M2sQrC4AXNhUQA18_hOiaejuZI_cM2rARGE?auto=format&dpr=1&w=3840',
+    floorPrice: '1.58',
+    totalSupply: '100000',
+    chain: '0x1',
+    verified: true,
+    category: 'Virtual Worlds'
+  },
+  {
+    id: '0x8a90cab2b38dba80c64b7734e58ee1db38b8992e',
+    name: 'Doodles',
+    description: 'A community-driven collectibles project featuring art by Burnt Toast. Doodles come in a joyful range of colors, traits and sizes with a collection size of 10,000.',
+    imageUrl: 'https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEOtztls02RlWQ?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gae/svc_rQkHVGf3DGmqNBsH6ZKUzNwJqskR5pEh7vGNuBDQiJfb_0r7K5A2JLRRIacHNNsFIR9zX0x67Jw2Jnw4Noag_1pYnkGjOgU?auto=format&dpr=1&w=3840',
+    floorPrice: '2.4',
+    totalSupply: '10000',
+    chain: '0x1',
+    verified: true,
+    category: 'Art & Collectibles'
+  }
+];
+
+// Real BNB Chain collections
+const mockBNBCollections = [
+  {
+    id: '0xdcbcf766dcd33a7a8abe6b01a8b0e44a006c4ac1',
+    name: 'Pancake Squad',
+    description: 'PancakeSwap\'s NFT collection of 10,000 unique bunnies designed to reward loyal community members and bring utility to the CAKE token.',
+    imageUrl: 'https://assets.pancakeswap.finance/pancakeSquad/header.png',
+    bannerImageUrl: 'https://assets.pancakeswap.finance/pancakeSquad/pancakeSquadBanner.png',
+    floorPrice: '2.5',
+    totalSupply: '10000',
+    chain: '0x38',
+    verified: true,
+    category: 'Gaming'
+  },
+  {
+    id: '0xcec33930ba196cdf9f38e1a5e2a1e0708450d20f',
+    name: 'Era7: Game of Truth',
+    description: 'Era7: Game of Truth is a play-to-earn trading card game inspired by Magic: The Gathering, Hearthstone, and Runeterra. Build your deck and battle against players around the world!',
+    imageUrl: 'https://images.pocketgamer.biz/T/52539/2022/52539_Era7_Game_of_Truth_screenshot_1.png',
+    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1428004235405357057/1648021562/1500x500',
+    floorPrice: '0.4',
+    totalSupply: '33000',
+    chain: '0x38',
+    verified: true,
+    category: 'Gaming'
+  },
+  {
+    id: '0x04a5e3ed4907b781f702adbddf1b7e771c31b0f2',
+    name: 'BSC Punks',
+    description: 'CryptoPunks on BSC - 10,000 uniquely generated characters on the BNB Chain.',
+    imageUrl: 'https://lh3.googleusercontent.com/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE=s130',
+    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1364731917736632321/1649351522/1500x500',
+    floorPrice: '0.25',
+    totalSupply: '10000',
+    chain: '0x38',
+    verified: false,
+    category: 'Art & Collectibles'
+  },
+  {
+    id: '0x85f0e02cb992aa1f9f47112f815f519ef1a59e2d',
+    name: 'BNB Bulls Club',
+    description: 'The BNB Bulls Club is a collection of 10,000 unique NFTs living on the BNB Chain, each representing membership to the club with unique utilities.',
+    imageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
+    bannerImageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
+    floorPrice: '1.2',
+    totalSupply: '10000',
+    chain: '0x38',
+    verified: false,
+    category: 'Membership'
+  }
+];
+
+// CryptoPath ecosystem NFT collection on BNB Testnet
+const cryptoPathCollection = {
+  id: '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551',
+  name: 'CryptoPath Genesis',
+  description: 'The official NFT collection of the CryptoPath ecosystem. These limited edition NFTs grant exclusive access to premium features and rewards within the CryptoPath platform.',
+  imageUrl: '/images/cryptopath-genesis-nft.png', // Replace with actual image path
+  bannerImageUrl: '/images/cryptopath-banner.png', // Replace with actual banner path
+  floorPrice: '10.0',
+  totalSupply: '1000',
+  chain: '0x61', // BNB Testnet
+  verified: true,
+  category: 'Utility',
+  featured: true
+};
+
+const API_ENDPOINTS = {
+  '0x1': 'https://eth-mainnet.g.alchemy.com/v2/your-api-key',
+  '0xaa36a7': 'https://eth-sepolia.g.alchemy.com/v2/your-api-key',
+  '0x38': 'https://bsc-mainnet.g.alchemy.com/v2/your-api-key',
+  '0x61': 'https://bsc-testnet.g.alchemy.com/v2/your-api-key'
+};
 
 export async function fetchUserNFTs(address: string, chainId: string, pageKey?: string): Promise<AlchemyNFTResponse> {
   if (!address) {
@@ -223,52 +363,32 @@ export async function fetchCollectionNFTs(
 // Mocked API service for NFT data
 // In a real application, this would connect to Alchemy or another provider
 export async function fetchPopularCollections(chainId: string): Promise<any[]> {
-  // In a production app, this would fetch from Alchemy API
-  // For this demo, we'll return mock data
-  return [
-    {
-      id: "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
-      name: "Bored Ape Yacht Club",
-      totalSupply: 10000,
-      floorPrice: "30.5",
-      imageUrl: "https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=1000"
-    },
-    {
-      id: "0x60e4d786628fea6478f785a6d7e704777c86a7c6",
-      name: "Mutant Ape Yacht Club",
-      totalSupply: 19423,
-      floorPrice: "10.2",
-      imageUrl: "https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPF6rLh2D4Xw?auto=format&dpr=1&w=1000"
-    },
-    {
-      id: "0xed5af388653567af2f388e6224dc7c4b3241c544",
-      name: "Azuki",
-      totalSupply: 10000,
-      floorPrice: "8.75",
-      imageUrl: "https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=1000"
-    },
-    {
-      id: "0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb",
-      name: "CryptoPunks",
-      totalSupply: 10000,
-      floorPrice: "54.95",
-      imageUrl: "https://i.seadn.io/gae/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE?auto=format&dpr=1&w=1000"
-    },
-    {
-      id: "0x8a90cab2b38dba80c64b7734e58ee1db38b8992e",
-      name: "Doodles",
-      totalSupply: 10000,
-      floorPrice: "5.25",
-      imageUrl: "https://i.seadn.io/gae/7B0qai02OdHA8P_EOVK672qUliyjQdQDGNrACxs7WnTgZAkJa_wWURnIFKeOh5VTf8cfTqW3wQpozGedaC9mteKphEOtztls02RlWQ?auto=format&dpr=1&w=1000"
-    },
-    {
-      id: "0xdf5d4038723f6605a3ecd7776ffe25f3b1be39a0",
-      name: "PATH NFT Collection",
-      totalSupply: 1000,
-      floorPrice: "0.5",
-      imageUrl: "/images/path-token.png"
+  try {
+    // For BNB Testnet, include our ecosystem collection first
+    if (chainId === '0x61') {
+      return [cryptoPathCollection, ...mockBNBCollections.map(collection => ({
+        ...collection,
+        chain: chainId
+      }))];
     }
-  ];
+    
+    // For BNB Chain mainnet
+    if (chainId === '0x38') {
+      return mockBNBCollections.map(collection => ({
+        ...collection,
+        chain: chainId
+      }));
+    }
+    
+    // For Ethereum and Sepolia
+    return mockCollections.map(collection => ({
+      ...collection,
+      chain: chainId
+    }));
+  } catch (error) {
+    console.error('Error fetching collections:', error);
+    throw error;
+  }
 }
 
 // Function to fetch marketplace trading history 
