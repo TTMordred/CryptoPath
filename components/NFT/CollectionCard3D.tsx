@@ -209,22 +209,23 @@ export default function CollectionCard3D({ collection, index, onClick }: Collect
               </div>
             </Badge>
           </div>
-          
-          {/* Collection Logo - Center bottom, partially overlapping banner */}
-          <div className="absolute -bottom-10 left-1/2 transform -translate-x-1/2 z-10">
-            <motion.div
-              className={`h-20 w-20 rounded-xl overflow-hidden border-4 ${chainTheme.borderClass} shadow-lg`}
-              style={{ background: chainTheme.primary + '20' }}
-              whileHover={{ rotate: [0, -5, 5, 0], transition: { duration: 0.5 } }}
-            >
-              <Image
-                src={collection.imageUrl}
-                alt={collection.name}
-                fill
-                className="object-cover"
-              />
-            </motion.div>
-          </div>
+        </div>
+
+        {/* Collection Logo - Positioned absolutely relative to the card */}
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-[999]" style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.5))" }}>
+          <motion.div
+            className={`h-20 w-20 rounded-xl overflow-hidden border-4 ${chainTheme.borderClass} shadow-lg`}
+            style={{ background: chainTheme.primary + '20' }}
+            whileHover={{ rotate: [0, -5, 5, 0], transition: { duration: 0.5 } }}
+          >
+            <Image
+              src={collection.imageUrl}
+              alt={collection.name}
+              fill
+              className="object-cover"
+              priority
+            />
+          </motion.div>
         </div>
         
         {/* Content Area with Padding for Logo */}
