@@ -1,8 +1,9 @@
 "use client";
 import { ethers } from "ethers";
 
-const ALCHEMY_API_KEY = "vHX215j9gH01Qc94rX2eEAsLeYohIu9X";
-const API_BASE_URL = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || "vHX215j9gH01Qc94rX2eEAsLeYohIu9X";
+const CORE_API_BASE_URL = `https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_API_KEY}`;
+const NFT_API_BASE_URL = `https://eth-mainnet.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}`;
 
 export interface WalletData {
   balance: string;
@@ -39,21 +40,36 @@ export interface Transaction {
   isError: string;
 }
 
-const fetchAlchemyApi = async (endpoint: string, params: Record<string, any>) => {
+const fetchAlchemyApi = async (
+  baseUrl: string,
+  endpoint: string,
+  params: Record<string, any>,
+  method: "POST" | "GET" = "POST"
+) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      method: "POST",
+    let url = `${baseUrl}${endpoint}`;
+    let options: RequestInit = {
+      method,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    };
+
+    if (method === "GET") {
+      const queryParams = new URLSearchParams(params.params).toString();
+      url += `?${queryParams}`;
+    } else {
+      options.body = JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
         method: params.method,
         params: params.params,
-      }),
-    });
+      });
+    }
+
+    const response = await fetch(url, options);
 
     if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(`HTTP error: ${response.status} - ${response.statusText} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -62,10 +78,10 @@ const fetchAlchemyApi = async (endpoint: string, params: Record<string, any>) =>
       throw new Error(`API error: ${data.error.message || "Unknown error"}`);
     }
 
-    return data.result;
+    return method === "POST" ? data.result : data; // GET trả về dữ liệu trực tiếp, POST trả về result
   } catch (error) {
     console.error("Fetch Alchemy API failed:", error);
-    throw error; // Ném lỗi để hàm gọi xử lý
+    throw error;
   }
 };
 
@@ -75,10 +91,10 @@ export const getWalletBalance = async (address: string): Promise<string> => {
     return "0";
   }
   try {
-    const result = await fetchAlchemyApi("", {
+    const result = await fetchAlchemyApi(CORE_API_BASE_URL, "", {
       method: "eth_getBalance",
       params: [address, "latest"],
-    });
+    }, "POST");
     const balance = ethers.utils.formatEther(result || "0");
     console.log(`Balance for ${address}: ${balance} ETH`);
     return balance;
@@ -94,10 +110,10 @@ export const getWalletTokens = async (address: string): Promise<Token[]> => {
     return [];
   }
   try {
-    const tokenBalances = await fetchAlchemyApi("", {
+    const tokenBalances = await fetchAlchemyApi(CORE_API_BASE_URL, "", {
       method: "alchemy_getTokenBalances",
-      params: [address, "DEFAULT_TOKENS"], // Lấy danh sách token mặc định
-    });
+      params: [address, "DEFAULT_TOKENS"],
+    }, "POST");
 
     if (!tokenBalances?.tokenBalances) return [];
 
@@ -105,10 +121,10 @@ export const getWalletTokens = async (address: string): Promise<Token[]> => {
       tokenBalances.tokenBalances
         .filter((token: any) => token.tokenBalance && token.tokenBalance !== "0x0")
         .map(async (token: any) => {
-          const metadata = await fetchAlchemyApi("", {
+          const metadata = await fetchAlchemyApi(CORE_API_BASE_URL, "", {
             method: "alchemy_getTokenMetadata",
             params: [token.contractAddress],
-          });
+          }, "POST");
 
           const balanceInWei = ethers.BigNumber.from(token.tokenBalance);
           const decimals = metadata.decimals || 18;
@@ -121,7 +137,7 @@ export const getWalletTokens = async (address: string): Promise<Token[]> => {
             tokenAddress: token.contractAddress,
             decimals,
             logo: metadata.logo || undefined,
-            value: parseFloat(balance) * 0.001, // Giá trị giả lập
+            value: parseFloat(balance) * 0.01,
           };
         })
     );
@@ -139,22 +155,31 @@ export const getWalletNFTs = async (address: string): Promise<NFT[]> => {
     return [];
   }
   try {
-    const nfts = await fetchAlchemyApi("", {
-      method: "alchemy_getNFTs",
-      params: [{ owner: address, withMetadata: true }], // Đúng cú pháp cho alchemy_getNFTs
-    });
+    const result = await fetchAlchemyApi(NFT_API_BASE_URL, "/getNFTs", {
+      params: {
+        owner: address,
+        withMetadata: "true", // Chuỗi "true" vì query string yêu cầu
+        pageSize: "100",
+      },
+    }, "GET");
 
-    if (!nfts?.ownedNfts) return [];
+    console.log("Raw NFT response from Alchemy:", result);
 
-    const nftList = nfts.ownedNfts.map((nft: any) => ({
-      name: nft.metadata?.name || nft.title || `NFT #${nft.id.tokenId}`,
-      collectionName: nft.contract?.name || "Unknown Collection",
-      description: nft.metadata?.description || nft.description || "",
-      tokenId: nft.id.tokenId,
-      contract: nft.contract.address,
-      imageUrl: nft.metadata?.image || nft.media?.[0]?.gateway || nft.image?.thumbnailUrl,
+    if (!result || !result.ownedNfts || !Array.isArray(result.ownedNfts)) {
+      console.log(`No NFTs found for ${address} or unexpected response format`);
+      return [];
+    }
+
+    const nftList = result.ownedNfts.map((nft: any) => ({
+      name: nft.title || nft.metadata?.name || `NFT #${nft.id?.tokenId || "Unknown"}`,
+      collectionName: nft.contractMetadata?.name || "Unknown Collection",
+      description: nft.description || nft.metadata?.description || "",
+      tokenId: nft.id?.tokenId || "",
+      contract: nft.contract?.address || "",
+      imageUrl: nft.media?.[0]?.gateway || nft.metadata?.image || "",
     }));
-    console.log(`NFTs for ${address}:`, nftList);
+
+    console.log(`Processed NFTs for ${address}:`, nftList);
     return nftList;
   } catch (error) {
     console.error("Error fetching NFTs:", error);
@@ -168,31 +193,27 @@ export const getWalletTransactions = async (address: string): Promise<Transactio
     return [];
   }
   try {
-    const transfersFrom = await fetchAlchemyApi("", {
+    const transfersFrom = await fetchAlchemyApi(CORE_API_BASE_URL, "", {
       method: "alchemy_getAssetTransfers",
-      params: [
-        {
-          fromBlock: "0x0",
-          toBlock: "latest",
-          fromAddress: address,
-          category: ["external"], // Chỉ lấy giao dịch ETH
-          withMetadata: true,
-        },
-      ],
-    });
+      params: [{
+        fromBlock: "0x0",
+        toBlock: "latest",
+        fromAddress: address,
+        category: ["external"],
+        withMetadata: true,
+      }],
+    }, "POST");
 
-    const transfersTo = await fetchAlchemyApi("", {
+    const transfersTo = await fetchAlchemyApi(CORE_API_BASE_URL, "", {
       method: "alchemy_getAssetTransfers",
-      params: [
-        {
-          fromBlock: "0x0",
-          toBlock: "latest",
-          toAddress: address,
-          category: ["external"],
-          withMetadata: true,
-        },
-      ],
-    });
+      params: [{
+        fromBlock: "0x0",
+        toBlock: "latest",
+        toAddress: address,
+        category: ["external"],
+        withMetadata: true,
+      }],
+    }, "POST");
 
     const allTransfers = [...(transfersFrom?.transfers || []), ...(transfersTo?.transfers || [])];
     if (!allTransfers.length) {
@@ -200,17 +221,29 @@ export const getWalletTransactions = async (address: string): Promise<Transactio
       return [];
     }
 
-    const txs = allTransfers.map((tx: any) => ({
-      hash: tx.hash || "",
-      timeStamp:
-        tx.metadata?.blockTimestamp 
+    const txs = allTransfers.map((tx: any) => {
+      let valueInWei = "0";
+      if (tx.value) {
+        const valueStr = typeof tx.value === "number" ? tx.value.toString() : tx.value;
+        try {
+          valueInWei = ethers.utils.parseEther(valueStr).toString();
+        } catch (e) {
+          console.warn(`Invalid value for tx ${tx.hash}: ${valueStr}`, e);
+          valueInWei = "0";
+        }
+      }
+
+      return {
+        hash: tx.hash || "",
+        timeStamp: tx.metadata?.blockTimestamp
           ? Math.floor(new Date(tx.metadata.blockTimestamp).getTime() / 1000).toString()
           : "0",
-      from: tx.from || "",
-      to: tx.to || "",
-      value: tx.value ? ethers.utils.parseEther(tx.value.toString()).toString() : "0",
-      isError: "0", // Alchemy không cung cấp thông tin lỗi, mặc định là 0
-    }));
+        from: tx.from || "",
+        to: tx.to || "",
+        value: valueInWei,
+        isError: "0",
+      };
+    });
     console.log(`Transactions for ${address}:`, txs);
     return txs;
   } catch (error) {

@@ -1,10 +1,10 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import BalanceCard from "@/components/portfolio/BalanceCard";
-import TokensCard from "@/components/portfolio/TokenCard"; // Giả sử là TokensCard
+import TokensCard from "@/components/portfolio/TokenCard";
 import NFTsCard from "@/components/portfolio/NFTsCard";
-import HistoryChart from "@/components/portfolio/HistoryCard"; // Giả sử là HistoryChart
+import HistoryChart from "@/components/portfolio/HistoryCard";
 import AllocationChart from "@/components/portfolio/Allocation";
 import ActivityTable from "@/components/portfolio/ActivityTable";
 import { getWalletData, WalletData } from "@/components/portfolio_service/alchemyService";
@@ -13,6 +13,7 @@ import { supabase } from "@/src/integrations/supabase/client";
 import { ethers } from "ethers";
 import ParticlesBackground from "@/components/ParticlesBackground";
 
+// Định nghĩa keyframes
 const keyframeStyles = `
   @keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
   @keyframes shine { 0% { transform: rotate(30deg) translate(-100%, -100%); } 100% { transform: rotate(30deg) translate(100%, 100%); } }
@@ -53,84 +54,80 @@ const PortfolioPage = () => {
     };
   }, []);
 
-  // Lấy địa chỉ ví từ Supabase và dữ liệu từ Alchemy
-  useEffect(() => {
-    const fetchWalletAddress = async () => {
-      setIsLoading(true);
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-        if (sessionError || !session) {
-          toast({
-            title: "Not logged in",
-            description: "Please log in to view your portfolio.",
-            variant: "destructive",
-          });
-          router.push("/login");
-          return;
-        }
-
-        const userId = session.user.id;
-
-        const { data: profileData, error: profileError } = await supabase
-          .from("profiles")
-          .select("wallets")
-          .eq("id", userId)
-          .single();
-
-        console.log("Profile data:", profileData, "Error:", profileError);
-
-        if (profileError || !profileData) {
-          throw new Error("No profile found or query error.");
-        }
-
-        const wallets = profileData.wallets as Wallet[];
-        if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
-          console.warn("No valid wallets found, redirecting to settings.");
-          router.push("/settings");
-          return;
-        }
-
-        const defaultWallet = wallets.find((wallet) => wallet.is_default);
-        if (!defaultWallet || !defaultWallet.address) {
-          console.warn("No default wallet address found, redirecting to settings.");
-          router.push("/settings");
-          return;
-        }
-
-        const address = defaultWallet.address;
-        if (!ethers.utils.isAddress(address)) {
-          console.error("Invalid Ethereum address:", address);
-          throw new Error("Invalid wallet address format.");
-        }
-
-        setWalletAddress(address);
-        console.log("Fetching data for address:", address);
-
-        const portfolioData = await getWalletData(address);
-        console.log("Portfolio data:", portfolioData);
-        setWalletData(portfolioData);
+  // Hàm lấy dữ liệu ví - tách riêng và memoized
+  const fetchWalletAddress = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError || !session) {
         toast({
-          title: "Portfolio loaded",
-          description: `Data for wallet ${address.slice(0, 6)}...${address.slice(-4)} has been loaded.`,
-        });
-      } catch (error: any) {
-        console.error("Error fetching wallet data:", error.message);
-        toast({
-          title: "Error",
-          description: "Unable to load portfolio data. Please check your profile settings.",
+          title: "Not logged in",
+          description: "Please log in to view your portfolio.",
           variant: "destructive",
         });
-        router.push("/settings");
-      } finally {
-        setIsLoading(false);
+        router.push("/login");
+        return;
       }
-    };
 
-    fetchWalletAddress();
+      const userId = session.user.id;
+
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("wallets")
+        .eq("id", userId)
+        .single();
+
+      if (profileError || !profileData) {
+        throw new Error("No profile found or query error.");
+      }
+
+      const wallets = profileData.wallets as Wallet[];
+      if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
+        console.warn("No valid wallets found, redirecting to settings.");
+        router.push("/settings");
+        return;
+      }
+
+      const defaultWallet = wallets.find((wallet) => wallet.is_default);
+      if (!defaultWallet || !defaultWallet.address) {
+        console.warn("No default wallet address found, redirecting to settings.");
+        router.push("/settings");
+        return;
+      }
+
+      const address = defaultWallet.address;
+      if (!ethers.utils.isAddress(address)) {
+        throw new Error("Invalid wallet address format.");
+      }
+
+      setWalletAddress(address);
+
+      const portfolioData = await getWalletData(address);
+      setWalletData(portfolioData);
+      toast({
+        title: "Portfolio loaded",
+        description: `Data for wallet ${address.slice(0, 6)}...${address.slice(-4)} has been loaded.`,
+      });
+    } catch (error: any) {
+      console.error("Error fetching wallet data:", error.message);
+      toast({
+        title: "Error",
+        description: "Unable to load portfolio data. Please check your profile settings.",
+        variant: "destructive",
+      });
+      router.push("/settings");
+    } finally {
+      setIsLoading(false);
+    }
   }, [router]);
+
+  // Gọi hàm lấy dữ liệu ví
+  useEffect(() => {
+    fetchWalletAddress();
+  }, [fetchWalletAddress]);
 
   // Hiệu ứng animation khi scroll
   useEffect(() => {
@@ -138,20 +135,22 @@ const PortfolioPage = () => {
       const elements = document.querySelectorAll(".opacity-0");
       elements.forEach((element) => {
         const rect = element.getBoundingClientRect();
-        if (rect.top < window.innerHeight) {
+        if (rect.top < window.innerHeight * 0.9) { // Trigger sớm hơn một chút
           (element as HTMLElement).style.opacity = "1";
           (element as HTMLElement).style.transform = "translateY(0)";
+          (element as HTMLElement).style.transition = "opacity 0.5s ease, transform 0.5s ease";
         }
       });
     };
+
     window.addEventListener("scroll", animateElements);
-    animateElements();
+    animateElements(); // Gọi ngay lần đầu
     return () => window.removeEventListener("scroll", animateElements);
   }, []);
 
   return (
     <div className="relative min-h-screen">
-      {/* Bọc ParticlesBackground */}
+      {/* Hiệu ứng nền Particles */}
       <ParticlesBackground />
 
       {/* Nội dung chính */}
@@ -179,27 +178,29 @@ const PortfolioPage = () => {
         {walletAddress && (
           <main className="px-6 mx-auto max-w-7xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <BalanceCard balance={walletData.balance} isLoading={isLoading} />
-              <div className="md:col-span-2">
+              <div className="opacity-0 translate-y-10">
+                <BalanceCard balance={walletData.balance} isLoading={isLoading} />
+              </div>
+              <div className="md:col-span-2 opacity-0 translate-y-10">
                 <HistoryChart transactions={walletData.transactions} isLoading={isLoading} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div>
+              <div className="opacity-0 translate-y-10">
                 <AllocationChart
                   tokens={walletData.tokens}
                   ethBalance={walletData.balance}
                   isLoading={isLoading}
                 />
               </div>
-              <div>
+              <div className="opacity-0 translate-y-10">
                 <TokensCard tokens={walletData.tokens} isLoading={isLoading} />
               </div>
-              <div>
+              <div className="opacity-0 translate-y-10">
                 <NFTsCard nfts={walletData.nfts} isLoading={isLoading} />
               </div>
             </div>
-            <div className="mb-6">
+            <div className="mb-6 opacity-0 translate-y-10">
               <ActivityTable
                 transactions={walletData.transactions}
                 walletAddress={walletAddress}
@@ -210,7 +211,7 @@ const PortfolioPage = () => {
         )}
 
         <footer className="text-center py-8 text-gray-500 text-sm">
-          <div className="relative overflow-hidden inline-block px-4 py-2 rounded-full backdrop-blur-xl bg-shark-700/30 border border-shark-600 shadow-lg animate-pulse">
+          <div className="relative overflow-hidden inline-block px-4 py-2 rounded-full backdrop-blur-xl bg-shark-700/30 border border-shark-600 shadow-lg animate-pulse-amber">
             Wallet Portfolio Scanner • Powered by Alchemy
             <div
               className="absolute top-[-50%] left-[-50%] w-[200%] h-[200%]"
