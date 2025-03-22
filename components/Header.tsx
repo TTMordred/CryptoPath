@@ -306,6 +306,13 @@ const Header = () => {
               >
                 Swap
               </Link>
+              <Link
+                href="/clickgame"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
+                onClick={() => setIsOpen(false)}
+              >
+                Click2Earn
+              </Link>
               <a
                 href="mailto:cryptopath@gmail.com"
                 className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
