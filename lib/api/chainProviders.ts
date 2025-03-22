@@ -14,6 +14,16 @@ export interface ChainConfig {
   testnet: boolean;
 }
 
+export interface ChainTheme {
+  primary: string;
+  secondary: string;
+  accent: string;
+  light: string;
+  textClass: string;
+  backgroundClass: string;
+  borderClass: string;
+}
+
 export const chainConfigs: Record<string, ChainConfig> = {
   // Ethereum Mainnet
   '0x1': {
@@ -73,7 +83,11 @@ export const chainConfigs: Record<string, ChainConfig> = {
   },
 };
 
-// Get provider for a specific chain
+/**
+ * Get a provider for a specific chain
+ * @param chainId The chain ID to get a provider for
+ * @returns Ethers provider for the specified chain
+ */
 export const getChainProvider = (chainId: string) => {
   const config = chainConfigs[chainId];
   if (!config) {
@@ -82,21 +96,39 @@ export const getChainProvider = (chainId: string) => {
   return new ethers.providers.JsonRpcProvider(config.rpcUrl);
 };
 
-// Get block explorer URL for a specific chain and address
-export const getExplorerUrl = (chainId: string, address: string) => {
+/**
+ * Get the block explorer URL for a specific chain and address/transaction/etc
+ * @param chainId The chain ID to get the explorer URL for
+ * @param path The path to add to the URL (e.g., address, tx)
+ * @param type The type of path (address, tx, token, block)
+ * @returns The full explorer URL
+ */
+export function getExplorerUrl(chainId: string, path: string = '', type: 'address' | 'tx' | 'token' | 'block' = 'address'): string {
   const config = chainConfigs[chainId];
-  if (!config) return `https://etherscan.io/address/${address}`;
-  return `${config.blockExplorerUrl}/address/${address}`;
-};
+  if (!config) {
+    // Default to Ethereum mainnet if chain not found
+    return `https://etherscan.io/${type}/${path}`;
+  }
+  
+  return `${config.blockExplorerUrl}/${type}/${path}`;
+}
 
-// Format address for display
+/**
+ * Format an address for display (shortening it)
+ * @param address The address to format
+ * @returns Formatted address string
+ */
 export const formatAddress = (address: string) => {
   if (!address) return '';
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
 
-// Get chain color theme
-export const getChainColorTheme = (chainId: string) => {
+/**
+ * Get theme colors and classes for a specific chain
+ * @param chainId The chain ID to get colors for
+ * @returns Object with color values and utility classes
+ */
+export const getChainColorTheme = (chainId: string): ChainTheme => {
   switch (chainId) {
     case '0x1':
     case '0xaa36a7':
@@ -131,4 +163,46 @@ export const getChainColorTheme = (chainId: string) => {
         textClass: 'text-blue-400'
       };
   }
+};
+
+/**
+ * Get the name of a network from its chain ID
+ * @param chainId The chain ID
+ * @returns Human-readable network name
+ */
+export const getNetworkName = (chainId: string): string => {
+  const config = chainConfigs[chainId];
+  return config?.name || 'Unknown Network';
+};
+
+/**
+ * Check if a chain is a testnet
+ * @param chainId The chain ID to check
+ * @returns Boolean indicating if it's a testnet
+ */
+export const isTestnet = (chainId: string): boolean => {
+  const config = chainConfigs[chainId];
+  return config?.testnet || false;
+};
+
+/**
+ * Get the native currency symbol for a chain
+ * @param chainId The chain ID
+ * @returns The currency symbol (e.g., ETH, BNB)
+ */
+export const getCurrencySymbol = (chainId: string): string => {
+  const config = chainConfigs[chainId];
+  return config?.nativeCurrency.symbol || 'ETH';
+};
+
+/**
+ * Format a currency amount with proper symbol
+ * @param amount The amount to format
+ * @param chainId The chain ID for currency symbol
+ * @param decimals Number of decimal places to show
+ * @returns Formatted currency string
+ */
+export const formatCurrency = (amount: number, chainId: string, decimals: number = 4): string => {
+  const symbol = getCurrencySymbol(chainId);
+  return `${amount.toFixed(decimals)} ${symbol}`;
 };

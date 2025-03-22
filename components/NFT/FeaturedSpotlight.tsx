@@ -22,7 +22,7 @@ const spotlights: NFTSpotlight[] = [
     id: 'cryptopath-genesis',
     name: 'CryptoPath Genesis Collection',
     description: 'Be part of the CryptoPath revolution with our limited Genesis NFT collection. Exclusive benefits, governance rights, and early access to new features await the owners!',
-    image: '/images/cryptopath-genesis-hero.png', // Replace with actual path
+    image: '/Img/logo/logo3.svg', // Replace with actual path
     chain: '0x61', // BNB Testnet
     contractAddress: '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551',
     artist: 'CryptoPath Team'
