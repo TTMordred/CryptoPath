@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Info, AlertTriangle, Flame, ExternalLink } from 'lucide-react';
 import axios from 'axios';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import Link from 'next/link';
 
 interface TrendingCoin {

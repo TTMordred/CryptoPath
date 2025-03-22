@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
-import Image from "next/image"
+import Image from "next/legacy/image"
 import { handleImageError, getDevImageProps } from "@/utils/imageUtils"
 
 interface TokenBalance {

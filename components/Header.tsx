@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Image from "next/legacy/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSettings } from "@/components/context/SettingsContext";

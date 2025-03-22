@@ -1,7 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import { motion } from 'framer-motion';
 import { FaFacebookF, FaGithub, FaLinkedinIn, FaCoins, FaExchangeAlt, FaPalette, FaChartLine, FaGamepad } from 'react-icons/fa';
 import ParticlesBackground from '@/components/ParticlesBackground';
