@@ -48,7 +48,7 @@ const fetchAlchemyApi = async (
 ) => {
   try {
     let url = `${baseUrl}${endpoint}`;
-    let options: RequestInit = {
+    const options: RequestInit = {
       method,
       headers: { "Content-Type": "application/json" },
     };

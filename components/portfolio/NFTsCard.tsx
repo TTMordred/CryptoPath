@@ -49,13 +49,14 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
           <div className="bg-amber/20 rounded-full p-2 mr-3">
-            <Image className="h-5 w-5 text-amber" />
+            <Image className="h-5 w-5 text-amber" aria-hidden="true" />
           </div>
           <h3 className="text-gray-300 font-medium">NFT Collection</h3>
         </div>
         {nfts.length > 0 && (
           <div className="text-xs text-gray-400">
-            {indexOfFirstNFT + 1}-{Math.min(indexOfLastNFT, nfts.length)} of {nfts.length}
+            {indexOfFirstNFT + 1}-{Math.min(indexOfLastNFT, nfts.length)} of{" "}
+            {nfts.length}
           </div>
         )}
       </div>
@@ -76,7 +77,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                 {nft.imageUrl ? (
                   <img
                     src={nft.imageUrl}
-                    alt={nft.name}
+                    alt={nft.name || `NFT ${nft.tokenId}`}
                     className="h-full w-full object-cover object-center"
                     loading="lazy"
                     onError={(e) => {
@@ -88,7 +89,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-shark-700 text-shark-400">
-                    <Image className="h-8 w-8" />
+                    <Image className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
                 <div
@@ -114,8 +115,10 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-[250px]">
-            <Image className="h-12 w-12 text-shark-400 mb-4" />
-            <p className="text-shark-300 text-center">No NFTs found for this wallet</p>
+            <Image className="h-12 w-12 text-shark-400 mb-4" aria-hidden="true" />
+            <p className="text-shark-300 text-center">
+              No NFTs found for this wallet
+            </p>
           </div>
         )}
       </div>
@@ -145,12 +148,9 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
         </div>
       )}
 
-      {/* Modal hiển thị thông tin chi tiết NFT */}
       {selectedNFT && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] p-4">
-          <div
-            className="backdrop-blur-md bg-white/10  p-6 max-w-md w-full h-[calc(100%-40px)] border border-shark-600 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent scrollbar-thumb-rounded-full"
-          >
+          <div className="backdrop-blur-md bg-white/10 p-6 max-w-md w-full h-[calc(100%-40px)] border border-shark-600 shadow-lg overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent scrollbar-thumb-rounded-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-gray-200 text-lg font-medium">NFT Details</h3>
               <Button
@@ -166,7 +166,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
               {selectedNFT.imageUrl ? (
                 <img
                   src={selectedNFT.imageUrl}
-                  alt={selectedNFT.name}
+                  alt={selectedNFT.name || `NFT ${selectedNFT.tokenId}`}
                   className="w-full max-h-64 object-contain rounded-md mb-4"
                   loading="lazy"
                   onError={(e) => {
@@ -178,7 +178,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                 />
               ) : (
                 <div className="w-full h-64 flex items-center justify-center bg-shark-700 text-shark-400 rounded-md mb-4">
-                  <Image className="h-12 w-12" />
+                  <Image className="h-12 w-12" aria-hidden="true" />
                 </div>
               )}
               <div className="w-full text-left">
@@ -192,10 +192,12 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                   {selectedNFT.description || "No description available"}
                 </p>
                 <p className="text-gray-500 text-sm">
-                  <span className="font-medium">Token ID:</span> {selectedNFT.tokenId}
+                  <span className="font-medium">Token ID:</span>{" "}
+                  {selectedNFT.tokenId}
                 </p>
                 <p className="text-gray-500 text-sm truncate">
-                  <span className="font-medium">Contract:</span> {selectedNFT.contract}
+                  <span className="font-medium">Contract:</span>{" "}
+                  {selectedNFT.contract}
                 </p>
               </div>
             </div>
