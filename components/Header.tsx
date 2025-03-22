@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Image from "next/legacy/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSettings } from "@/components/context/SettingsContext";
@@ -201,6 +201,9 @@ const Header = () => {
           <Link href="/Swap" className="text-white text-sm hover:text-[#F5B056] transition">
             Swap
           </Link>
+          <Link href="/clickgame" className="text-white text-sm hover:text-[#F5B056] transition">
+            Click2Earn
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
@@ -305,6 +308,13 @@ const Header = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Swap
+              </Link>
+              <Link
+                href="/clickgame"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
+                onClick={() => setIsOpen(false)}
+              >
+                Click2Earn
               </Link>
               <a
                 href="mailto:cryptopath@gmail.com"

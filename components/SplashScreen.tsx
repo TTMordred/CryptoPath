@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Hexagon } from "lucide-react";
-import Image from "next/image";
+import Image from "next/legacy/image";
 
 interface SplashScreenProps {
   minimumLoadTimeMs?: number;

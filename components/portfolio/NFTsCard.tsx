@@ -40,7 +40,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
           <div className="bg-amber/20 rounded-full p-2 mr-3">
-            <Image className="h-5 w-5 text-amber" />
+            <Image className="h-5 w-5 text-amber" aria-label="NFT icon" />
           </div>
           <h3 className="text-gray-300 font-medium">NFT Collection</h3>
         </div>
@@ -83,7 +83,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-shark-700 text-shark-400">
-                    <Image className="h-8 w-8" />
+                    <Image className="h-8 w-8" aria-label="NFT placeholder" />
                   </div>
                 )}
                 <div
@@ -110,7 +110,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-[250px]">
-            <Image className="h-12 w-12 text-shark-400 mb-4" />
+            <Image className="h-12 w-12 text-shark-400 mb-4" aria-label="No NFTs found" />
             <p className="text-shark-300 text-center">No NFTs found for this wallet</p>
           </div>
         )}

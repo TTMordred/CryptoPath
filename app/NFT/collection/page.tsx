@@ -2,7 +2,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import Link from 'next/link';
 import { 
   fetchPopularCollections, 
@@ -169,7 +169,7 @@ export default function NFTCollectionPage() {
             <Image
               src={collection.imageUrl}
               alt={collection.name}
-              fill
+              layout="fill"
               className="object-cover"
               onError={(e) => {
                 const target = e.target as HTMLImageElement;
