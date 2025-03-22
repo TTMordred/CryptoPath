@@ -201,6 +201,9 @@ const Header = () => {
           <Link href="/Swap" className="text-white text-sm hover:text-[#F5B056] transition">
             Swap
           </Link>
+          <Link href="/clickgame" className="text-white text-sm hover:text-[#F5B056] transition">
+            Click2Earn
+          </Link>
           <a href="mailto:cryptopath@gmail.com" className="text-white text-sm hover:text-[#F5B056] transition">
             Support
           </a>
