@@ -287,10 +287,9 @@ export default function NFTGallery() {
                         <Image
                           src={nft.imageUrl || "/images/nft-placeholder.png"}
                           alt={nft.tokenName || `NFT #${formattedTokenId}`}
-                          style={{ width: '100%', height: '100%', position: 'relative' }}
+                          fill
                           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                           className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          priority
                           onError={(event) => {
                             markImageAsError(nftId);
                             handleImageError(event);
@@ -424,9 +423,8 @@ export default function NFTGallery() {
                     <Image
                       src={selectedNft.imageUrl}
                       alt={selectedNft.tokenName || `NFT #${formatTokenId(selectedNft.tokenID)}`}
-                      style={{ width: '100%', height: '100%', position: 'relative' }}
+                      fill
                       className="object-contain"
-                      priority
                       onError={(event) => {
                         markImageAsError(`${selectedNft.contractAddress}-${selectedNft.tokenID}`);
                         handleImageError(event);
