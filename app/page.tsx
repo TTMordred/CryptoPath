@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { FaFacebookF, FaGithub, FaLinkedinIn } from 'react-icons/fa';
+import { FaFacebookF, FaGithub, FaLinkedinIn, FaCoins, FaExchangeAlt, FaPalette, FaChartLine, FaGamepad } from 'react-icons/fa';
 import ParticlesBackground from '@/components/ParticlesBackground';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -584,6 +584,111 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+
+      {/* New Features Section */}
+      <div className="bg-black py-20 px-4">
+        <div className="container mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold text-center text-white mb-16" data-aos="fade-up">
+            Platform <span className="text-[#F5B056]">Features</span>
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+            {/* Market Analysis */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105" data-aos="fade-up" data-aos-delay="100">
+              <div className="text-[#F5B056] text-4xl mb-4">
+                <FaChartLine />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3">Market Analysis</h3>
+              <p className="text-gray-400">
+                Real-time market data and analysis tools to help you make informed decisions.
+              </p>
+              <Link href="/market-overview" className="text-[#F5B056] mt-4 inline-block hover:underline">
+                Explore Markets →
+              </Link>
+            </div>
+            
+            {/* Token Swapping */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105" data-aos="fade-up" data-aos-delay="200">
+              <div className="text-[#F5B056] text-4xl mb-4">
+                <FaExchangeAlt />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3">Token Swapping</h3>
+              <p className="text-gray-400">
+                Easily exchange different cryptocurrencies with our simple swap interface.
+              </p>
+              <Link href="/Swap" className="text-[#F5B056] mt-4 inline-block hover:underline">
+                Swap Tokens →
+              </Link>
+            </div>
+            
+            {/* NFT Marketplace */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105" data-aos="fade-up" data-aos-delay="300">
+              <div className="text-[#F5B056] text-4xl mb-4">
+                <FaPalette />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3">NFT Marketplace</h3>
+              <p className="text-gray-400">
+                Buy, sell, and trade unique digital collectibles on our NFT marketplace.
+              </p>
+              <Link href="/NFT" className="text-[#F5B056] mt-4 inline-block hover:underline">
+                Discover NFTs →
+              </Link>
+            </div>
+            
+            {/* Faucet */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105" data-aos="fade-up" data-aos-delay="400">
+              <div className="text-[#F5B056] text-4xl mb-4">
+                <FaCoins />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3">Token Faucet</h3>
+              <p className="text-gray-400">
+                Get free tokens to start your journey and explore the CryptoPath ecosystem.
+              </p>
+              <Link href="/Faucet" className="text-[#F5B056] mt-4 inline-block hover:underline">
+                Claim Tokens →
+              </Link>
+            </div>
+
+            {/* Click-to-Earn Game - NEW FEATURE */}
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105 relative overflow-hidden" data-aos="fade-up" data-aos-delay="500">
+              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+                NEW
+              </div>
+              <div className="text-[#F5B056] text-4xl mb-4">
+                <FaGamepad />
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3">Clicker Game</h3>
+              <p className="text-gray-400">
+                Earn PATH tokens by playing our addictive click-to-earn game with upgrades and boosts.
+              </p>
+              <Link href="/clickgame" className="text-[#F5B056] mt-4 inline-block hover:underline">
+                Play Now →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Call to Action */}
+      <div className="relative bg-gradient-to-b from-gray-900 to-black py-20 px-4 text-center">
+        <div className="container mx-auto max-w-3xl" data-aos="fade-up">
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Start Your <span className="text-[#F5B056]">Crypto Journey</span>?
+          </h2>
+          <p className="text-gray-400 text-lg mb-10">
+            Join thousands of users exploring the crypto universe with CryptoPath
+          </p>
+          
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/login" className="bg-[#F5B056] text-black font-bold px-8 py-3 rounded-full hover:bg-[#F5B056]/90 transition">
+              Get Started Now
+            </Link>
+            <Link href="/clickgame" className="bg-transparent border-2 border-[#F5B056] text-white font-bold px-8 py-3 rounded-full hover:bg-[#F5B056]/10 transition flex items-center">
+              <FaGamepad className="mr-2" /> Try the Game
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
