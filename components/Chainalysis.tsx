@@ -84,6 +84,7 @@ export default function ChainalysisDisplay({ address }: ChainalysisDisplayProps)
     }
   
     // Normal state (data exists)
+    if (data){
     return (
       <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
         <CardHeader>
@@ -122,4 +123,7 @@ export default function ChainalysisDisplay({ address }: ChainalysisDisplayProps)
         </CardContent>
       </Card>
     );
-  }
+    }
+    // Fallback (if data is null for some reason)
+    return null;
+}
