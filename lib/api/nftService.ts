@@ -400,7 +400,7 @@ export async function fetchPopularCollections(chainId: string): Promise<Collecti
     // Get list of popular collection addresses for this chain
     const popularAddresses = POPULAR_NFT_COLLECTIONS[chainId as keyof typeof POPULAR_NFT_COLLECTIONS] || [];
     
-    if (popularAddresses.length === 0) {
+    if (!popularAddresses || (popularAddresses.length as number) === 0) {
       return [];
     }
     
@@ -563,81 +563,110 @@ export async function fetchTradeHistory(
 export async function fetchPriceHistory(
   contractAddress: string,
   tokenId?: string,
-  chainId: string = '0x1'
+  chainId: string = '0x1',
+  period: '1d' | '7d' | '30d' | 'all' = '7d'
 ): Promise<any[]> {
-  // Generate realistic price history data based on real market trends
-  const now = Date.now();
-  const data = [];
-  const days = 90; // 3 months of data
-  
-  // Determine base price and volatility based on collection
-  let basePrice = 1;
-  let volatility = 0.05;
-  let trend = 0; // Neutral trend by default
-  
-  // Special handling for known collections
-  if (chainId === '0x1') {
-    if (contractAddress.toLowerCase() === '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d') {
-      // BAYC - high value, high volatility
-      basePrice = 70;
-      volatility = 0.08;
-      trend = 0.001; // Slight uptrend
-    } else if (contractAddress.toLowerCase() === '0xed5af388653567af2f388e6224dc7c4b3241c544') {
-      // Azuki
-      basePrice = 8;
-      volatility = 0.06;
-      trend = 0.0005;
-    } else if (contractAddress.toLowerCase() === '0x60e4d786628fea6478f785a6d7e704777c86a7c6') {
-      // MAYC
-      basePrice = 10;
-      volatility = 0.07;
-      trend = 0.0007;
+  try {
+    // Generate realistic price history data based on real market trends
+    const now = Date.now();
+    const data = [];
+    const days = 90; // 3 months of data
+    
+    // Determine base price and volatility based on collection
+    let basePrice = 1;
+    let volatility = 0.05;
+    let trend = 0; // Neutral trend by default
+    
+    // Special handling for known collections
+    if (chainId === '0x1') {
+      if (contractAddress.toLowerCase() === '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d') {
+        // BAYC - high value, high volatility
+        basePrice = 70;
+        volatility = 0.08;
+        trend = 0.001; // Slight uptrend
+      } else if (contractAddress.toLowerCase() === '0xed5af388653567af2f388e6224dc7c4b3241c544') {
+        // Azuki
+        basePrice = 8;
+        volatility = 0.06;
+        trend = 0.0005;
+      } else if (contractAddress.toLowerCase() === '0x60e4d786628fea6478f785a6d7e704777c86a7c6') {
+        // MAYC
+        basePrice = 10;
+        volatility = 0.07;
+        trend = 0.0007;
+      }
+    } else if (chainId === '0x38') {
+      if (contractAddress.toLowerCase() === '0x0a8901b0e25deb55a87524f0cc164e9644020eba') {
+        // Pancake Squad
+        basePrice = 2;
+        volatility = 0.04;
+        trend = 0.0008; // Stronger uptrend
+      }
+    } else if (chainId === '0x61' && contractAddress.toLowerCase() === '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551') {
+      // CryptoPath Genesis
+        basePrice = 10;
+        volatility = 0.06;
+        trend = 0.002; // Strong growth
+    } else {
+      // Use token ID to influence base price if available
+      basePrice = tokenId ? 
+        (parseInt(tokenId, 16) % 100) / 10 + 0.5 : // Use tokenId to generate a base price
+        1 + Math.random() * 5; // Random base price for collection
     }
-  } else if (chainId === '0x38') {
-    if (contractAddress.toLowerCase() === '0x0a8901b0e25deb55a87524f0cc164e9644020eba') {
-      // Pancake Squad
-      basePrice = 2;
-      volatility = 0.04;
-      trend = 0.0008; // Stronger uptrend
+    
+    // Generate prices with realistic market movements
+    let price = basePrice;
+    for (let i = days; i >= 0; i--) {
+      const date = new Date(now - 1000 * 60 * 60 * 24 * i);
+      
+      // Apply market factors - fix the TypeScript error with explicit weekend check
+      // Instead of comparing day of week directly, use an array of weekend days
+      const weekendDays = [0, 6]; // 0 = Sunday, 6 = Saturday
+      const isWeekend = weekendDays.includes(date.getDay());
+      const weekendFactor = isWeekend ? (Math.random() > 0.5 ? 0.01 : -0.01) : 0; // Weekend volatility
+      
+      // Market cycle - simulate some cyclical behavior (10-day cycles)
+      const cycleFactor = 0.02 * Math.sin(i / 10);
+      
+      // Apply trend (accumulated over time) + random volatility + cyclical factor + weekend effect
+      price = price * (1 + trend + (Math.random() - 0.5) * volatility + cycleFactor + weekendFactor);
+      
+      // Floor at 10% of base price to avoid unrealistic crashes
+      price = Math.max(price, basePrice * 0.1);
+      
+      data.push({
+        date: date.toISOString().split('T')[0],
+        price: price.toFixed(4)
+      });
     }
-  } else if (chainId === '0x61' && contractAddress.toLowerCase() === '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551') {
-    // CryptoPath Genesis
-    basePrice = 10;
-    volatility = 0.06;
-    trend = 0.002; // Strong growth
-  } else {
-    // Use token ID to influence base price if available
-    basePrice = tokenId ? 
-      (parseInt(tokenId, 16) % 100) / 10 + 0.5 : // Use tokenId to generate a base price
-      1 + Math.random() * 5; // Random base price for collection
+    
+    // Filter data based on period
+    const pastDate = new Date();
+    
+    switch (period) {
+      case '1d':
+        pastDate.setDate(pastDate.getDate() - 1);
+        break;
+      case '7d':
+        pastDate.setDate(pastDate.getDate() - 7);
+        break;
+      case '30d':
+        pastDate.setDate(pastDate.getDate() - 30);
+        break;
+      case 'all':
+      default:
+        // No filtering for 'all'
+        break;
+    }
+    
+    // Filter and format price history
+    return period === 'all'
+      ? data
+      : data.filter(item => new Date(item.date) >= pastDate);
+  } catch (error) {
+    console.error("Error fetching price history:", error);
+    return [];
   }
-  
-  // Generate prices with realistic market movements
-  let price = basePrice;
-  for (let i = days; i >= 0; i--) {
-    const date = new Date(now - 1000 * 60 * 60 * 24 * i);
-    
-    // Apply market factors
-    const dayOfWeek = date.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const weekendFactor = isWeekend ? (Math.random() > 0.5 ? 0.01 : -0.01) : 0; // Weekend volatility
-    
-    // Market cycle - simulate some cyclical behavior (10-day cycles)
-    const cycleFactor = 0.02 * Math.sin(i / 10);
-    
-    // Apply trend (accumulated over time) + random volatility + cyclical factor + weekend effect
-    price = price * (1 + trend + (Math.random() - 0.5) * volatility + cycleFactor + weekendFactor);
-    
-    // Floor at 10% of base price to avoid unrealistic crashes
-    price = Math.max(price, basePrice * 0.1);
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      price: price.toFixed(4)
-    });
-  }
-  
-  return data;
 }
 
 /**
@@ -781,7 +810,7 @@ export async function getCollectionStats(
 }> {
   try {
     // Get price history for the chosen period
-    const priceData = await fetchPriceHistory(contractAddress, undefined, chainId);
+    const priceData = await fetchPriceHistory(contractAddress, undefined, chainId, period);
     
     // Filter data based on period
     const now = new Date();
