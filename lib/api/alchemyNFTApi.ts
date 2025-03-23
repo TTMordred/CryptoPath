@@ -467,20 +467,20 @@ interface NFTItem {
     attributes?: Array<{trait_type: string, value: string}>
   };
 }
-
-interface CollectionNFT {
+export interface CollectionNFT {
   id: string;
   tokenId: string;
   name: string;
-  description: string;
+  description?: string;
   imageUrl: string;
-  attributes: Array<{
+  attributes?: Array<{
     trait_type: string;
     value: string;
   }>;
+  chain: string;
 }
 
-interface CollectionNFTsResponse {
+export interface CollectionNFTsResponse {
   nfts: CollectionNFT[];
   totalCount: number;
   pageKey?: string;
@@ -543,6 +543,9 @@ export async function fetchCollectionNFTs(
     if (Object.keys(attributes).length > 0) {
       nfts = nfts.filter((nft: CollectionNFT) => {
         for (const [traitType, values] of Object.entries(attributes)) {
+          if (!nft.attributes) {
+            return false;
+          }
           const nftAttribute = nft.attributes.find((attr: {trait_type: string, value: string}) => attr.trait_type === traitType);
           if (!nftAttribute || !values.includes(nftAttribute.value)) {
             return false;

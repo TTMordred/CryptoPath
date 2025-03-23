@@ -1,24 +1,36 @@
 import { toast } from "sonner";
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { 
-  fetchContractCollectionInfo, 
-  fetchNFTData, 
+import {
+  fetchContractCollectionInfo,
+  fetchNFTData,
   fetchContractNFTs,
   fetchOwnedNFTs,
   NFTMetadata,
   POPULAR_NFT_COLLECTIONS
 } from './nftContracts';
+import {
+  CollectionNFT,
+  CollectionNFTsResponse
+} from './alchemyNFTApi';
 import { getChainProvider, getExplorerUrl, ChainConfig, chainConfigs } from './chainProviders';
 
 // Environment variables for API keys
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
 const MORALIS_API_KEY = process.env.NEXT_PUBLIC_MORALIS_API_KEY || '';
 
+// Default pagination settings
+const DEFAULT_PAGE_SIZE = 20;
+
 // Cache for collection data to reduce API calls
 const collectionsCache = new Map<string, any>();
-const nftCache = new Map<string, NFTMetadata>();
-const collectionNFTsCache = new Map<string, {timestamp: number, nfts: NFTMetadata[]}>();
+const nftCache = new Map<string, {
+  data: CollectionNFT[];
+  totalCount: number;
+  timestamp: number;
+  expires: number;
+}>();
+const collectionNFTsCache = new Map<string, {timestamp: number, nfts: CollectionNFT[]}>();
 
 // Cache TTL in milliseconds (10 minutes)
 const CACHE_TTL = 10 * 60 * 1000;
@@ -1061,4 +1073,192 @@ export async function estimateNFTValue(
       similarSales: []
     };
   }
+}
+
+/**
+ * Enhanced NFT fetching service with caching, pagination and virtualization support
+ */
+export async function fetchNFTsWithVirtualization(
+  contractAddress: string,
+  chainId: string,
+  page: number = 1,
+  pageSize: number = DEFAULT_PAGE_SIZE,
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc',
+  searchQuery: string = '',
+  attributes: Record<string, string[]> = {}
+): Promise<{
+  nfts: CollectionNFT[],
+  totalCount: number,
+  hasMore: boolean,
+  pageKey?: string
+}> {
+  // Create a cache key based on all parameters
+  const cacheKey = `${contractAddress}-${chainId}-${page}-${pageSize}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+  // Check if we have cached data and it's not expired
+  const cachedData = nftCache.get(cacheKey);
+  if (cachedData && Date.now() - cachedData.timestamp < cachedData.expires) {
+    return {
+      nfts: cachedData.data,
+      totalCount: cachedData.totalCount,
+      hasMore: cachedData.data.length < cachedData.totalCount
+    };
+  }
+  try {
+    const response = await fetchCollectionNFTs(contractAddress, chainId, {
+      page,
+      pageSize,
+      sortBy,
+      sortDirection,
+      searchQuery,
+      attributes
+    });
+
+    const nftsWithChain = response.nfts.map(nft => ({
+      ...nft,
+      chain: chainId
+    }));
+    
+    // Store in cache
+    nftCache.set(cacheKey, {
+      data: nftsWithChain,
+      totalCount: response.totalCount,
+      timestamp: Date.now(),
+      expires: CACHE_TTL
+    });
+    return {
+      nfts: nftsWithChain,
+      totalCount: response.totalCount,
+      hasMore: response.nfts.length < response.totalCount,
+      pageKey: response.pageKey
+    };
+  } catch (error) {
+    console.error('Error fetching NFTs with virtualization:', error);
+    toast.error('Failed to load NFTs. Please try again.');
+    return { nfts: [], totalCount: 0, hasMore: false };
+  }
+}
+
+/**
+ * Get cursor-based paginated NFTs similar to OpenSea
+ */
+export async function fetchNFTsWithCursor(
+  contractAddress: string,
+  chainId: string,
+  cursor?: string,
+  limit: number = DEFAULT_PAGE_SIZE,
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc',
+  searchQuery: string = '',
+  attributes: Record<string, string[]> = {}
+): Promise<{
+  nfts: any[],
+  totalCount: number,
+  nextCursor?: string
+}> {
+  // Calculate the "page" based on cursor if provided
+  // This is a simplified approach - in a real app you'd parse the cursor
+  const page = cursor ? parseInt(cursor, 10) : 1;
+  
+  try {
+    const response = await fetchCollectionNFTs(contractAddress, chainId, {
+      page,
+      pageSize: limit,
+      sortBy,
+      sortDirection,
+      searchQuery,
+      attributes
+    });
+    
+    // Create a new cursor for the next page
+    const nextCursor = response.pageKey || (
+      response.nfts.length === limit ? (page + 1).toString() : undefined
+    );
+    
+    return {
+      nfts: response.nfts,
+      totalCount: response.totalCount,
+      nextCursor
+    };
+  } catch (error) {
+    console.error('Error fetching NFTs with cursor:', error);
+    toast.error('Failed to load NFTs. Please try again.');
+    return { nfts: [], totalCount: 0 };
+  }
+}
+
+/**
+ * Clear all NFT cache data
+ */
+export function clearNFTCache() {
+  nftCache.clear();
+}
+
+/**
+ * Clear cache for a specific collection
+ */
+export function clearCollectionCache(contractAddress: string, chainId: string) {
+  const cacheKeyPrefix = `${contractAddress}-${chainId}`;
+  
+  // Iterate through all keys and delete matching ones
+  for (const key of nftCache.keys()) {
+    if (key.startsWith(cacheKeyPrefix)) {
+      nftCache.delete(key);
+    }
+  }
+}
+
+/**
+ * Get NFT indexing status - simulating OpenSea's indexing progress
+ */
+export async function getNFTIndexingStatus(contractAddress: string, chainId: string): Promise<{
+  status: 'completed' | 'in_progress' | 'not_started', 
+  progress: number
+}> {
+  // Simulate different statuses based on contract address
+  const lastChar = contractAddress.slice(-1);
+  const charCode = lastChar.charCodeAt(0);
+  
+  if (charCode % 3 === 0) {
+    return { status: 'completed', progress: 100 };
+  } else if (charCode % 3 === 1) {
+    const progress = Math.floor(Math.random() * 90) + 10; // 10-99%
+    return { status: 'in_progress', progress };
+  } else {
+    return { status: 'not_started', progress: 0 };
+  }
+}
+
+/**
+ * Calculate visible range for virtualized rendering
+ */
+export function calculateVisibleRange(
+  scrollTop: number, 
+  viewportHeight: number, 
+  itemHeight: number, 
+  itemCount: number,
+  buffer: number = 5 // Number of items to render above/below viewport
+): { startIndex: number, endIndex: number } {
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - buffer);
+  const endIndex = Math.min(
+    itemCount - 1,
+    Math.ceil((scrollTop + viewportHeight) / itemHeight) + buffer
+  );
+  
+  return { startIndex, endIndex };
+}
+
+/**
+ * Generate placeholder data for NFTs that are being loaded
+ */
+export function generatePlaceholderNFTs(count: number, startIndex: number = 0): any[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `placeholder-${startIndex + i}`,
+    tokenId: `${startIndex + i}`,
+    name: `Loading...`,
+    description: '',
+    imageUrl: '',
+    isPlaceholder: true,
+    attributes: []
+  }));
 }

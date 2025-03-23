@@ -72,15 +72,16 @@ import ParticlesBackground from '@/components/ParticlesBackground';
 import NetworkSelector from '@/components/NFT/NetworkSelector';
 import AnimatedNFTCard from '@/components/NFT/AnimatedNFTCard';
 import { getExplorerUrl, getChainColorTheme, formatAddress } from '@/lib/api/chainProviders';
+import VirtualizedNFTGrid from '@/components/NFT/VirtualizedNFTGrid';
 
 interface NFT {
   id: string;
   tokenId: string;
   name: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   chain: string;
-  attributes: Array<{
+  attributes?: Array<{
     trait_type: string;
     value: string;
   }>;
@@ -848,34 +849,40 @@ export default function CollectionDetailsPage() {
                   ) : (
                     <>
                       {/* NFT Grid with Virtualization */}
-                      <motion.div
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                          visible: {
-                            transition: {
-                              staggerChildren: 0.05
-                            }
-                          }
-                        }}
-                        layout
-                        className={
-                          viewMode === 'grid'
-                            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
-                            : 'space-y-4'
-                        }
-                      >
-                        <AnimatePresence mode="wait">
-                          {nfts.slice(0, visibleItems).map((nft, index) => (
-                            <AnimatedNFTCard
-                              key={`${nft.id}-${chainId}`}
-                              nft={nft}
-                              index={index}
-                              onClick={() => handleNFTClick(nft)}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </motion.div>
+                      {nfts.length > 0 && !loading ? (
+                        <VirtualizedNFTGrid
+                          contractAddress={collectionId}
+                          chainId={chainId}
+                          sortBy={sortBy}
+                          sortDirection={sortDir}
+                          searchQuery={searchQuery}
+                          attributes={selectedAttributes}
+                          viewMode={viewMode}
+                          onNFTClick={handleNFTClick}
+                          itemsPerPage={32}
+                        />
+                      ) : (
+                        <motion.div 
+                          className="text-center py-12 border border-gray-800 rounded-lg bg-black/30"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <p className="text-gray-400">
+                            No NFTs found for this collection.
+                          </p>
+                          {(searchQuery ||
+                            Object.keys(selectedAttributes).length > 0) && (
+                            <Button
+                              variant="link"
+                              onClick={clearFilters}
+                              className="mt-2"
+                            >
+                              Clear filters
+                            </Button>
+                          )}
+                        </motion.div>
+                      )}
 
                       {/* Load More Indicator */}
                       {visibleItems < nfts.length && (
@@ -917,7 +924,7 @@ export default function CollectionDetailsPage() {
 
                             {[...Array(totalPages)].map((_, i) => {
                               const pageNumber = i + 1;
-                              // Show first page, last page, and pages around current page
+                              // Show first page, last page, and pages around currentPage
                               if (
                                 pageNumber === 1 ||
                                 pageNumber === totalPages ||
