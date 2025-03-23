@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { ErrorCard } from "@/components/ui/error-card"
 import AddressErrorCard from "@/components/search/AddressErrorCard"
+import ChainalysisDisplay from "@/components/Chainalysis"
 
 // Ethereum address validation regex pattern
 const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
@@ -142,6 +143,7 @@ export default function Transactions() {
         <WalletInfo />
         <TransactionGraph />
         </div>
+        <ChainalysisDisplay address={address} />
         <div className="mb-8">
         <Portfolio />
         </div>
