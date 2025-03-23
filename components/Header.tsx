@@ -4,21 +4,44 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Image from "next/image"; // Changed from legacy/image to standard image
+import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { LoadingScreen } from "@/components/loading-screen";
 import { useSettings } from "@/components/context/SettingsContext";
 import { supabase } from "@/src/integrations/supabase/client";
 import { toast } from "sonner";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
+import injectedModule from '@web3-onboard/injected-wallets';
 
-// Add this helper function at the top of your component or in a utils file
+// Khởi tạo Web3Onboard
+const INFURA_KEY = '7d389678fba04ceb9510b2be4fff5129';
+const wallets = [injectedModule()];
+const chains = [
+  {
+    id: '0x1',
+    token: 'ETH',
+    label: 'Ethereum Mainnet',
+    rpcUrl: `https://mainnet.infura.io/v3/${INFURA_KEY}`,
+  },
+];
+const appMetadata = {
+  name: 'CryptoPath',
+  description: 'CryptoPath DApp',
+  recommendedInjectedWallets: [
+    { name: 'MetaMask', url: 'https://metamask.io' },
+  ],
+};
+const web3Onboard = init({ wallets, chains, appMetadata });
+
 const shortenAddress = (address: string): string => {
-  if (!address) return '';
+  if (!address) return "";
   return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
 };
 
-const Header = () => {
+// Component nội bộ
+const HeaderContent = () => {
+  const [{ wallet }, , disconnect] = useConnectWallet();
   const [isOpen, setIsOpen] = useState(false);
   const [address, setAddress] = useState("");
   const [searchType, setSearchType] = useState<"onchain" | "offchain">("onchain");
@@ -33,11 +56,9 @@ const Header = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { profile } = useSettings();
 
-  // Fetch and sync user state with Supabase Auth
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-
       if (session) {
         const user = session.user;
         setCurrentUser({
@@ -45,8 +66,6 @@ const Header = () => {
           email: user.email,
           name: user.user_metadata?.full_name || user.email?.split("@")[0],
         });
-        
-        // Store user info in localStorage for other components
         localStorage.setItem('currentUser', JSON.stringify({
           id: user.id,
           email: user.email,
@@ -62,7 +81,6 @@ const Header = () => {
 
     fetchUser();
 
-    // Listen for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event: AuthChangeEvent, session: Session | null) => {
         if (event === "SIGNED_IN" && session) {
@@ -72,8 +90,6 @@ const Header = () => {
             email: user.email,
             name: user.user_metadata?.full_name || user.email?.split("@")[0],
           });
-          
-          // Store user info in localStorage for other components
           localStorage.setItem('currentUser', JSON.stringify({
             id: user.id,
             email: user.email,
@@ -93,7 +109,6 @@ const Header = () => {
     };
   }, []);
 
-  // Handle dropdown click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -110,7 +125,7 @@ const Header = () => {
 
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2500)); // Simulated delay
+      await new Promise((resolve) => setTimeout(resolve, 2500));
       if (searchType === "onchain") {
         router.push(`/search/?address=${encodeURIComponent(address)}`);
       } else {
@@ -127,6 +142,7 @@ const Header = () => {
     router.push("/setting");
     setDropdownOpen(false);
   };
+
   const handlePortfolioClick = () => {
     router.push("/portfolio");
     setDropdownOpen(false);
@@ -140,14 +156,17 @@ const Header = () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      localStorage.removeItem("currentUser"); // Clean up if used
+
+      if (wallet) {
+        await disconnect({ label: wallet.label });
+      }
+
+      localStorage.removeItem("currentUser");
       setCurrentUser(null);
       setDropdownOpen(false);
+      
       toast.success("Logged out successfully");
       router.push("/login");
-      if (typeof window !== "undefined" && (window as any).ethereum) {
-        console.log("Please disconnect your wallet manually in MetaMask.");
-      }
     } catch (error) {
       console.error("Logout error:", error);
       toast.error("Failed to log out. Please try again.");
@@ -213,7 +232,6 @@ const Header = () => {
           <Link href="/search" className="text-white text-sm hover:text-[#F5B056] transition">
             Search
           </Link>
-   
 
           {currentUser ? (
             <div className="relative" ref={dropdownRef}>
@@ -333,7 +351,6 @@ const Header = () => {
               >
                 Search
               </Link>
-      
 
               {currentUser ? (
                 <div className="relative flex justify-center mt-4 pt-2">
@@ -371,6 +388,15 @@ const Header = () => {
 
       <LoadingScreen isLoading={isLoading} />
     </>
+  );
+};
+
+// Component chính với Provider
+const Header = () => {
+  return (
+    <Web3OnboardProvider web3Onboard={web3Onboard}>
+      <HeaderContent />
+    </Web3OnboardProvider>
   );
 };
 
