@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import Image from 'next/image';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Info, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
+import LazyImage from './LazyImage';
 
 interface NFT {
   id: string;
@@ -16,23 +16,20 @@ interface NFT {
     trait_type: string;
     value: string;
   }>;
+  isPlaceholder?: boolean;
 }
 
 interface AnimatedNFTCardProps {
   nft: NFT;
   onClick?: () => void;
   index?: number;
+  isVirtualized?: boolean;
 }
 
-export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFTCardProps) {
-  const [isLoading, setIsLoading] = useState(true);
-  const [imgError, setImgError] = useState(false);
+export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [blurAmount, setBlurAmount] = useState(20); // For progressive loading blur effect
   const cardRef = useRef<HTMLDivElement>(null);
-  const placeholderColors = useRef<string[]>([
-    'rgb(30, 30, 30)', 'rgb(40, 40, 40)', 'rgb(50, 50, 50)', 'rgb(35, 35, 35)'
-  ]);
   
   // Chain-specific styling
   const chainTheme = getChainColorTheme(nft.chain);
@@ -57,12 +54,11 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
     damping: 17
   });
 
-  // Card shine effect - Fix: Calculate shine directly instead of transforming motion values together
+  // Card shine effect
   const shineX = useTransform(x, [-100, 100], [0, 1]);
   const shineY = useTransform(y, [-100, 100], [0, 1]);
-  
-  // Derived shine opacity based on both x and y
   const shineOpacity = useMotionValue(0);
+  const shinePosition = useTransform(x, [-100, 100], ["45% 45%", "55% 55%"]);
   
   // Update shine opacity based on mouse position
   useEffect(() => {
@@ -134,7 +130,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
       scale: 1,
       transition: {
         duration: 0.5,
-        delay: index * 0.06, // Stagger effect
+        delay: isVirtualized ? 0 : index * 0.06, // Only stagger if not virtualized
         ease: [0.2, 0.65, 0.3, 0.9],
       }
     },
@@ -147,12 +143,6 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
       }
     }
   };
-
-  // Process image URL for various types
-  let imageUrl = nft.imageUrl;
-  if (imageUrl?.startsWith('ipfs://')) {
-    imageUrl = `https://ipfs.io/ipfs/${imageUrl.slice(7)}`;
-  }
 
   // Get network badge details
   const getNetworkBadge = () => {
@@ -210,6 +200,13 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
     return 'hover:shadow-[0_0_15px_rgba(107,141,247,0.3)]';
   };
 
+  // If this is a placeholder card (for virtualization), show a simpler version
+  if (nft.isPlaceholder) {
+    return (
+      <div className="w-full h-full aspect-square bg-gray-800/40 rounded-xl animate-pulse" />
+    );
+  }
+
   return (
     <motion.div
       ref={cardRef}
@@ -239,12 +236,13 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
             <div className="relative h-3 w-3">
-              <Image 
+              <LazyImage 
                 src={networkBadge.icon} 
                 alt={networkBadge.name} 
                 width={12} 
                 height={12} 
-                className="object-contain" 
+                className="object-contain"
+                priority={true} // Small icon, always prioritize
               />
             </div>
             <span className="text-xs font-medium" style={{ color: networkBadge.textColor }}>
@@ -255,63 +253,27 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
 
         {/* Card Content with Shine Effect */}
         <div className="relative">
-          {/* Shine overlay */}
           <motion.div 
             className="absolute inset-0 w-full h-full bg-gradient-to-tr from-transparent via-white/10 to-white/20 z-10 pointer-events-none"
             style={{ 
               opacity: shineOpacity,
-              backgroundPosition: useTransform(
-                x, 
-                [-100, 100], 
-                ["45% 45%", "55% 55%"]
-              ) 
+              backgroundPosition: shinePosition
             }}
           />
 
           {/* NFT Image with progressive loading */}
           <div className="aspect-square relative overflow-hidden bg-gray-800">
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-800/60 backdrop-blur-sm">
-                <div className="h-8 w-8 rounded-full border-2 border-t-transparent animate-spin"
-                     style={{ borderColor: `${chainTheme.primary} transparent transparent transparent` }} />
-              </div>
-            )}
-            
-            {/* Placeholder gradient while image loads */}
-            <div 
-              className="absolute inset-0 transition-opacity duration-500"
-              style={{ 
-                opacity: imageLoaded ? 0 : 1,
-                background: `linear-gradient(45deg, ${placeholderColors.current[0]}, ${placeholderColors.current[1]}, ${placeholderColors.current[2]}, ${placeholderColors.current[3]})` 
-              }}
+            {/* Use our optimized LazyImage component */}
+            <LazyImage
+              src={nft.imageUrl}
+              alt={nft.name || `NFT #${nft.tokenId}`}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              objectFit="cover"
+              priority={index < 4} // Only prioritize the first 4 images
+              onLoad={() => setImageLoaded(true)}
+              onError={() => {/* Error handled inside LazyImage */}}
             />
-            
-            {imageUrl ? (
-              <Image
-                src={imgError ? '/fallback-nft.png' : imageUrl}
-                alt={nft.name || `NFT #${nft.tokenId}`}
-                fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                className={`object-cover transition-all duration-500`}
-                style={{ 
-                  opacity: imageLoaded ? 1 : 0,
-                  filter: `blur(${blurAmount}px)` 
-                }}
-                onLoad={() => {
-                  setIsLoading(false);
-                  setImageLoaded(true);
-                }}
-                onError={() => {
-                  setImgError(true);
-                  setIsLoading(false);
-                }}
-                priority={index < 4} // Prioritize loading for first 4 items
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-gray-800">
-                <Info className="h-12 w-12 text-gray-400" />
-              </div>
-            )}
             
             {/* Chain indicator corner decoration */}
             <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
@@ -325,7 +287,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0 }: AnimatedNFT
             
             <div className="flex justify-between items-center mt-1">
               <p className="text-sm text-gray-300">
-                ID: {parseInt(nft.tokenId).toString()}
+                ID: {parseInt(nft.tokenId, 16) ? parseInt(nft.tokenId, 16).toString() : nft.tokenId}
               </p>
               <ExternalLink className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
             </div>
