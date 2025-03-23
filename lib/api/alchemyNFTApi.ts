@@ -44,23 +44,47 @@ const mockCollections = [
     category: 'Art & Collectibles'
   },
   {
-    id: '0x3cd266509d127d0eac42f4474f57d0526804b44e',
-    name: 'Buildspace',
-    description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
-    imageUrl: 'https://tokens.buildspace.so/assets/CH4f447780-07cf-408a-8f4c-253a8b4e8bae-359/render.mp4',
-    bannerImageUrl: 'https://buildspace.so/assets/buildspace-banner.png',
-    floorPrice: '0.05',
-    totalSupply: '10000',
+    id: '0x059edd72cd353df5106d2b9cc5ab83a52287ac3a',
+    name: 'Chromie Squiggle by Snowfro',
+    description: 'The Chromie Squiggle by Snowfro is the first Art Blocks project ever created. It is a simple generative algorithm that creates unique squiggles with different colors, frequencies, and amplitudes. Each squiggle is a unique combination of parameters from a vast possibility space.',
+    imageUrl: 'https://i.seadn.io/gae/0qG8Y78s198F2GZHhURw8_TEfxFlpS2XYnuLV_OW6TJin5AV1G2WOSpcLGnEmv5g2gZ6R6Pxjd4v1DP2p0bxptckM6ZJ3cMIvQmrgDM?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0x059edd72cd353df5106d2b9cc5ab83a52287ac3a/2198741:about:media:2bf36829-9374-4475-9cb6-4a8c7713a3f1.png?auto=format&dpr=1&w=1920',
+    floorPrice: '11.8',
+    totalSupply: '9250',
     chain: '0x1',
     verified: true,
-    category: 'Education'
+    category: 'Art Blocks'
+  },
+  {
+    id: '0xc274a97f1691ef390f662067e95a6eff1f99b504',
+    name: 'Tin Fun NFT',
+    description: 'Oriental fantasy adventure in Web3',
+    imageUrl: 'https://i.seadn.io/s/raw/files/a531bedf317b5ffe5a35d559b5c94cd9.jpg?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0xc274a97f1691ef390f662067e95a6eff1f99b504/31341974:about:media:98e2f8a2-a8aa-46d9-9267-87108353c759.jpeg?auto=format&dpr=1&w=1920',
+    floorPrice: '0.0929',
+    totalSupply: '9999',
+    chain: '0x1',
+    verified: true,
+    category: 'China'
+  },
+  {
+    id: '0x39ee2c7b3cb80254225884ca001f57118c8f21b6',
+    name: 'Memeland Potatoz',
+    description: '9,999 SMALL SPECIES LEADING THE WAY TO MEMELAND.',
+    imageUrl: 'https://i.seadn.io/gcs/files/129b97582f0071212ee7cf440644fc28.gif?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gcs/files/62448fe425d5e5e2bd44ded754865f37.png?auto=format&dpr=1&w=1200',
+    floorPrice: '0.2448',
+    totalSupply: '9999',
+    chain: '0x1',
+    verified: true,
+    category: 'Meme'
   },
   {
     id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
     name: 'Mutant Ape Yacht Club',
     description: 'The MUTANT APE YACHT CLUB is a collection of up to 20,000 Mutant Apes that can only be created by exposing an existing Bored Ape to a vial of MUTANT SERUM.',
-    imageUrl: 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPF6rLh2D4Xw?auto=format&dpr=1&w=1000',
-    bannerImageUrl: 'https://i.seadn.io/gae/MPBRMl-Gs1sFZ6Z3uH5IxQKbCXlC2v9VdaI8fzWLOxUV8y-LzWoMzuRkz0HzLSCY0dHEBzplKAAPfMKYr2nanSI6S6yttS4JEU3l?auto=format&dpr=1&w=3840',
+    imageUrl: 'https://i.seadn.io/gae/lHexKRMpw-aoSyB1WdFBff5yfANLReFxHzt1DOj_sg7mS14yARpuvYcUtsyyx-Nkpk6WTcUPFoG53VnLJezYi8hAs0OxNZwlw6Y-dmI?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gae/5c-HcdLMinTg3LvEwXYZYC-u5nN22Pn5ivTPYA4pVEsWJHU1rCobhUlHSFjZgCHPGSmcGMQGCrDCQU8BfSfygmL7Uol9MRQZt6-gqA?auto=format&dpr=1&w=1920',
     floorPrice: '10.2',
     totalSupply: '19423',
     chain: '0x1',
@@ -156,16 +180,16 @@ const mockBNBCollections = [
     category: 'Membership'
   },
   {
-    id: '0x3cd266509d127d0eac42f4474f57d0526804b44e',
-    name: 'Buildspace',
+    id: '0xc274a97f1691ef390f662067e95a6eff1f99b504',
+    name: 'Tin Fun NFT',
     description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
-    imageUrl: 'https://tokens.buildspace.so/assets/CH4f447780-07cf-408a-8f4c-253a8b4e8bae-359/render.mp4',
-    bannerImageUrl: 'https://buildspace.so/assets/buildspace-banner.png',
-    floorPrice: '0.05',
-    totalSupply: '10000',
+    imageUrl: 'https://i.seadn.io/s/raw/files/a531bedf317b5ffe5a35d559b5c94cd9.jpg?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0xc274a97f1691ef390f662067e95a6eff1f99b504/31341974:about:media:98e2f8a2-a8aa-46d9-9267-87108353c759.jpeg?auto=format&dpr=1&w=1920',
+    floorPrice: '0.0929',
+    totalSupply: '9999',
     chain: '0x38',
     verified: true,
-    category: 'Education'
+    category: 'China'
   }
 ];
 
