@@ -1,9 +1,9 @@
 import { toast } from "sonner";
 import axios from 'axios';
 import { ethers } from 'ethers';
-import { 
-  fetchContractCollectionInfo, 
-  fetchNFTData, 
+import {
+  fetchContractCollectionInfo,
+  fetchNFTData,
   fetchContractNFTs,
   fetchOwnedNFTs,
   NFTMetadata,
@@ -13,7 +13,19 @@ import { getChainProvider, getExplorerUrl, ChainConfig, chainConfigs } from './c
 
 // Environment variables for API keys
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
+const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY || '1QGN2GHNEPT6CQP854TVBH24C85714ETC5';
 const MORALIS_API_KEY = process.env.NEXT_PUBLIC_MORALIS_API_KEY || '';
+
+// Helper interface for BSCScan API response
+interface BSCTransactionResponse {
+  status: string;
+  message: string;
+  result: Array<{
+    tokenID: string;
+    tokenName?: string;
+    blockNumber: string;
+  }> | string;
+}
 
 // Cache for collection data to reduce API calls
 const collectionsCache = new Map<string, any>();
@@ -201,10 +213,114 @@ async function fetchMarketplaceData(contractAddress: string, chainId: string) {
 }
 
 /**
+ * Helper function to fetch NFT data from BSCScan
+ */
+async function fetchBSCNFTs(
+  contractAddress: string,
+  chainId: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<{ nfts: NFTMetadata[]; totalCount: number }> {
+  interface BSCApiResponse {
+    status: string;
+    message: string;
+    result: Array<{
+      tokenID: string;
+      tokenName?: string;
+      blockNumber: string;
+    }> | string;
+  }
+
+  const baseUrl = chainId === '0x38'
+    ? 'https://api.bscscan.com/api'
+    : 'https://api-testnet.bscscan.com/api';
+
+  const queryParams = new URLSearchParams({
+    module: 'token',
+    action: 'tokennfttx',
+    contractaddress: contractAddress,
+    page: page.toString(),
+    offset: pageSize.toString(),
+    startblock: '0',
+    endblock: '999999999',
+    sort: 'desc',
+    apikey: BSCSCAN_API_KEY
+  });
+
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const response = await fetch(`${baseUrl}?${queryParams.toString()}`);
+      const data: BSCApiResponse = await response.json();
+
+      // Handle API errors
+      if (!response.ok) {
+        throw new Error(`BSCScan API request failed with status ${response.status}`);
+      }
+
+      if (data.status === '0') {
+        if (typeof data.result === 'string') {
+          const errorMsg = data.result;
+          if (errorMsg.toLowerCase().includes('rate limit')) {
+            retries--;
+            if (retries > 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              continue;
+            }
+          }
+          if (errorMsg === 'No transactions found') {
+            return { nfts: [], totalCount: 0 };
+          }
+          throw new Error(`BSCScan API error: ${errorMsg}`);
+        }
+        throw new Error(`BSCScan API error: ${data.message}`);
+      }
+
+      if (!Array.isArray(data.result)) {
+        throw new Error('Invalid response format from BSCScan API');
+      }
+
+      // Process valid response
+      const transactions = data.result.map(tx => ({
+        tokenID: tx.tokenID,
+        tokenName: tx.tokenName,
+        blockNumber: tx.blockNumber
+      }));
+
+      const uniqueTokenIds = [...new Set(transactions.map(tx => tx.tokenID))];
+      const nftPromises = uniqueTokenIds.map(tokenId =>
+        fetchNFTData(contractAddress, tokenId, chainId)
+      );
+      
+      const fetchedNfts = await Promise.all(nftPromises);
+      const validNfts = fetchedNfts.filter((nft): nft is NFTMetadata => nft !== null);
+      
+      return {
+        nfts: validNfts,
+        totalCount: validNfts.length
+      };
+    } catch (error) {
+      retries--;
+      if (retries === 0) {
+        console.error('Error fetching BSC NFTs:', error);
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  throw new Error('Failed to fetch BSC NFTs after all retries');
+}
+
+    volume24h: baseVolume.toFixed(2)
+  };
+}
+
+/**
  * Fetch NFTs for a specific collection with pagination and filtering
  */
 export async function fetchCollectionNFTs(
-  contractAddress: string, 
+  contractAddress: string,
   chainId: string,
   options: {
     page?: number,
@@ -227,51 +343,116 @@ export async function fetchCollectionNFTs(
     searchQuery = '',
     attributes = {}
   } = options;
-  
-  // Check if we should use direct contract fetching or API
-  // For well-known collections or testnet, use direct contract fetching
-  const useDirectFetching = [
-    // Our CryptoPath Genesis on BNB Testnet
-    '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551',
-    // Some popular testnet or demo collections
-    '0x7c09282c24c363073e0f30d74c301c312e5533ac'
-  ].includes(contractAddress.toLowerCase());
-  
+
   try {
     let nfts: NFTMetadata[] = [];
     let totalCount = 0;
-    
+
+    // Check if it's a well-known collection for direct fetching
+    const useDirectFetching = [
+      '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551', // CryptoPath Genesis
+      '0x7c09282c24c363073e0f30d74c301c312e5533ac'  // Demo collection
+    ].includes(contractAddress.toLowerCase());
+
     if (useDirectFetching) {
-      // Check cache first
       const cacheKey = `${chainId}-${contractAddress.toLowerCase()}-nfts`;
       const cachedData = collectionNFTsCache.get(cacheKey);
-      
+
       if (cachedData && (Date.now() - cachedData.timestamp < CACHE_TTL)) {
         nfts = cachedData.nfts;
       } else {
-        // Fetch directly from contract
         const startIndex = (page - 1) * pageSize;
         nfts = await fetchContractNFTs(contractAddress, chainId, startIndex, pageSize);
-        
-        // Save to cache
-        collectionNFTsCache.set(cacheKey, {
-          timestamp: Date.now(),
-          nfts
-        });
+        collectionNFTsCache.set(cacheKey, { timestamp: Date.now(), nfts });
       }
-      
-      totalCount = nfts.length > 0 ? parseInt(await fetchCollectionInfo(contractAddress, chainId).then(info => info.totalSupply)) : 0;
+
+      totalCount = nfts.length > 0
+        ? parseInt(await fetchCollectionInfo(contractAddress, chainId).then(info => info.totalSupply))
+        : 0;
+
+    } else if (chainId === '0x38' || chainId === '0x61') {
+      try {
+        const bscResult = await fetchBSCNFTs(contractAddress, chainId, page, pageSize);
+        nfts = bscResult.nfts;
+        totalCount = bscResult.totalCount;
+      } catch (error) {
+        console.error('Error fetching BSC NFTs:', error);
+        toast.error("Failed to fetch NFTs from BSCScan");
+        nfts = [];
+        totalCount = 0;
+      }
     } else {
-      // Use Alchemy API for production collections
+      // Other chains use Alchemy API
       const network = CHAIN_ID_TO_NETWORK[chainId as keyof typeof CHAIN_ID_TO_NETWORK] || 'eth-mainnet';
-      const apiUrl = `https://${network}.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}/getNFTsForCollection`;
-      const url = new URL(apiUrl);
-      url.searchParams.append('contractAddress', contractAddress);
-      url.searchParams.append('withMetadata', 'true');
-      url.searchParams.append('startToken', ((page - 1) * pageSize).toString());
-      url.searchParams.append('limit', pageSize.toString());
+      const apiUrl = new URL(`https://${network}.g.alchemy.com/nft/v2/${ALCHEMY_API_KEY}/getNFTsForCollection`);
       
-      const response = await fetch(url.toString());
+      apiUrl.searchParams.append('contractAddress', contractAddress);
+      apiUrl.searchParams.append('withMetadata', 'true');
+      apiUrl.searchParams.append('startToken', ((page - 1) * pageSize).toString());
+      apiUrl.searchParams.append('limit', pageSize.toString());
+
+      const alchemyResponse = await fetch(apiUrl.toString());
+      if (!alchemyResponse.ok) {
+        throw new Error(`Alchemy API request failed with status ${alchemyResponse.status}`);
+      }
+
+      const alchemyData = await alchemyResponse.json();
+      nfts = alchemyData.nfts.map((nft: any) => ({
+        id: `${contractAddress.toLowerCase()}-${nft.id.tokenId || ''}`,
+        tokenId: nft.id.tokenId || '',
+        name: nft.title || `NFT #${parseInt(nft.id.tokenId || '0', 16).toString()}`,
+        description: nft.description || '',
+        imageUrl: nft.media?.[0]?.gateway || '',
+        attributes: nft.metadata?.attributes || [],
+        chain: chainId
+      }));
+
+      totalCount = alchemyData.totalCount || nfts.length;
+    }
+
+    // Apply filtering and sorting
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      nfts = nfts.filter(nft =>
+        nft.name.toLowerCase().includes(query) ||
+        nft.tokenId.toLowerCase().includes(query) ||
+        nft.description?.toLowerCase().includes(query)
+      );
+    }
+
+    if (Object.keys(attributes).length > 0) {
+      nfts = nfts.filter(nft => {
+        for (const [traitType, values] of Object.entries(attributes)) {
+          if (!Array.isArray(values) || values.length === 0) continue;
+          const nftAttribute = nft.attributes?.find(attr => attr.trait_type === traitType);
+          if (!nftAttribute || !values.includes(nftAttribute.value)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    if (sortBy && sortDirection) {
+      nfts.sort((a: NFTMetadata, b: NFTMetadata) => {
+        if (sortBy === 'tokenId') {
+          const idA = parseInt(a.tokenId, 16) || 0;
+          const idB = parseInt(b.tokenId, 16) || 0;
+          return sortDirection === 'asc' ? idA - idB : idB - idA;
+        }
+        // name sort
+        return sortDirection === 'asc'
+          ? (a.name || '').localeCompare(b.name || '')
+          : (b.name || '').localeCompare(a.name || '');
+      });
+    }
+
+    return { nfts, totalCount };
+  } catch (error) {
+    console.error(`Error fetching NFTs for collection ${contractAddress}:`, error);
+    toast.error("Failed to load collection NFTs");
+    return { nfts: [], totalCount: 0 };
+  }
       
       if (!response.ok) {
         throw new Error(`API request failed with status ${response.status}`);
