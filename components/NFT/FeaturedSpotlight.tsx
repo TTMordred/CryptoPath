@@ -31,7 +31,7 @@ const spotlights: NFTSpotlight[] = [
     id: 'pancake-squad',
     name: 'Pancake Squad',
     description: 'A collection of 10,000 unique, cute, and sometimes fierce PancakeSwap bunny NFTs that serve as your membership to the Pancake Squad.',
-    image: 'https://assets.pancakeswap.finance/pancakeSquad/header.png',
+    image: 'https://i.seadn.io/s/primary-drops/0xc291cc12018a6fcf423699bce985ded86bac47cb/33406336:about:media:6f541d5a-5309-41ad-8f73-74f092ed1314.png?auto=format&dpr=1&w=1200',
     chain: '0x38', // BNB Chain
     contractAddress: '0xdcbcf766dcd33a7a8abe6b01a8b0e44a006c4ac1',
     artist: 'PancakeSwap'

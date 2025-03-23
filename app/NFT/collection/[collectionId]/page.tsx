@@ -169,6 +169,14 @@ export default function CollectionDetailsPage() {
 
     setLoading(true);
     try {
+      // For BNB Chain, show a loading toast to indicate it might take some time
+      if (networkId === '0x38' || networkId === '0x61') {
+        toast({
+          title: 'Loading BNB Chain NFTs',
+          description: 'This may take a moment as we fetch data from BSCScan...',
+        });
+      }
+      
       const metadata = await fetchCollectionInfo(collectionId, networkId);
       setCollection({...metadata, chain: networkId});
 
@@ -190,7 +198,10 @@ export default function CollectionDetailsPage() {
       }));
       
       setNfts(nftsWithChain);
-      setTotalPages(Math.ceil(nftData.totalCount / pageSize));
+      
+      // Calculate total pages - may be different for BNB Chain
+      const totalPagesCount = Math.max(1, Math.ceil(nftData.totalCount / pageSize));
+      setTotalPages(totalPagesCount);
 
       // Extract attributes for filtering
       const attributeMap: Record<string, string[]> = {};
@@ -209,9 +220,9 @@ export default function CollectionDetailsPage() {
       
       // Add network as a filter attribute
       attributeMap['Network'] = [
-        chainId === '0x1' ? 'Ethereum' : 
-        chainId === '0xaa36a7' ? 'Sepolia' : 
-        chainId === '0x38' ? 'BNB Chain' : 
+        networkId === '0x1' ? 'Ethereum' : 
+        networkId === '0xaa36a7' ? 'Sepolia' : 
+        networkId === '0x38' ? 'BNB Chain' : 
         'BNB Testnet'
       ];
       

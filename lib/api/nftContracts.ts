@@ -133,6 +133,49 @@ export async function detectNFTStandard(contractAddress: string, chainId: string
   }
 }
 
+// Simple in-memory cache for BSCScan responses to avoid hitting rate limits
+const contractResponseCache = new Map<string, {data: any, timestamp: number}>();
+const CONTRACT_CACHE_TTL = 300000; // 5 minute cache TTL
+
+// Helper function to make BSCScan API calls with caching
+async function cachedBscScanApiCall(params: Record<string, string>, chainId: string): Promise<any> {
+  const cacheKey = JSON.stringify(params) + chainId;
+  const cachedResponse = contractResponseCache.get(cacheKey);
+  
+  // Return cached response if valid
+  if (cachedResponse && (Date.now() - cachedResponse.timestamp) < CONTRACT_CACHE_TTL) {
+    return cachedResponse.data;
+  }
+  
+  // Build the URL for BSCScan API
+  const baseUrl = chainId === '0x38' ? 'https://api.bscscan.com/api' : 'https://api-testnet.bscscan.com/api';
+  const queryParams = new URLSearchParams({
+    ...params,
+    apikey: BSCSCAN_API_KEY
+  });
+  
+  try {
+    const response = await fetch(`${baseUrl}?${queryParams.toString()}`);
+    
+    if (!response.ok) {
+      throw new Error(`BSCScan API request failed with status ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Cache the successful response
+    contractResponseCache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    return data;
+  } catch (error) {
+    console.error("BSCScan API request failed:", error);
+    throw error;
+  }
+}
+
 /**
  * Get the collection info for an NFT contract
  */
@@ -359,14 +402,18 @@ export async function fetchContractNFTs(
       throw new Error('Batch fetching for ERC1155 not implemented');
     }
 
-    // For BNB Chain, try BSCScan API first
+    // For BNB Chain, use cached BSCScan API to improve performance
     if ((nftStandard === 'BNB721' || chainId === '0x38' || chainId === '0x61')) {
       try {
-        const baseUrl = chainId === '0x38' ? 'https://api.bscscan.com/api' : 'https://api-testnet.bscscan.com/api';
-        const response = await fetch(
-          `${baseUrl}?module=token&action=tokennfttx&contractaddress=${contractAddress}&page=1&offset=${count}&startblock=0&sort=asc&apikey=${BSCSCAN_API_KEY}`
-        );
-        const data = await response.json();
+        const data = await cachedBscScanApiCall({
+          module: 'token',
+          action: 'tokennfttx',
+          contractaddress: contractAddress,
+          page: '1',
+          offset: count.toString(),
+          startblock: '0',
+          sort: 'asc'
+        }, chainId);
         
         if (data.status === '1' && data.result) {
           interface BSCNFTTransaction {
@@ -751,22 +798,10 @@ export const POPULAR_NFT_COLLECTIONS = {
   ],
   '0x38': [
     {
-      address: '0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D',
+      address: '0x0a8901b0E25DEb55A87524f0cC164E9644020EBA',
       name: 'Pancake Squad',
       description: 'PancakeSwap\'s NFT collection for the BSC community.',
       standard: 'BNB721'
-    },
-    {
-      address: '0x0a8901b0E25DEb55A87524f0cC164E9644020EBA',
-      name: 'BSC Punks',
-      description: 'The first NFT collection on Binance Smart Chain.',
-      standard: 'BNB721'
-    },
-    {
-      address: '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07',
-      name: 'BSC Multi-Token',
-      description: 'Example ERC1155 collection on BSC for testing.',
-      standard: 'ERC1155'
     }
   ],
   '0xaa36a7': [
@@ -805,7 +840,7 @@ export function getExampleNFTContract(chainId: string, standard: 'ERC721' | 'BNB
     case '0x38':
       return standard === 'ERC1155'
         ? '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07' // BSC Multi-Token
-        : '0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D'; // Pancake Squad
+        : '0x0a8901b0E25DEb55A87524f0cC164E9644020EBA'; // Pancake Squad with correct address
     case '0x61':
       return standard === 'ERC1155'
         ? '0x60935F36e4631F73f0f407e68642144e07aC7f5E' // BSC Test Collection

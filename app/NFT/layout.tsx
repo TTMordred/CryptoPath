@@ -114,9 +114,9 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
               <li>
                 <div className="flex items-center">
                   <ChevronRight className="w-4 h-4 mx-1" />
-                  <span className={pathname === '/NFT/collection' ? 'text-white' : ''}>
-                    Collections
-                  </span>
+                  <Link href="/NFT/collection" className="hover:text-white">
+                  Collections
+                  </Link>
                 </div>
               </li>
             )}

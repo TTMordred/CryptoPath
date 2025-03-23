@@ -2,6 +2,46 @@ import { toast } from "sonner";
 import axios from 'axios';
 
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
+const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY || '1QGN2GHNEPT6CQP854TVBH24C85714ETC5';
+
+// Simple in-memory cache for BSCScan responses to avoid hitting rate limits
+const responseCache = new Map<string, {data: any, timestamp: number}>();
+const CACHE_TTL = 60000; // 1 minute cache TTL
+
+// Helper to get cached data or fetch from BSCScan with rate limiting
+async function cachedBscScanRequest(params: Record<string, string>, chainId: string): Promise<any> {
+  const cacheKey = JSON.stringify(params) + chainId;
+  const cachedResponse = responseCache.get(cacheKey);
+  
+  // Return cached response if valid
+  if (cachedResponse && (Date.now() - cachedResponse.timestamp) < CACHE_TTL) {
+    return cachedResponse.data;
+  }
+  
+  // Use a delay to stay under rate limits (5 calls per second)
+  const baseUrl = chainId === '0x38' ? 'https://api.bscscan.com/api' : 'https://api-testnet.bscscan.com/api';
+  
+  try {
+    // Add API key to params
+    const requestParams = {
+      ...params,
+      apikey: BSCSCAN_API_KEY
+    };
+    
+    const response = await axios.get(baseUrl, { params: requestParams });
+    
+    // Cache the successful response
+    responseCache.set(cacheKey, {
+      data: response.data,
+      timestamp: Date.now()
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("BSCScan API request failed:", error);
+    throw error;
+  }
+}
 
 const CHAIN_ID_TO_NETWORK: Record<string, string> = {
   '0x1': 'eth-mainnet',
@@ -11,9 +51,13 @@ const CHAIN_ID_TO_NETWORK: Record<string, string> = {
   '0x13881': 'polygon-mumbai',
   '0xa': 'optimism-mainnet',
   '0xa4b1': 'arbitrum-mainnet',
-  '0x38': 'bsc-mainnet',
-  '0x61': 'bsc-testnet',
+  // BNB Chain networks are handled separately with BSCScan
 };
+
+// Check if a chain is BNB-based
+function isBNBChain(chainId: string): boolean {
+  return chainId === '0x38' || chainId === '0x61';
+}
 
 interface AlchemyNFTResponse {
   ownedNfts: any[];
@@ -108,64 +152,16 @@ const mockCollections = [
 // Real BNB Chain collections
 const mockBNBCollections = [
   {
-    id: '0xdcbcf766dcd33a7a8abe6b01a8b0e44a006c4ac1',
+    id: '0x0a8901b0E25DEb55A87524f0cC164E9644020EBA',
     name: 'Pancake Squad',
     description: 'PancakeSwap\'s NFT collection of 10,000 unique bunnies designed to reward loyal community members and bring utility to the CAKE token.',
-    imageUrl: 'https://assets.pancakeswap.finance/pancakeSquad/header.png',
-    bannerImageUrl: 'https://assets.pancakeswap.finance/pancakeSquad/pancakeSquadBanner.png',
+    imageUrl: 'https://i.seadn.io/s/raw/files/8b1d3939c420d39c8914f68b506c50db.png?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0xc291cc12018a6fcf423699bce985ded86bac47cb/33406336:about:media:6f541d5a-5309-41ad-8f73-74f092ed1314.png?auto=format&dpr=1&w=1200',
     floorPrice: '2.5',
     totalSupply: '10000',
     chain: '0x38',
     verified: true,
     category: 'Gaming'
-  },
-  {
-    id: '0xcec33930ba196cdf9f38e1a5e2a1e0708450d20f',
-    name: 'Era7: Game of Truth',
-    description: 'Era7: Game of Truth is a play-to-earn trading card game inspired by Magic: The Gathering, Hearthstone, and Runeterra. Build your deck and battle against players around the world!',
-    imageUrl: 'https://images.pocketgamer.biz/T/52539/2022/52539_Era7_Game_of_Truth_screenshot_1.png',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1428004235405357057/1648021562/1500x500',
-    floorPrice: '0.4',
-    totalSupply: '33000',
-    chain: '0x38',
-    verified: true,
-    category: 'Gaming'
-  },
-  {
-    id: '0x04a5e3ed4907b781f702adbddf1b7e771c31b0f2',
-    name: 'BSC Punks',
-    description: 'CryptoPunks on BSC - 10,000 uniquely generated characters on the BNB Chain.',
-    imageUrl: 'https://lh3.googleusercontent.com/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE=s130',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1364731917736632321/1649351522/1500x500',
-    floorPrice: '0.25',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: false,
-    category: 'Art & Collectibles'
-  },
-  {
-    id: '0x85f0e02cb992aa1f9f47112f815f519ef1a59e2d',
-    name: 'BNB Bulls Club',
-    description: 'The BNB Bulls Club is a collection of 10,000 unique NFTs living on the BNB Chain, each representing membership to the club with unique utilities.',
-    imageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    bannerImageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    floorPrice: '1.2',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: false,
-    category: 'Membership'
-  },
-  {
-    id: '0x3cd266509d127d0eac42f4474f57d0526804b44e',
-    name: 'Buildspace',
-    description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
-    imageUrl: 'https://tokens.buildspace.so/assets/CH4f447780-07cf-408a-8f4c-253a8b4e8bae-359/render.mp4',
-    bannerImageUrl: 'https://buildspace.so/assets/buildspace-banner.png',
-    floorPrice: '0.05',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: true,
-    category: 'Education'
   }
 ];
 
@@ -184,18 +180,86 @@ const cryptoPathCollection = {
   featured: true
 };
 
-const API_ENDPOINTS = {
-  '0x1': 'https://eth-mainnet.g.alchemy.com/v2/your-api-key',
-  '0xaa36a7': 'https://eth-sepolia.g.alchemy.com/v2/your-api-key',
-  '0x38': 'https://bsc-mainnet.g.alchemy.com/v2/your-api-key',
-  '0x61': 'https://bsc-testnet.g.alchemy.com/v2/your-api-key'
-};
-
 export async function fetchUserNFTs(address: string, chainId: string, pageKey?: string): Promise<AlchemyNFTResponse> {
   if (!address) {
     throw new Error("Address is required to fetch NFTs");
   }
 
+  // For BNB Chain, use BSCScan API
+  if (isBNBChain(chainId)) {
+    try {
+      const result = await cachedBscScanRequest({
+        module: 'account',
+        action: 'tokennfttx',
+        address: address,
+        page: '1',
+        offset: '100',
+        sort: 'desc'
+      }, chainId);
+      
+      if (result.status === '1' && result.result) {
+        // Group transactions by contract address to simulate the Alchemy response format
+        const groupedByContract: Record<string, any[]> = {};
+        
+        for (const tx of result.result) {
+          if (!groupedByContract[tx.contractAddress]) {
+            groupedByContract[tx.contractAddress] = [];
+          }
+          groupedByContract[tx.contractAddress].push(tx);
+        }
+        
+        // Convert to Alchemy-like format for compatibility
+        const ownedNfts = Object.entries(groupedByContract).map(([contractAddress, transactions]) => {
+          // Filter for NFTs the user still owns (received but not sent)
+          const ownedTokenIds = new Set<string>();
+          
+          // Track all token IDs user has received
+          transactions.forEach(tx => {
+            if (tx.to.toLowerCase() === address.toLowerCase()) {
+              ownedTokenIds.add(tx.tokenID);
+            }
+          });
+          
+          // Remove tokens that were sent away
+          transactions.forEach(tx => {
+            if (tx.from.toLowerCase() === address.toLowerCase()) {
+              ownedTokenIds.delete(tx.tokenID);
+            }
+          });
+          
+          // Take the first transaction to get NFT details
+          const firstTx = transactions[0];
+          
+          return {
+            contract: {
+              address: contractAddress,
+              name: firstTx.tokenName || 'Unknown',
+              symbol: firstTx.tokenSymbol || '',
+            },
+            id: { 
+              tokenId: Array.from(ownedTokenIds)[0] || '0',
+            },
+            balance: ownedTokenIds.size.toString(),
+            media: [{ gateway: '' }],
+            tokenUri: { gateway: '', raw: '' }
+          };
+        });
+        
+        return {
+          ownedNfts: ownedNfts.filter(nft => nft.balance !== '0'),
+          totalCount: ownedNfts.length
+        };
+      }
+      
+      return { ownedNfts: [], totalCount: 0 };
+    } catch (error) {
+      console.error(`Error fetching NFTs from BSCScan for ${address}:`, error);
+      toast.error("Failed to load NFTs from BSCScan");
+      return { ownedNfts: [], totalCount: 0 };
+    }
+  }
+
+  // For non-BNB chains, continue using Alchemy
   const network = CHAIN_ID_TO_NETWORK[chainId as keyof typeof CHAIN_ID_TO_NETWORK] || 'eth-mainnet';
   
   try {
@@ -229,6 +293,137 @@ export async function fetchCollectionInfo(contractAddress: string, chainId: stri
     throw new Error("Contract address is required");
   }
 
+  // For BNB Chain networks, use BSCScan API
+  if (isBNBChain(chainId)) {
+    try {
+      // First try to get contract ABI to extract more info
+      const abiResult = await cachedBscScanRequest({
+        module: 'contract',
+        action: 'getabi',
+        address: contractAddress
+      }, chainId);
+      
+      // Default values
+      let name = 'Unknown Collection';
+      let symbol = '';
+      let totalSupply = '0';
+      const description = '';
+      const imageUrl = '';
+      
+      // Try to use the mock data if available for better UX
+      if (chainId === '0x38') {
+        const mockCollection = mockBNBCollections.find(c => 
+          c.id.toLowerCase() === contractAddress.toLowerCase()
+        );
+        
+        if (mockCollection) {
+          return {
+            name: mockCollection.name,
+            symbol: '',
+            totalSupply: mockCollection.totalSupply,
+            description: mockCollection.description,
+            imageUrl: mockCollection.imageUrl
+          };
+        }
+      } else if (chainId === '0x61' && contractAddress.toLowerCase() === '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551'.toLowerCase()) {
+        // Use CryptoPath collection info for testnet
+        return {
+          name: cryptoPathCollection.name,
+          symbol: 'CP',
+          totalSupply: cryptoPathCollection.totalSupply,
+          description: cryptoPathCollection.description,
+          imageUrl: cryptoPathCollection.imageUrl
+        };
+      }
+      
+      // If we have valid ABI, try to extract info
+      if (abiResult.status === '1' && abiResult.result) {
+        try {
+          // Get token name
+          const nameResult = await cachedBscScanRequest({
+            module: 'contract',
+            action: 'readcontract',
+            address: contractAddress,
+            contractaddress: contractAddress,
+            function: 'name()'
+          }, chainId);
+          
+          if (nameResult.status === '1' && nameResult.result) {
+            name = nameResult.result;
+          }
+          
+          // Get token symbol
+          const symbolResult = await cachedBscScanRequest({
+            module: 'contract',
+            action: 'readcontract',
+            address: contractAddress,
+            contractaddress: contractAddress,
+            function: 'symbol()'
+          }, chainId);
+          
+          if (symbolResult.status === '1' && symbolResult.result) {
+            symbol = symbolResult.result;
+          }
+          
+          // Get total supply
+          const supplyResult = await cachedBscScanRequest({
+            module: 'contract',
+            action: 'readcontract',
+            address: contractAddress,
+            contractaddress: contractAddress,
+            function: 'totalSupply()'
+          }, chainId);
+          
+          if (supplyResult.status === '1' && supplyResult.result) {
+            totalSupply = supplyResult.result;
+          }
+        } catch (error) {
+          console.error("Error reading contract functions:", error);
+        }
+      }
+      
+      // If we still don't have a name, try to get token info
+      if (name === 'Unknown Collection') {
+        try {
+          // Get token info
+          const tokenInfoResult = await cachedBscScanRequest({
+            module: 'token',
+            action: 'tokeninfo',
+            contractaddress: contractAddress,
+          }, chainId);
+          
+          if (tokenInfoResult.status === '1' && tokenInfoResult.result?.[0]) {
+            const info = tokenInfoResult.result[0];
+            name = info.name || name;
+            symbol = info.symbol || symbol;
+            totalSupply = info.totalSupply || totalSupply;
+          }
+        } catch (error) {
+          console.error("Error getting token info:", error);
+        }
+      }
+      
+      return {
+        name,
+        symbol,
+        totalSupply,
+        description,
+        imageUrl
+      };
+    } catch (error) {
+      console.error(`Error fetching collection info for ${contractAddress} from BSCScan:`, error);
+      toast.error("Failed to load collection info from BSCScan");
+      return {
+        name: 'Unknown Collection',
+        symbol: '',
+        totalSupply: '0',
+        description: '',
+        imageUrl: '',
+      };
+    }
+  }
+
+  // For non-BNB chains, continue using Alchemy
   const network = CHAIN_ID_TO_NETWORK[chainId as keyof typeof CHAIN_ID_TO_NETWORK] || 'eth-mainnet';
   
   try {
@@ -294,7 +489,6 @@ interface CollectionNFTsResponse {
   pageKey?: string;
 }
 
-
 export async function fetchCollectionNFTs(
   contractAddress: string, 
   chainId: string,
@@ -309,7 +503,163 @@ export async function fetchCollectionNFTs(
     throw new Error("Contract address is required");
   }
   
-  // For other collections, continue with the existing implementation
+  // For BNB Chain networks, use BSCScan API
+  if (isBNBChain(chainId)) {
+    try {
+      // Get NFT transactions for the contract - this is the most reliable way to get all token IDs
+      const result = await cachedBscScanRequest({
+        module: 'token',
+        action: 'tokennfttx',
+        contractaddress: contractAddress,
+        page: '1',
+        offset: String(pageSize * 2), // Request more to account for transfers
+        sort: sortDirection
+      }, chainId);
+      
+      if (result.status === '1' && result.result) {
+        // Extract unique token IDs
+        const uniqueTokenIds = [...new Set(result.result
+          .map((tx: any) => tx.tokenID)
+          .filter((id: string) => id && id.length > 0)
+        )];
+        
+        // Sort token IDs
+        const sortedTokenIds = uniqueTokenIds.sort((a, b) => {
+          const stringA = String(a);
+          const stringB = String(b);
+          const numA = parseInt(stringA, 10);
+          const numB = parseInt(stringB, 10);
+          
+          if (isNaN(numA) || isNaN(numB)) {
+            // Fallback to string comparison if not valid numbers
+            return sortDirection === 'asc' 
+              ? stringA.localeCompare(stringB)
+              : stringB.localeCompare(stringA);
+          }
+          
+          return sortDirection === 'asc' ? numA - numB : numB - numA;
+        });
+        
+        // Apply pagination
+        const startIdx = (page - 1) * pageSize;
+        const paginatedTokenIds = sortedTokenIds.slice(startIdx, startIdx + pageSize);
+        
+        // Fetch metadata for each token (could be optimized with Promise.all with rate limiting)
+        const nfts: CollectionNFT[] = [];
+        
+        // Apply search filter if needed
+        const filteredTokenIds = searchQuery 
+          ? paginatedTokenIds.filter(id => String(id).includes(searchQuery))
+          : paginatedTokenIds;
+        
+        for (const tokenId of filteredTokenIds) {
+          try {
+            // Get token URI
+            const tokenUriResult = await cachedBscScanRequest({
+              module: 'token',
+              action: 'tokenuri',
+              contractaddress: contractAddress,
+              tokenid: String(tokenId)
+            }, chainId);
+            
+            if (tokenUriResult.status === '1' && tokenUriResult.result) {
+              const uri = tokenUriResult.result;
+              
+              // Fetch metadata from URI
+              try {
+                const resolvedUri = uri.startsWith('ipfs://')
+                  ? `https://ipfs.io/ipfs/${uri.slice(7)}`
+                  : uri;
+                  
+                const metadataResponse = await axios.get(resolvedUri);
+                const metadata = metadataResponse.data;
+                
+                // Format into our CollectionNFT structure
+                const nft: CollectionNFT = {
+                  id: `${contractAddress.toLowerCase()}-${tokenId}`,
+                  tokenId: String(tokenId),
+                  name: metadata.name || `NFT #${tokenId}`,
+                  description: metadata.description || '',
+                  imageUrl: metadata.image?.startsWith('ipfs://')
+                    ? `https://ipfs.io/ipfs/${metadata.image.slice(7)}`
+                    : metadata.image || '',
+                  attributes: metadata.attributes || []
+                };
+                
+                // Apply attribute filters if needed
+                let includeNft = true;
+                
+                if (Object.keys(attributes).length > 0) {
+                  for (const [traitType, values] of Object.entries(attributes)) {
+                    const nftAttribute = nft.attributes.find(attr => attr.trait_type === traitType);
+                    if (!nftAttribute || !values.includes(nftAttribute.value)) {
+                      includeNft = false;
+                      break;
+                    }
+                  }
+                }
+                
+                if (includeNft) {
+                  nfts.push(nft);
+                }
+              } catch (metadataError) {
+                console.error(`Error fetching metadata for token ${tokenId}:`, metadataError);
+                
+                // Add a basic NFT with the token ID even if metadata fails
+                nfts.push({
+                  id: `${contractAddress.toLowerCase()}-${tokenId}`,
+                  tokenId: String(tokenId),
+                  name: `NFT #${tokenId}`,
+                  description: 'Metadata unavailable',
+                  imageUrl: '',
+                  attributes: []
+                });
+              }
+            }
+          } catch (tokenError) {
+            console.error(`Error fetching token ${tokenId} data:`, tokenError);
+          }
+          
+          // Add a short delay to avoid rate limits
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+        
+        // Apply sorting to the final results
+        nfts.sort((a, b) => {
+          if (sortBy === 'tokenId') {
+            const numA = parseInt(a.tokenId, 10);
+            const numB = parseInt(b.tokenId, 10);
+            
+            if (!isNaN(numA) && !isNaN(numB)) {
+              return sortDirection === 'asc' ? numA - numB : numB - numA;
+            }
+            
+            return sortDirection === 'asc' 
+              ? a.tokenId.localeCompare(b.tokenId)
+              : b.tokenId.localeCompare(a.tokenId);
+          } else if (sortBy === 'name') {
+            return sortDirection === 'asc' 
+              ? a.name.localeCompare(b.name)
+              : b.name.localeCompare(a.name);
+          }
+          return 0;
+        });
+        
+        return {
+          nfts,
+          totalCount: uniqueTokenIds.length
+        };
+      }
+      
+      return { nfts: [], totalCount: 0 };
+    } catch (error) {
+      console.error(`Error fetching NFTs for collection ${contractAddress} from BSCScan:`, error);
+      toast.error("Failed to load collection NFTs from BSCScan");
+      return { nfts: [], totalCount: 0 };
+    }
+  }
+  
+  // For non-BNB chains, continue using Alchemy
   const network = CHAIN_ID_TO_NETWORK[chainId as keyof typeof CHAIN_ID_TO_NETWORK] || 'eth-mainnet';
   
   try {
