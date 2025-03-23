@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticlesBackground from '@/components/ParticlesBackground';
-import toast from 'react-hot-toast'; // Thay đổi import từ sonner sang react-hot-toast
+import toast from 'react-hot-toast';
 import { supabase } from '@/src/integrations/supabase/client';
 import { Web3OnboardProvider, init, useConnectWallet } from '@web3-onboard/react';
 import injectedModule from '@web3-onboard/injected-wallets';
@@ -134,45 +134,81 @@ function LoginPageContent() {
     if (wallet?.provider && !isLoggedOut) {
       const { address, ens } = wallet.accounts[0];
       setAccount({ address, ens: ens?.name || null });
-
+  
       const authenticateWithWallet = async () => {
         try {
           setIsLoading(true);
-          const { data, error } = await signInWithWalletConnect(address);
-          if (error) throw new Error(error.message);
-      
-          if (!data || !data.session) throw new Error('No session data returned from sign-in');
-      
-          updateProfile({
-            username: ens?.name || formatWalletAddress(address),
-            profileImage: null,
-            backgroundImage: null,
-          });
-          addWallet(address);
-          await syncWithSupabase();
-      
-          const { error: profileError } = await supabase
+  
+          // Kiểm tra xem địa chỉ ví đã tồn tại trong Supabase chưa
+          const { data: existingProfile, error: profileError } = await supabase
             .from('profiles')
-            .upsert({
-              id: data.session.user.id,
-              username: ens?.name || formatWalletAddress(address),
-              wallets: [{ address, is_default: true }],
-              updated_at: new Date().toISOString(),
+            .select('id, username, wallets')
+            .eq('wallets->>address', address)
+            .single();
+  
+          if (profileError && profileError.code !== 'PGRST116') {
+            throw new Error(); // Bỏ message
+          }
+  
+          if (existingProfile) {
+            // Nếu tìm thấy profile với địa chỉ ví này
+            const { data, error } = await signInWithWalletConnect(address);
+            if (error) throw new Error(); // Bỏ message
+            if (!data || !data.session) throw new Error(); // Bỏ message
+  
+            updateProfile({
+              username: existingProfile.username || formatWalletAddress(address),
+              profileImage: null,
+              backgroundImage: null,
             });
-      
-          if (profileError) throw new Error(profileError.message);
-      
+            addWallet(address);
+            await syncWithSupabase();
+  
+            toast.success('Logged in with existing wallet!');
+          } else {
+            // Nếu không tìm thấy, tạo tài khoản mới
+            const { data, error } = await signInWithWalletConnect(address);
+            if (error) throw new Error(); // Bỏ message
+            if (!data || !data.session) throw new Error(); // Bỏ message
+  
+            const newUsername = ens?.name || formatWalletAddress(address);
+  
+            updateProfile({
+              username: newUsername,
+              profileImage: null,
+              backgroundImage: null,
+            });
+            addWallet(address);
+            await syncWithSupabase();
+  
+            const { error: upsertError } = await supabase
+              .from('profiles')
+              .upsert({
+                id: data.session.user.id,
+                username: newUsername,
+                wallets: [{ address, is_default: true }],
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              });
+  
+            if (upsertError) throw new Error(); // Bỏ message
+  
+            toast.success('New account created with wallet!'); // Giữ thông báo thành công
+          }
+  
           router.push('/');
-          window.location.reload();
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
         } catch (error: unknown) {
-          console.error('Wallet authentication error:', error);
+          console.error('Wallet authentication error:', error); // Giữ log
+          // Bỏ toast.error
         } finally {
           setIsLoading(false);
         }
       };
-      
+  
       authenticateWithWallet();
-      
     }
   }, [wallet, router, isLoggedOut, signInWithWalletConnect, updateProfile, addWallet, syncWithSupabase]);
 
@@ -242,7 +278,7 @@ function LoginPageContent() {
       await syncWithSupabase();
 
       toast.success('Login successful!');
-      setTimeout(() => router.push('/'), 2000); // Delay để thấy thông báo
+      setTimeout(() => router.push('/'), 2000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
       console.error('Login error:', error);
@@ -262,7 +298,7 @@ function LoginPageContent() {
       await supabase.auth.signOut();
       router.push('/login');
     }
-  }, 1000);
+  }, 3000);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -332,7 +368,7 @@ function LoginPageContent() {
                         >
                           {showPassword ? (
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="w-5 h-5">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 溯16.338 7.244 19.5 12 19.5c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c4.756 0 8.773-3.162 10.065-7.498a10.523 10.523 0 01-4.293-5.774" />
                               <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0" />
                             </svg>
                           ) : (
