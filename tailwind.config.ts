@@ -29,7 +29,7 @@ export default {
         ],
       },
       screens:{
-        '2xl': '1400px',
+        '2xl': '1500px',
       },
       colors: {
         // Từ tệp thứ hai

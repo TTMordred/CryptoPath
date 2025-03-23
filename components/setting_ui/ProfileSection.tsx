@@ -51,7 +51,7 @@ const ProfileSection: React.FC = () => {
           <div className="space-y-4">
             <label className="flex items-center text-sm font-medium text-[#f6b355] gap-2">
               <UserRound className="h-4 w-4" />
-              Username
+              User name
             </label>
             <Input
               value={profile.username || ''}
