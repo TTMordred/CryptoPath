@@ -1192,6 +1192,8 @@ export async function fetchNFTsWithCursor(
  */
 export function clearNFTCache() {
   nftCache.clear();
+  // Also clear advanced cache
+  advancedNFTCache.clearAll();
 }
 
 /**
@@ -1261,4 +1263,900 @@ export function generatePlaceholderNFTs(count: number, startIndex: number = 0): 
     isPlaceholder: true,
     attributes: []
   }));
+}
+
+// Create a more sophisticated cache system with IndexedDB support
+class AdvancedNFTCache {
+  private memoryCache: Map<string, {
+    data: any[];
+    totalCount: number;
+    timestamp: number;
+    expires: number;
+  }> = new Map();
+  
+  private readonly MEMORY_CACHE_LIMIT = 1000; // Max items to store in memory
+  private readonly DB_NAME = 'nft_cache_db';
+  private readonly STORE_NAME = 'nfts';
+  private dbPromise: Promise<IDBDatabase> | null = null;
+  
+  constructor() {
+    // Initialize IndexedDB for large collections
+    this.initDB();
+  }
+  
+  private initDB(): Promise<IDBDatabase> {
+    if (this.dbPromise) return this.dbPromise;
+    
+    this.dbPromise = new Promise((resolve, reject) => {
+      if (!window.indexedDB) {
+        console.warn('IndexedDB not supported. Using memory cache only.');
+        resolve(null as unknown as IDBDatabase);
+        return;
+      }
+      
+      const request = window.indexedDB.open(this.DB_NAME, 1);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+          const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'cacheKey' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+      };
+      
+      request.onsuccess = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        resolve(db);
+      };
+      
+      request.onerror = (event) => {
+        console.error('IndexedDB error:', event);
+        reject(new Error('Failed to open IndexedDB'));
+      };
+    });
+    
+    return this.dbPromise;
+  }
+  
+  async get(key: string): Promise<{
+    data: any[];
+    totalCount: number;
+    timestamp: number;
+    expires: number;
+  } | null> {
+    // First check memory cache
+    if (this.memoryCache.has(key)) {
+      return this.memoryCache.get(key) || null;
+    }
+    
+    // Then check IndexedDB for large collections
+    try {
+      const db = await this.initDB();
+      if (!db) return null;
+      
+      return new Promise((resolve) => {
+        const transaction = db.transaction(this.STORE_NAME, 'readonly');
+        const store = transaction.objectStore(this.STORE_NAME);
+        const request = store.get(key);
+        
+        request.onsuccess = () => {
+          const result = request.result;
+          if (result && Date.now() - result.timestamp < result.expires) {
+            // Cache hit - move to memory for faster access next time
+            this.memoryCache.set(key, result);
+            this.pruneMemoryCache();
+            resolve(result);
+          } else {
+            resolve(null);
+          }
+        };
+        
+        request.onerror = () => resolve(null);
+      });
+    } catch (error) {
+      console.warn('Error accessing IndexedDB:', error);
+      return null;
+    }
+  }
+  
+  async set(key: string, value: {
+    data: any[];
+    totalCount: number;
+    timestamp: number;
+    expires: number;
+  }, isLargeCollection: boolean = false): Promise<void> {
+    // Always store in memory cache for fast access
+    this.memoryCache.set(key, value);
+    this.pruneMemoryCache();
+    
+    // For large collections, also persist to IndexedDB
+    if (isLargeCollection) {
+      try {
+        const db = await this.initDB();
+        if (!db) return;
+        
+        const transaction = db.transaction(this.STORE_NAME, 'readwrite');
+        const store = transaction.objectStore(this.STORE_NAME);
+        store.put({ ...value, cacheKey: key });
+      } catch (error) {
+        console.warn('Error storing in IndexedDB:', error);
+      }
+    }
+  }
+  
+  async clearForCollection(collectionId: string, chainId: string): Promise<void> {
+    const keyPrefix = `${collectionId}-${chainId}`;
+    
+    // Clear from memory cache
+    for (const key of this.memoryCache.keys()) {
+      if (key.startsWith(keyPrefix)) {
+        this.memoryCache.delete(key);
+      }
+    }
+    
+    // Clear from IndexedDB
+    try {
+      const db = await this.initDB();
+      if (!db) return;
+      
+      const transaction = db.transaction(this.STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(this.STORE_NAME);
+      const range = IDBKeyRange.bound(
+        keyPrefix, 
+        keyPrefix + '\uffff', // This ensures we get all keys starting with keyPrefix
+        false, 
+        false
+      );
+      
+      store.delete(range);
+    } catch (error) {
+      console.warn('Error clearing IndexedDB:', error);
+    }
+  }
+  
+  async clearAll(): Promise<void> {
+    // Clear memory cache
+    this.memoryCache.clear();
+    
+    // Clear IndexedDB
+    try {
+      const db = await this.initDB();
+      if (!db) return;
+      
+      const transaction = db.transaction(this.STORE_NAME, 'readwrite');
+      const store = transaction.objectStore(this.STORE_NAME);
+      store.clear();
+    } catch (error) {
+      console.warn('Error clearing IndexedDB:', error);
+    }
+  }
+  
+  private pruneMemoryCache(): void {
+    // Keep memory cache size under control
+    if (this.memoryCache.size > this.MEMORY_CACHE_LIMIT) {
+      // Remove oldest entries
+      const entries = Array.from(this.memoryCache.entries());
+      entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+      
+      const toDelete = entries.slice(0, entries.length - this.MEMORY_CACHE_LIMIT);
+      for (const [key] of toDelete) {
+        this.memoryCache.delete(key);
+      }
+    }
+  }
+}
+
+// Create a singleton instance of our advanced cache
+const advancedNFTCache = new AdvancedNFTCache();
+
+// Track loading state for collections to avoid duplicate requests
+const loadingCollections = new Map<string, Promise<any>>();
+
+/**
+ * Enhanced NFT fetching with progressive loading for very large collections
+ */
+export async function fetchNFTsWithProgressiveLoading(
+  contractAddress: string,
+  chainId: string,
+  options: {
+    batchSize?: number;
+    maxBatches?: number; // Limit number of batches to avoid excessive loading
+    initialPage?: number;
+    initialPageSize?: number;
+    sortBy?: string;
+    sortDirection?: 'asc' | 'desc';
+    searchQuery?: string;
+    attributes?: Record<string, string[]>;
+    onProgress?: (progress: number, total: number) => void;
+  } = {}
+): Promise<{
+  nfts: any[];
+  totalCount: number;
+  hasMoreBatches: boolean;
+  progress: number; // 0-100
+}> {
+  const {
+    batchSize = 100,
+    maxBatches = 100, // Limit to 10,000 NFTs by default
+    initialPage = 1,
+    initialPageSize = 32,
+    sortBy = 'tokenId',
+    sortDirection = 'asc',
+    searchQuery = '',
+    attributes = {},
+    onProgress
+  } = options;
+  
+  // Determine if this is a large collection (>500 items)
+  const isLargeCollection = true; // Assume large until we know otherwise
+  
+  // Create a cache key for this specific request
+  const cacheKeyBase = `${contractAddress}-${chainId}-progressive`;
+  const filterKey = `-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+  const cacheKey = cacheKeyBase + filterKey;
+  
+  // Check if we already have cached data
+  const cachedData = await advancedNFTCache.get(cacheKey);
+  if (cachedData) {
+    // Check if cache is fresh enough
+    const now = Date.now();
+    if (now - cachedData.timestamp < cachedData.expires) {
+      return {
+        nfts: cachedData.data,
+        totalCount: cachedData.totalCount,
+        hasMoreBatches: cachedData.data.length < cachedData.totalCount,
+        progress: (cachedData.data.length / cachedData.totalCount) * 100
+      };
+    }
+  }
+  
+  // Check if this collection is already being loaded
+  const loadingKey = `${contractAddress}-${chainId}-loading`;
+  if (loadingCollections.has(loadingKey)) {
+    try {
+      await loadingCollections.get(loadingKey);
+    } catch (error) {
+      console.warn('Previous loading failed:', error);
+    }
+  }
+  
+  // Set up loading promise
+  const loadingPromise = (async () => {
+    try {
+      // Start with a small initial batch for fast first render
+      const initialBatch = await fetchCollectionNFTs(
+        contractAddress,
+        chainId,
+        {
+          page: initialPage,
+          pageSize: initialPageSize,
+          sortBy,
+          sortDirection,
+          searchQuery,
+          attributes
+        }
+      );
+      
+      // Store the initial NFTs
+      let allNfts = initialBatch.nfts;
+      const totalCount = initialBatch.totalCount;
+      
+      if (onProgress) {
+        onProgress(allNfts.length, totalCount);
+      }
+      
+      // Store in cache even with partial data
+      await advancedNFTCache.set(cacheKey, {
+        data: allNfts.map(nft => ({ ...nft, chain: chainId })),
+        totalCount: totalCount,
+        timestamp: Date.now(),
+        expires: 10 * 60 * 1000 // 10 minute cache
+      }, isLargeCollection);
+      
+      // Stop if we already have all NFTs or reached the limit
+      if (allNfts.length >= totalCount || allNfts.length >= batchSize * maxBatches) {
+        return {
+          nfts: allNfts,
+          totalCount
+        };
+      }
+      
+      // Load remaining batches in the background
+      const loadRemainingBatches = async () => {
+        try {
+          let currentPage = 2; // Start from page 2 since we already have page 1
+          let continueFetching = true;
+          
+          while (
+            continueFetching && 
+            allNfts.length < totalCount && 
+            allNfts.length < batchSize * maxBatches
+          ) {
+            const nextBatch = await fetchCollectionNFTs(
+              contractAddress,
+              chainId,
+              {
+                page: currentPage,
+                pageSize: batchSize,
+                sortBy,
+                sortDirection,
+                searchQuery,
+                attributes
+              }
+            );
+            
+            if (nextBatch.nfts.length === 0) {
+              continueFetching = false;
+            } else {
+              // Add new NFTs to our collection
+              allNfts = [...allNfts, ...nextBatch.nfts];
+              currentPage++;
+              
+              if (onProgress) {
+                onProgress(allNfts.length, totalCount);
+              }
+              
+              // Update cache with each batch
+              await advancedNFTCache.set(cacheKey, {
+                data: allNfts.map(nft => ({ ...nft, chain: chainId })),
+                totalCount: totalCount,
+                timestamp: Date.now(),
+                expires: 10 * 60 * 1000 // 10 minute cache
+              }, isLargeCollection);
+            }
+          }
+        } catch (error) {
+          console.error('Error loading remaining batches:', error);
+        }
+      };
+      
+      // Start the background loading process without awaiting it
+      loadRemainingBatches();
+      
+      return {
+        nfts: allNfts,
+        totalCount
+      };
+    } catch (error) {
+      console.error('Error in progressive loading:', error);
+      throw error;
+    }
+  })();
+  
+  // Store the promise to track loading state
+  loadingCollections.set(loadingKey, loadingPromise);
+  
+  try {
+    const result = await loadingPromise;
+    
+    // Convert NFTs to the expected format with chain ID
+    const nftsWithChain = result.nfts.map(nft => ({
+      ...nft,
+      chain: chainId
+    }));
+    
+    return {
+      nfts: nftsWithChain,
+      totalCount: result.totalCount,
+      hasMoreBatches: nftsWithChain.length < result.totalCount,
+      progress: (nftsWithChain.length / result.totalCount) * 100
+    };
+  } finally {
+    // Clean up loading state
+    loadingCollections.delete(loadingKey);
+  }
+}
+
+/**
+ * Get cursor-based paginated NFTs with optimized memory handling for large collections
+ */
+export async function fetchNFTsWithOptimizedCursor(
+  contractAddress: string,
+  chainId: string,
+  cursor?: string,
+  limit: number = DEFAULT_PAGE_SIZE,
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc',
+  searchQuery: string = '',
+  attributes: Record<string, string[]> = {}
+): Promise<{
+  nfts: any[],
+  totalCount: number,
+  nextCursor?: string,
+  loadedCount: number,
+  progress: number
+}> {
+  // Create cursor info from the cursor string
+  const page = cursor ? parseInt(cursor, 10) : 1;
+  const pageOffset = (page - 1) * limit;
+  
+  // Create a cache key that includes all filter params
+  const cacheKey = `${contractAddress}-${chainId}-cursor-${pageOffset}-${limit}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+  
+  // Check global cache first for this specific page
+  const cachedPageData = await advancedNFTCache.get(cacheKey);
+  if (cachedPageData && Date.now() - cachedPageData.timestamp < cachedPageData.expires) {
+    const nextCursor = pageOffset + limit < cachedPageData.totalCount 
+      ? (page + 1).toString() 
+      : undefined;
+    
+    return {
+      nfts: cachedPageData.data,
+      totalCount: cachedPageData.totalCount,
+      nextCursor,
+      loadedCount: pageOffset + cachedPageData.data.length,
+      progress: Math.min(100, ((pageOffset + cachedPageData.data.length) / cachedPageData.totalCount) * 100)
+    };
+  }
+  
+  // Also check if we have a progressive loading cache that contains this page
+  const progressiveCacheKey = `${contractAddress}-${chainId}-progressive-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+  const progressiveCache = await advancedNFTCache.get(progressiveCacheKey);
+  
+  if (progressiveCache && Date.now() - progressiveCache.timestamp < progressiveCache.expires) {
+    const totalCount = progressiveCache.totalCount;
+    
+    // Check if the progressive cache contains the data for this page
+    if (pageOffset < progressiveCache.data.length) {
+      const pageData = progressiveCache.data.slice(pageOffset, pageOffset + limit);
+      const nextCursor = pageOffset + limit < totalCount 
+        ? (page + 1).toString() 
+        : undefined;
+      
+      // Cache this specific page result too
+      await advancedNFTCache.set(cacheKey, {
+        data: pageData,
+        totalCount,
+        timestamp: Date.now(),
+        expires: 5 * 60 * 1000 // 5 minute cache for page results
+      });
+      
+      return {
+        nfts: pageData,
+        totalCount,
+        nextCursor,
+        loadedCount: Math.min(progressiveCache.data.length, pageOffset + limit),
+        progress: Math.min(100, (progressiveCache.data.length / totalCount) * 100)
+      };
+    }
+  }
+  
+  // If not in cache, fetch from API
+  try {
+    const response = await fetchCollectionNFTs(
+      contractAddress,
+      chainId,
+      {
+        page,
+        pageSize: limit,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      }
+    );
+    
+    // Add chain info to each NFT
+    const nftsWithChain = response.nfts.map(nft => ({
+      ...nft,
+      chain: chainId
+    }));
+    
+    // Create the next cursor if there are more items
+    const nextCursor = response.nfts.length === limit && pageOffset + limit < response.totalCount
+      ? (page + 1).toString()
+      : undefined;
+    
+    // Cache this page result
+    await advancedNFTCache.set(cacheKey, {
+      data: nftsWithChain,
+      totalCount: response.totalCount,
+      timestamp: Date.now(),
+      expires: 5 * 60 * 1000 // 5 minute cache
+    });
+    
+    return {
+      nfts: nftsWithChain,
+      totalCount: response.totalCount,
+      nextCursor,
+      loadedCount: pageOffset + nftsWithChain.length,
+      progress: Math.min(100, ((pageOffset + nftsWithChain.length) / response.totalCount) * 100)
+    };
+  } catch (error) {
+    console.error('Error fetching NFTs with optimized cursor:', error);
+    toast.error('Failed to load NFTs. Please try again.');
+    return { 
+      nfts: [], 
+      totalCount: 0, 
+      loadedCount: 0, 
+      progress: 0 
+    };
+  }
+}
+
+/**
+ * Clear all NFT cache data
+ */
+export function clearAllNFTCaches() {
+  advancedNFTCache.clearAll();
+}
+
+/**
+ * Clear cache for a specific collection
+ */
+export function clearSpecificCollectionCache(contractAddress: string, chainId: string) {
+  advancedNFTCache.clearForCollection(contractAddress, chainId);
+// No need to redefine clearNFTCache, it's already defined above and will
+// call the clearAllNFTCaches function
+  clearAllNFTCaches();
+}
+
+/**
+ * Calculate estimated memory usage for an NFT collection
+ */
+export function estimateCollectionMemoryUsage(totalNFTs: number): string {
+  // Rough estimate: average NFT object is about 2KB
+  const estimatedBytes = totalNFTs * 2 * 1024;
+  
+  if (estimatedBytes < 1024 * 1024) {
+    return `${(estimatedBytes / 1024).toFixed(2)} KB`;
+  } else if (estimatedBytes < 1024 * 1024 * 1024) {
+    return `${(estimatedBytes / (1024 * 1024)).toFixed(2)} MB`;
+  } else {
+    return `${(estimatedBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  }
+}
+
+/**
+ * Preload critical NFT data
+ */
+export async function preloadCollectionData(contractAddress: string, chainId: string): Promise<boolean> {
+  try {
+    // Preload collection metadata
+    const metadata = await fetchCollectionInfo(contractAddress, chainId);
+    
+    // Preload first batch of NFTs
+    await fetchNFTsWithOptimizedCursor(
+      contractAddress,
+      chainId,
+      '1', // First page
+      32, // Small batch to load quickly
+      'tokenId',
+      'asc'
+    );
+    
+    return true;
+  } catch (error) {
+    console.error('Error preloading collection data:', error);
+    return false;
+  }
+}
+
+// Add these enhanced caching functions for optimized pagination
+
+/**
+ * Optimized cache for pagination to minimize Alchemy API calls
+ */
+class PagedNFTCache {
+  private static instance: PagedNFTCache;
+  private cache: Map<string, {
+    data: any[];
+    totalCount: number;
+    timestamp: number;
+    expires: number;
+  }> = new Map();
+  
+  // Longer cache time for pagination to reduce API calls further
+  private CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+  
+  private constructor() {}
+  
+  public static getInstance(): PagedNFTCache {
+    if (!PagedNFTCache.instance) {
+      PagedNFTCache.instance = new PagedNFTCache();
+    }
+    return PagedNFTCache.instance;
+  }
+  
+  public get(key: string) {
+    const cached = this.cache.get(key);
+    if (cached && Date.now() - cached.timestamp < cached.expires) {
+      return cached;
+    }
+    return null;
+  }
+  
+  public set(
+    key: string, 
+    data: any[], 
+    totalCount: number, 
+    expires: number = this.CACHE_TTL
+  ) {
+    this.cache.set(key, {
+      data,
+      totalCount,
+      timestamp: Date.now(),
+      expires
+    });
+  }
+  
+  public clear(prefix?: string) {
+    if (prefix) {
+      // Clear only cache entries that start with prefix
+      for (const key of this.cache.keys()) {
+        if (key.startsWith(prefix)) {
+          this.cache.delete(key);
+        }
+      }
+    } else {
+      // Clear all cache
+      this.cache.clear();
+    }
+  }
+  
+  // Prefetch adjacent pages to improve UX
+  public async prefetchAdjacentPages(
+    contractAddress: string,
+    chainId: string,
+    currentPage: number,
+    pageSize: number,
+    sortBy: string,
+    sortDirection: 'asc' | 'desc',
+    searchQuery: string = '',
+    attributes: Record<string, string[]> = {}
+  ) {
+    // Only prefetch if we're not already loading/caching that page
+    const pagesToPrefetch = [currentPage + 1];
+    
+    for (const page of pagesToPrefetch) {
+      const cacheKey = this.generateCacheKey(
+        contractAddress, 
+        chainId, 
+        page, 
+        pageSize, 
+        sortBy, 
+        sortDirection, 
+        searchQuery, 
+        attributes
+      );
+      
+      // Only prefetch if not already in cache and page is > 0
+      if (!this.get(cacheKey) && page > 0) {
+        // Use a low priority flag and setTimeout to not block the main thread
+        setTimeout(() => {
+          fetchCollectionNFTs(contractAddress, chainId, {
+            page,
+            pageSize,
+            sortBy,
+            sortDirection,
+            searchQuery,
+            attributes
+          }).then(result => {
+            if (result.nfts.length > 0) {
+              this.set(cacheKey, result.nfts, result.totalCount);
+            }
+          }).catch(err => {
+            console.log('Prefetch error (non-critical):', err);
+          });
+        }, 1000); // Delay prefetch to prioritize current page
+      }
+    }
+  }
+  
+  public generateCacheKey(
+    contractAddress: string,
+    chainId: string,
+    page: number,
+    pageSize: number,
+    sortBy: string,
+    sortDirection: 'asc' | 'desc',
+    searchQuery: string = '',
+    attributes: Record<string, string[]> = {}
+  ): string {
+    return `${contractAddress.toLowerCase()}-${chainId}-p${page}-s${pageSize}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+  }
+}
+
+// Singleton instance
+const pagedCache = PagedNFTCache.getInstance();
+
+/**
+ * Fetch collection NFTs with optimized pagination to reduce Alchemy API calls
+ */
+export async function fetchPaginatedNFTs(
+  contractAddress: string,
+  chainId: string,
+  page: number = 1,
+  pageSize: number = 20, // Default to 20 for optimal API usage
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc',
+  searchQuery: string = '',
+  attributes: Record<string, string[]> = {}
+): Promise<{
+  nfts: any[];
+  totalCount: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}> {
+  // Generate cache key
+  const cacheKey = pagedCache.generateCacheKey(
+    contractAddress, 
+    chainId, 
+    page, 
+    pageSize, 
+    sortBy, 
+    sortDirection, 
+    searchQuery, 
+    attributes
+  );
+  
+  // Check cache first - log cache hits for monitoring
+  const cached = pagedCache.get(cacheKey);
+  if (cached) {
+    console.log(`[API Optimization] Cache hit for ${contractAddress} page ${page}`);
+    
+    // Only prefetch next page if we're in a stable view (not actively changing pages)
+    setTimeout(() => {
+      // Start prefetching next page in background
+      pagedCache.prefetchAdjacentPages(
+        contractAddress, 
+        chainId, 
+        page, 
+        pageSize, 
+        sortBy, 
+        sortDirection, 
+        searchQuery, 
+        attributes
+      );
+    }, 500);
+    
+    // Ensure totalCount is at least 1 more than current items if we need pagination
+    const calculatedTotalCount = Math.max(
+      cached.totalCount,
+      page * pageSize + (cached.data.length === pageSize ? 1 : 0)
+    );
+    
+    console.log(`[Pagination] Using cached data: Page ${page}, Items: ${cached.data.length}, Total: ${calculatedTotalCount}`);
+    
+    return {
+      nfts: cached.data,
+      totalCount: calculatedTotalCount,
+      hasNextPage: page * pageSize < calculatedTotalCount,
+      hasPrevPage: page > 1
+    };
+  }
+  
+  // If not in cache, fetch from API with a small cooldown to prevent rate limiting
+  try {
+    console.log(`[API Call] Fetching ${contractAddress} page ${page} - reducing API usage`);
+    
+    // Add a small random delay to prevent rate limiting (50-150ms)
+    await new Promise(resolve => setTimeout(resolve, 50 + Math.random() * 100));
+    
+    const result = await fetchCollectionNFTs(
+      contractAddress,
+      chainId,
+      {
+        page,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      }
+    );
+    
+    // Enhance with chain info
+    const nftsWithChain = result.nfts.map(nft => ({
+      ...nft,
+      chain: chainId
+    }));
+    
+    // If this collection is one of the large ones with known pagination issues,
+    // ensure we have a reasonable totalCount for pagination
+    let calculatedTotalCount = result.totalCount;
+    
+    // For some collections, ensure we have at least the minimum page count
+    const isSpecialCollection = [
+      '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d', // BAYC
+      '0x60e4d786628fea6478f785a6d7e704777c86a7c6', // MAYC
+      // Add other collections with pagination issues here
+    ].includes(contractAddress.toLowerCase());
+    
+    if (isSpecialCollection) {
+      // Ensure we have at least 100 items for these collections to show pagination
+      calculatedTotalCount = Math.max(calculatedTotalCount, 100);
+    }
+    
+    // If we got a full page of results, assume there's at least one more page
+    if (nftsWithChain.length === pageSize && calculatedTotalCount <= page * pageSize) {
+      calculatedTotalCount = page * pageSize + 1;
+    }
+    
+    console.log(`[Pagination] API data: Page ${page}, Items: ${nftsWithChain.length}, Adjusted Total: ${calculatedTotalCount}`);
+    
+    // Save to cache with longer TTL for popular collections
+    const cacheTTL = isSpecialCollection ? 60 * 60 * 1000 : 30 * 60 * 1000; // 1 hour for popular vs 30 min
+    pagedCache.set(cacheKey, nftsWithChain, calculatedTotalCount, cacheTTL);
+    
+    // Prefetch adjacent pages in background with delay to ensure current page loads first
+    setTimeout(() => {
+      pagedCache.prefetchAdjacentPages(
+        contractAddress, 
+        chainId, 
+        page, 
+        pageSize, 
+        sortBy, 
+        sortDirection, 
+        searchQuery, 
+        attributes
+      );
+    }, 1000);
+    
+    return {
+      nfts: nftsWithChain,
+      totalCount: calculatedTotalCount,
+      hasNextPage: page * pageSize < calculatedTotalCount,
+      hasPrevPage: page > 1
+    };
+  } catch (error) {
+    console.error('Error fetching paginated NFTs:', error);
+    toast.error('Failed to load NFTs. Please try again.');
+    
+    return {
+      nfts: [],
+      totalCount: 0,
+      hasNextPage: false,
+      hasPrevPage: page > 1
+    };
+  }
+}
+
+/**
+ * Clear pagination cache for a specific collection or all collections
+ */
+export function clearPaginationCache(contractAddress?: string, chainId?: string) {
+  if (contractAddress && chainId) {
+    pagedCache.clear(`${contractAddress.toLowerCase()}-${chainId}`);
+  } else {
+    pagedCache.clear();
+  }
+}
+
+/**
+ * Throttled API call for collections to avoid rate limiting
+ */
+const pendingApiCalls = new Map<string, Promise<any>>();
+
+export async function throttledApiCall<T>(
+  key: string, 
+  apiFunction: () => Promise<T>,
+  expiryMs: number = 10000 // Default 10s
+): Promise<T> {
+  // Check if there's already a pending call for this key
+  if (pendingApiCalls.has(key)) {
+    return pendingApiCalls.get(key)!;
+  }
+  
+  // Create a new promise for this call
+  const promise = new Promise<T>((resolve, reject) => {
+    setTimeout(async () => {
+      try {
+        const result = await apiFunction();
+        resolve(result);
+      } catch (error) {
+        reject(error);
+      } finally {
+        // Auto-clean the pendingApiCalls map after expiry
+        setTimeout(() => {
+          pendingApiCalls.delete(key);
+        }, expiryMs);
+      }
+    }, Math.random() * 100); // Small random delay to prevent concurrent calls
+  });
+  
+  // Store the promise in the map
+  pendingApiCalls.set(key, promise);
+  
+  return promise;
 }

@@ -73,6 +73,9 @@ import NetworkSelector from '@/components/NFT/NetworkSelector';
 import AnimatedNFTCard from '@/components/NFT/AnimatedNFTCard';
 import { getExplorerUrl, getChainColorTheme, formatAddress } from '@/lib/api/chainProviders';
 import VirtualizedNFTGrid from '@/components/NFT/VirtualizedNFTGrid';
+import { clearCollectionCache } from '@/lib/api/nftService';
+import PaginatedNFTGrid from '@/components/NFT/PaginatedNFTGrid';
+import { clearPaginationCache } from '@/lib/api/nftService';
 
 interface NFT {
   id: string;
@@ -264,11 +267,7 @@ export default function CollectionDetailsPage() {
   // Apply search when enter is pressed
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      if (currentPage === 1) {
-        loadCollectionData(chainId);
-      } else {
-        setCurrentPage(1);
-      }
+      handleFilterChange();
     }
   };
 
@@ -303,6 +302,9 @@ export default function CollectionDetailsPage() {
 
       return newFilters;
     });
+    
+    // Clear pagination cache
+    handleFilterChange();
   };
 
   // Clear all filters
@@ -432,6 +434,19 @@ export default function CollectionDetailsPage() {
     setSelectedNFT(nft);
     setIsDetailModalOpen(true);
   };
+
+  // Add a cache control function to handle filter changes
+  const handleFilterChange = () => {
+    // Clear the cache for this collection and chainId when filters change
+    clearPaginationCache(collectionId, chainId);
+    
+    // Apply the filter
+    if (currentPage === 1) {
+      loadCollectionData(chainId);
+    } else {
+      setCurrentPage(1);
+    }
+  }
 
   return (
     <div className="relative min-h-screen text-white font-exo2">
@@ -848,9 +863,9 @@ export default function CollectionDetailsPage() {
                     </motion.div>
                   ) : (
                     <>
-                      {/* NFT Grid with Virtualization */}
+                      {/* NFT Grid with pagination optimized for Alchemy API */}
                       {nfts.length > 0 && !loading ? (
-                        <VirtualizedNFTGrid
+                        <PaginatedNFTGrid
                           contractAddress={collectionId}
                           chainId={chainId}
                           sortBy={sortBy}
@@ -859,7 +874,15 @@ export default function CollectionDetailsPage() {
                           attributes={selectedAttributes}
                           viewMode={viewMode}
                           onNFTClick={handleNFTClick}
-                          itemsPerPage={32}
+                          itemsPerPage={20} // Reduced to exactly 20 items per page
+                          defaultPage={currentPage}
+                          onPageChange={(page) => {
+                            setCurrentPage(page);
+                            // Scroll to top when page changes
+                            if (scrollRef.current) {
+                              scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                            }
+                          }}
                         />
                       ) : (
                         <motion.div 
@@ -893,111 +916,6 @@ export default function CollectionDetailsPage() {
                           <div className={`h-10 w-10 rounded-full border-2 border-t-transparent animate-spin`} 
                             style={{ borderColor: `${chainTheme.primary} transparent transparent transparent` }} />
                         </div>
-                      )}
-
-                      {/* Pagination for pages */}
-                      {totalPages > 1 && (
-                        <Pagination className="mt-8">
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious
-                                href="#"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (currentPage > 1) {
-                                    setCurrentPage(currentPage - 1);
-                                    setVisibleItems(16);
-                                    // Scroll to top
-                                    scrollRef.current?.scrollTo({
-                                      top: 0,
-                                      behavior: 'smooth'
-                                    });
-                                  }
-                                }}
-                                className={
-                                  currentPage === 1
-                                    ? 'pointer-events-none opacity-50'
-                                    : ''
-                                }
-                              />
-                            </PaginationItem>
-
-                            {[...Array(totalPages)].map((_, i) => {
-                              const pageNumber = i + 1;
-                              // Show first page, last page, and pages around currentPage
-                              if (
-                                pageNumber === 1 ||
-                                pageNumber === totalPages ||
-                                (pageNumber >= currentPage - 1 &&
-                                  pageNumber <= currentPage + 1)
-                              ) {
-                                return (
-                                  <PaginationItem key={pageNumber}>
-                                    <PaginationLink
-                                      href="#"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setCurrentPage(pageNumber);
-                                        setVisibleItems(16);
-                                        // Scroll to top
-                                        scrollRef.current?.scrollTo({
-                                          top: 0,
-                                          behavior: 'smooth'
-                                        });
-                                      }}
-                                      isActive={pageNumber === currentPage}
-                                      style={
-                                        pageNumber === currentPage 
-                                          ? { backgroundColor: chainTheme.primary, color: 'black' }
-                                          : undefined
-                                      }
-                                    >
-                                      {pageNumber}
-                                    </PaginationLink>
-                                  </PaginationItem>
-                                );
-                              }
-
-                              // Show ellipsis for gaps
-                              if (
-                                (pageNumber === 2 && currentPage > 3) ||
-                                (pageNumber === totalPages - 1 &&
-                                  currentPage < totalPages - 2)
-                              ) {
-                                return (
-                                  <PaginationItem key={pageNumber}>
-                                    <span className="px-2">...</span>
-                                  </PaginationItem>
-                                );
-                              }
-
-                              return null;
-                            })}
-
-                            <PaginationItem>
-                              <PaginationNext
-                                href="#"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (currentPage < totalPages) {
-                                    setCurrentPage(currentPage + 1);
-                                    setVisibleItems(16);
-                                    // Scroll to top
-                                    scrollRef.current?.scrollTo({
-                                      top: 0,
-                                      behavior: 'smooth'
-                                    });
-                                  }
-                                }}
-                                className={
-                                  currentPage === totalPages
-                                    ? 'pointer-events-none opacity-50'
-                                    : ''
-                                }
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
                       )}
                     </>
                   )}
