@@ -72,15 +72,19 @@ import ParticlesBackground from '@/components/ParticlesBackground';
 import NetworkSelector from '@/components/NFT/NetworkSelector';
 import AnimatedNFTCard from '@/components/NFT/AnimatedNFTCard';
 import { getExplorerUrl, getChainColorTheme, formatAddress } from '@/lib/api/chainProviders';
+import VirtualizedNFTGrid from '@/components/NFT/VirtualizedNFTGrid';
+import { clearCollectionCache } from '@/lib/api/nftService';
+import PaginatedNFTGrid from '@/components/NFT/PaginatedNFTGrid';
+import { clearPaginationCache } from '@/lib/api/nftService';
 
 interface NFT {
   id: string;
   tokenId: string;
   name: string;
-  description: string;
+  description?: string;
   imageUrl: string;
   chain: string;
-  attributes: Array<{
+  attributes?: Array<{
     trait_type: string;
     value: string;
   }>;
@@ -274,11 +278,7 @@ export default function CollectionDetailsPage() {
   // Apply search when enter is pressed
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      if (currentPage === 1) {
-        loadCollectionData(chainId);
-      } else {
-        setCurrentPage(1);
-      }
+      handleFilterChange();
     }
   };
 
@@ -313,6 +313,9 @@ export default function CollectionDetailsPage() {
 
       return newFilters;
     });
+    
+    // Clear pagination cache
+    handleFilterChange();
   };
 
   // Clear all filters
@@ -442,6 +445,19 @@ export default function CollectionDetailsPage() {
     setSelectedNFT(nft);
     setIsDetailModalOpen(true);
   };
+
+  // Add a cache control function to handle filter changes
+  const handleFilterChange = () => {
+    // Clear the cache for this collection and chainId when filters change
+    clearPaginationCache(collectionId, chainId);
+    
+    // Apply the filter
+    if (currentPage === 1) {
+      loadCollectionData(chainId);
+    } else {
+      setCurrentPage(1);
+    }
+  }
 
   return (
     <div className="relative min-h-screen text-white font-exo2">
@@ -864,35 +880,49 @@ export default function CollectionDetailsPage() {
                     </motion.div>
                   ) : (
                     <>
-                      {/* NFT Grid with Virtualization */}
-                      <motion.div
-                        initial="hidden"
-                        animate="visible"
-                        variants={{
-                          visible: {
-                            transition: {
-                              staggerChildren: 0.05
+                      {/* NFT Grid with pagination optimized for Alchemy API */}
+                      {nfts.length > 0 && !loading ? (
+                        <PaginatedNFTGrid
+                          contractAddress={collectionId}
+                          chainId={chainId}
+                          sortBy={sortBy}
+                          sortDirection={sortDir}
+                          searchQuery={searchQuery}
+                          attributes={selectedAttributes}
+                          viewMode={viewMode}
+                          onNFTClick={handleNFTClick}
+                          itemsPerPage={20} // Reduced to exactly 20 items per page
+                          defaultPage={currentPage}
+                          onPageChange={(page) => {
+                            setCurrentPage(page);
+                            // Scroll to top when page changes
+                            if (scrollRef.current) {
+                              scrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
                             }
-                          }
-                        }}
-                        layout
-                        className={
-                          viewMode === 'grid'
-                            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
-                            : 'space-y-4'
-                        }
-                      >
-                        <AnimatePresence mode="wait">
-                          {nfts.slice(0, visibleItems).map((nft, index) => (
-                            <AnimatedNFTCard
-                              key={`${nft.id}-${chainId}`}
-                              nft={nft}
-                              index={index}
-                              onClick={() => handleNFTClick(nft)}
-                            />
-                          ))}
-                        </AnimatePresence>
-                      </motion.div>
+                          }}
+                        />
+                      ) : (
+                        <motion.div 
+                          className="text-center py-12 border border-gray-800 rounded-lg bg-black/30"
+                          initial={{ opacity: 0, scale: 0.95 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <p className="text-gray-400">
+                            No NFTs found for this collection.
+                          </p>
+                          {(searchQuery ||
+                            Object.keys(selectedAttributes).length > 0) && (
+                            <Button
+                              variant="link"
+                              onClick={clearFilters}
+                              className="mt-2"
+                            >
+                              Clear filters
+                            </Button>
+                          )}
+                        </motion.div>
+                      )}
 
                       {/* Load More Indicator */}
                       {visibleItems < nfts.length && (
@@ -903,111 +933,6 @@ export default function CollectionDetailsPage() {
                           <div className={`h-10 w-10 rounded-full border-2 border-t-transparent animate-spin`} 
                             style={{ borderColor: `${chainTheme.primary} transparent transparent transparent` }} />
                         </div>
-                      )}
-
-                      {/* Pagination for pages */}
-                      {totalPages > 1 && (
-                        <Pagination className="mt-8">
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious
-                                href="#"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (currentPage > 1) {
-                                    setCurrentPage(currentPage - 1);
-                                    setVisibleItems(16);
-                                    // Scroll to top
-                                    scrollRef.current?.scrollTo({
-                                      top: 0,
-                                      behavior: 'smooth'
-                                    });
-                                  }
-                                }}
-                                className={
-                                  currentPage === 1
-                                    ? 'pointer-events-none opacity-50'
-                                    : ''
-                                }
-                              />
-                            </PaginationItem>
-
-                            {[...Array(totalPages)].map((_, i) => {
-                              const pageNumber = i + 1;
-                              // Show first page, last page, and pages around current page
-                              if (
-                                pageNumber === 1 ||
-                                pageNumber === totalPages ||
-                                (pageNumber >= currentPage - 1 &&
-                                  pageNumber <= currentPage + 1)
-                              ) {
-                                return (
-                                  <PaginationItem key={pageNumber}>
-                                    <PaginationLink
-                                      href="#"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        setCurrentPage(pageNumber);
-                                        setVisibleItems(16);
-                                        // Scroll to top
-                                        scrollRef.current?.scrollTo({
-                                          top: 0,
-                                          behavior: 'smooth'
-                                        });
-                                      }}
-                                      isActive={pageNumber === currentPage}
-                                      style={
-                                        pageNumber === currentPage 
-                                          ? { backgroundColor: chainTheme.primary, color: 'black' }
-                                          : undefined
-                                      }
-                                    >
-                                      {pageNumber}
-                                    </PaginationLink>
-                                  </PaginationItem>
-                                );
-                              }
-
-                              // Show ellipsis for gaps
-                              if (
-                                (pageNumber === 2 && currentPage > 3) ||
-                                (pageNumber === totalPages - 1 &&
-                                  currentPage < totalPages - 2)
-                              ) {
-                                return (
-                                  <PaginationItem key={pageNumber}>
-                                    <span className="px-2">...</span>
-                                  </PaginationItem>
-                                );
-                              }
-
-                              return null;
-                            })}
-
-                            <PaginationItem>
-                              <PaginationNext
-                                href="#"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  if (currentPage < totalPages) {
-                                    setCurrentPage(currentPage + 1);
-                                    setVisibleItems(16);
-                                    // Scroll to top
-                                    scrollRef.current?.scrollTo({
-                                      top: 0,
-                                      behavior: 'smooth'
-                                    });
-                                  }
-                                }}
-                                className={
-                                  currentPage === totalPages
-                                    ? 'pointer-events-none opacity-50'
-                                    : ''
-                                }
-                              />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
                       )}
                     </>
                   )}
