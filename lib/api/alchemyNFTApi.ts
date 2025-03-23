@@ -8,8 +8,51 @@ const BSCSCAN_API_KEY = process.env.BSCSCAN_API_KEY || '1QGN2GHNEPT6CQP854TVBH24
 const responseCache = new Map<string, {data: any, timestamp: number}>();
 const CACHE_TTL = 60000; // 1 minute cache TTL
 
-// Helper to get cached data or fetch from BSCScan with rate limiting
-async function cachedBscScanRequest(params: Record<string, string>, chainId: string): Promise<any> {
+// Queue system for BSCScan API calls to avoid rate limiting
+const bscRequestQueue: (() => Promise<void>)[] = [];
+let isProcessingQueue = false;
+let lastRequestTime = 0;
+const REQUEST_DELAY = 250; // ms between requests (4 per second to stay under the 5/sec limit)
+
+// Process the BSCScan request queue
+async function processBscRequestQueue() {
+  if (isProcessingQueue || bscRequestQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  try {
+    while (bscRequestQueue.length > 0) {
+      const request = bscRequestQueue.shift();
+      if (request) {
+        // Ensure minimum delay between requests
+        const now = Date.now();
+        const elapsed = now - lastRequestTime;
+        if (elapsed < REQUEST_DELAY) {
+          await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY - elapsed));
+        }
+        
+        await request();
+        lastRequestTime = Date.now();
+      }
+    }
+  } finally {
+    isProcessingQueue = false;
+    
+    // If new requests were added while processing, start again
+    if (bscRequestQueue.length > 0) {
+      processBscRequestQueue();
+    }
+  }
+}
+
+// Ensure each BSCScan API call has valid parameters and improve error handling
+async function cachedBscScanRequest(params: Record<string, string>, chainId: string, retries = 2): Promise<any> {
+  // Validate required parameters
+  if (!params.module || !params.action) {
+    console.error("Missing required BSCScan API parameters", params);
+    throw new Error("BSCScan API request missing required parameters: module and action must be specified");
+  }
+
   const cacheKey = JSON.stringify(params) + chainId;
   const cachedResponse = responseCache.get(cacheKey);
   
@@ -18,29 +61,68 @@ async function cachedBscScanRequest(params: Record<string, string>, chainId: str
     return cachedResponse.data;
   }
   
-  // Use a delay to stay under rate limits (5 calls per second)
-  const baseUrl = chainId === '0x38' ? 'https://api.bscscan.com/api' : 'https://api-testnet.bscscan.com/api';
-  
-  try {
-    // Add API key to params
-    const requestParams = {
-      ...params,
-      apikey: BSCSCAN_API_KEY
+  // Add request to queue and return a promise
+  return new Promise((resolve, reject) => {
+    const executeRequest = async () => {
+      const baseUrl = chainId === '0x38' ? 'https://api.bscscan.com/api' : 'https://api-testnet.bscscan.com/api';
+      
+      try {
+        // Add API key to params
+        const requestParams = {
+          ...params,
+          apikey: BSCSCAN_API_KEY
+        };
+        
+        // Debug log the request (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`BSCScan API request: ${baseUrl}`, requestParams);
+        }
+        
+        const response = await axios.get(baseUrl, { params: requestParams });
+        const data = response.data;
+        
+        // Check for rate limit errors
+        if (data.status === '0' && data.message === 'NOTOK') {
+          console.warn("BSCScan API error:", data.result);
+          
+          if (data.result.includes('rate limit') && retries > 0) {
+            console.warn("BSCScan rate limit hit, retrying after delay...");
+            // Wait a bit longer before retrying
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Increased delay
+            
+            // Retry with one fewer retry attempt
+            const retryResult = await cachedBscScanRequest(params, chainId, retries - 1);
+            resolve(retryResult);
+            return;
+          } else if (data.result.includes('Missing Or invalid')) {
+            // Log detailed information about the invalid request
+            console.error("Invalid BSCScan API request:", {
+              url: baseUrl,
+              params: requestParams,
+              error: data.result
+            });
+            reject(new Error(`BSCScan API error: ${data.result}`));
+            return;
+          }
+        }
+        
+        // Cache the successful response
+        responseCache.set(cacheKey, {
+          data,
+          timestamp: Date.now()
+        });
+        
+        resolve(data);
+      } catch (error) {
+        console.error("BSCScan API request failed:", error);
+        reject(error);
+      }
     };
     
-    const response = await axios.get(baseUrl, { params: requestParams });
-    
-    // Cache the successful response
-    responseCache.set(cacheKey, {
-      data: response.data,
-      timestamp: Date.now()
-    });
-    
-    return response.data;
-  } catch (error) {
-    console.error("BSCScan API request failed:", error);
-    throw error;
-  }
+    // Add to queue and start processing
+    bscRequestQueue.push(executeRequest);
+    processBscRequestQueue();
+  });
 }
 
 const CHAIN_ID_TO_NETWORK: Record<string, string> = {
@@ -513,7 +595,7 @@ export async function fetchCollectionNFTs(
         contractaddress: contractAddress,
         page: '1',
         offset: String(pageSize * 2), // Request more to account for transfers
-        sort: sortDirection
+        sort: sortDirection === 'asc' ? 'asc' : 'desc'
       }, chainId);
       
       if (result.status === '1' && result.result) {
@@ -523,67 +605,135 @@ export async function fetchCollectionNFTs(
           .filter((id: string) => id && id.length > 0)
         )];
         
-        // Sort token IDs
+        // Sort token IDs numerically if possible, otherwise as strings
         const sortedTokenIds = uniqueTokenIds.sort((a, b) => {
-          const stringA = String(a);
-          const stringB = String(b);
-          const numA = parseInt(stringA, 10);
-          const numB = parseInt(stringB, 10);
+          const numA = parseInt(a as string, 10);
+          const numB = parseInt(b as string, 10);
           
-          if (isNaN(numA) || isNaN(numB)) {
-            // Fallback to string comparison if not valid numbers
-            return sortDirection === 'asc' 
-              ? stringA.localeCompare(stringB)
-              : stringB.localeCompare(stringA);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return sortDirection === 'asc' ? numA - numB : numB - numA;
           }
           
-          return sortDirection === 'asc' ? numA - numB : numB - numA;
+          return sortDirection === 'asc' 
+            ? (a as string).localeCompare(b as string)
+            : (b as string).localeCompare(a as string);
         });
         
         // Apply pagination
         const startIdx = (page - 1) * pageSize;
         const paginatedTokenIds = sortedTokenIds.slice(startIdx, startIdx + pageSize);
         
-        // Fetch metadata for each token (could be optimized with Promise.all with rate limiting)
-        const nfts: CollectionNFT[] = [];
-        
         // Apply search filter if needed
         const filteredTokenIds = searchQuery 
           ? paginatedTokenIds.filter(id => String(id).includes(searchQuery))
           : paginatedTokenIds;
         
+        // Fetch metadata for each token with proper rate limiting
+        const nfts: CollectionNFT[] = [];
+        
+        // Try to get the contract's baseURI first to optimize requests
+        let baseURI = '';
+        try {
+          // Use contract's baseURI function if available
+          const baseURIResult = await cachedBscScanRequest({
+            module: 'contract',
+            action: 'readcontract',
+            address: contractAddress,
+            contractaddress: contractAddress,
+            function: 'baseURI()'
+          }, chainId);
+          
+          if (baseURIResult.status === '1' && baseURIResult.result) {
+            baseURI = baseURIResult.result;
+          }
+        } catch (error) {
+          console.warn("Could not get baseURI, will try individual tokenURI calls:", error);
+        }
+        
+        // Process tokens one at a time to avoid overloading the API
         for (const tokenId of filteredTokenIds) {
           try {
-            // Get token URI
-            const tokenUriResult = await cachedBscScanRequest({
-              module: 'token',
-              action: 'tokenuri',
-              contractaddress: contractAddress,
-              tokenid: String(tokenId)
-            }, chainId);
+            // Default fallback NFT in case metadata can't be fetched
+            const fallbackNft: CollectionNFT = {
+              id: `${contractAddress.toLowerCase()}-${tokenId}`,
+              tokenId: String(tokenId),
+              name: `NFT #${tokenId}`,
+              description: 'Metadata unavailable',
+              imageUrl: '',
+              attributes: []
+            };
             
-            if (tokenUriResult.status === '1' && tokenUriResult.result) {
-              const uri = tokenUriResult.result;
+            // Get token URI - use contract call with the tokenURI function
+            let uri = '';
+            try {
+              // Use contract's tokenURI function directly
+              const tokenURIResult = await cachedBscScanRequest({
+                module: 'contract',
+                action: 'readcontract',
+                address: contractAddress,
+                contractaddress: contractAddress,
+                function: `tokenURI(${tokenId})`
+              }, chainId);
               
-              // Fetch metadata from URI
+              if (tokenURIResult.status === '1' && tokenURIResult.result) {
+                uri = tokenURIResult.result;
+              } else if (baseURI) {
+                // If we have baseURI but tokenURI call failed, try to construct the URI
+                uri = baseURI.endsWith('/') ? `${baseURI}${tokenId}` : `${baseURI}/${tokenId}`;
+              }
+              
+              if (!uri) {
+                // If we still don't have a URI, add the fallback NFT
+                nfts.push(fallbackNft);
+                continue;
+              }
+              
+              // Process the URI to get metadata
               try {
-                const resolvedUri = uri.startsWith('ipfs://')
-                  ? `https://ipfs.io/ipfs/${uri.slice(7)}`
-                  : uri;
-                  
-                const metadataResponse = await axios.get(resolvedUri);
+                // Resolve various URI formats (IPFS, HTTP, etc.)
+                let resolvedUri = uri;
+                
+                if (uri.startsWith('ipfs://')) {
+                  resolvedUri = `https://ipfs.io/ipfs/${uri.slice(7)}`;
+                } else if (!uri.startsWith('http')) {
+                  // Some contracts return baseURI + tokenId
+                  if (uri.endsWith('/')) {
+                    resolvedUri = `${uri}${tokenId}`;
+                  } else {
+                    resolvedUri = `${uri}/${tokenId}`;
+                  }
+                }
+                
+                // Fetch metadata with timeout to avoid hanging
+                const metadataResponse = await axios.get(resolvedUri, { 
+                  timeout: 5000,
+                  // Some IPFS gateways may return HTML error pages without proper status code
+                  validateStatus: (status) => status < 400
+                });
+                
+                if (!metadataResponse.data) {
+                  nfts.push(fallbackNft);
+                  continue;
+                }
+                
                 const metadata = metadataResponse.data;
                 
-                // Format into our CollectionNFT structure
+                // Resolve image URL, handle IPFS and other formats
+                let imageUrl = '';
+                if (typeof metadata.image === 'string') {
+                  imageUrl = metadata.image.startsWith('ipfs://')
+                    ? `https://ipfs.io/ipfs/${metadata.image.slice(7)}`
+                    : metadata.image;
+                }
+                
+                // Create NFT object from metadata
                 const nft: CollectionNFT = {
                   id: `${contractAddress.toLowerCase()}-${tokenId}`,
                   tokenId: String(tokenId),
                   name: metadata.name || `NFT #${tokenId}`,
                   description: metadata.description || '',
-                  imageUrl: metadata.image?.startsWith('ipfs://')
-                    ? `https://ipfs.io/ipfs/${metadata.image.slice(7)}`
-                    : metadata.image || '',
-                  attributes: metadata.attributes || []
+                  imageUrl,
+                  attributes: Array.isArray(metadata.attributes) ? metadata.attributes : []
                 };
                 
                 // Apply attribute filters if needed
@@ -591,6 +741,8 @@ export async function fetchCollectionNFTs(
                 
                 if (Object.keys(attributes).length > 0) {
                   for (const [traitType, values] of Object.entries(attributes)) {
+                    if (traitType === 'Network') continue; // Skip the Network filter we added
+                    
                     const nftAttribute = nft.attributes.find(attr => attr.trait_type === traitType);
                     if (!nftAttribute || !values.includes(nftAttribute.value)) {
                       includeNft = false;
@@ -603,28 +755,30 @@ export async function fetchCollectionNFTs(
                   nfts.push(nft);
                 }
               } catch (metadataError) {
-                console.error(`Error fetching metadata for token ${tokenId}:`, metadataError);
-                
-                // Add a basic NFT with the token ID even if metadata fails
-                nfts.push({
-                  id: `${contractAddress.toLowerCase()}-${tokenId}`,
-                  tokenId: String(tokenId),
-                  name: `NFT #${tokenId}`,
-                  description: 'Metadata unavailable',
-                  imageUrl: '',
-                  attributes: []
-                });
+                console.warn(`Error fetching metadata for token ${tokenId}:`, metadataError);
+                nfts.push(fallbackNft);
+              }
+            } catch (uriError) {
+              console.warn(`Error fetching token URI for token ${tokenId}:`, uriError);
+              
+              // If we're on testnet, generate mock data for demo purposes
+              if (chainId === '0x61' && contractAddress.toLowerCase() === '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551'.toLowerCase()) {
+                // For our demo CryptoPath collection, generate mock data
+                const mockNft = generateMockNFT(String(tokenId), contractAddress, chainId);
+                nfts.push(mockNft);
+              } else {
+                nfts.push(fallbackNft);
               }
             }
           } catch (tokenError) {
-            console.error(`Error fetching token ${tokenId} data:`, tokenError);
+            console.error(`Error processing token ${tokenId}:`, tokenError);
           }
           
-          // Add a short delay to avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 200));
+          // Add a small delay between requests to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
         
-        // Apply sorting to the final results
+        // Apply final sorting to the results based on user's sort preference
         nfts.sort((a, b) => {
           if (sortBy === 'tokenId') {
             const numA = parseInt(a.tokenId, 10);
@@ -651,6 +805,7 @@ export async function fetchCollectionNFTs(
         };
       }
       
+      // If we didn't get valid result from BSCScan
       return { nfts: [], totalCount: 0 };
     } catch (error) {
       console.error(`Error fetching NFTs for collection ${contractAddress} from BSCScan:`, error);
@@ -736,6 +891,42 @@ export async function fetchCollectionNFTs(
   }
 }
 
+// Helper function to generate mock NFT data for testing
+function generateMockNFT(tokenId: string, contractAddress: string, chainId: string): CollectionNFT {
+  // Generate predictable but random-looking attributes based on tokenId
+  const tokenNum = parseInt(tokenId as string, 10);
+  const seed = tokenNum % 100;
+  
+  // Background options
+  const backgrounds = ['Blue', 'Red', 'Green', 'Purple', 'Gold', 'Black', 'White'];
+  const backgroundIndex = seed % backgrounds.length;
+  
+  // Species options
+  const species = ['Human', 'Ape', 'Robot', 'Alien', 'Zombie', 'Demon', 'Angel'];
+  const speciesIndex = (seed * 3) % species.length;
+  
+  // Rarity options
+  const rarities = ['Common', 'Uncommon', 'Rare', 'Epic', 'Legendary'];
+  const rarityIndex = Math.floor(seed / 20); // 0-4
+  
+  return {
+    id: `${contractAddress.toLowerCase()}-${tokenId}`,
+    tokenId: String(tokenId),
+    name: `CryptoPath #${tokenId}`,
+    description: `A unique NFT from the CryptoPath Genesis Collection with ${rarities[rarityIndex]} rarity.`,
+    imageUrl: `/Img/nft/sample-${(seed % 5) + 1}.jpg`, // Using sample images 1-5
+    attributes: [
+      { trait_type: 'Background', value: backgrounds[backgroundIndex] },
+      { trait_type: 'Species', value: species[speciesIndex] },
+      { trait_type: 'Rarity', value: rarities[rarityIndex] },
+      // Network attribute for filtering
+      { trait_type: 'Network', value: chainId === '0x1' ? 'Ethereum' : 
+                               chainId === '0xaa36a7' ? 'Sepolia' :
+                               chainId === '0x38' ? 'BNB Chain' : 'BNB Testnet' }
+    ]
+  };
+}
+
 // Mocked API service for NFT data
 // In a real application, this would connect to Alchemy or another provider
 export async function fetchPopularCollections(chainId: string): Promise<any[]> {
@@ -759,7 +950,7 @@ export async function fetchPopularCollections(chainId: string): Promise<any[]> {
     // For Ethereum and Sepolia
     return mockCollections.map(collection => ({
       ...collection,
-      chain: chainId
+        chain: chainId
     }));
   } catch (error) {
     console.error('Error fetching collections:', error);

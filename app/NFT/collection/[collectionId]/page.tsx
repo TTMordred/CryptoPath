@@ -628,10 +628,8 @@ export default function CollectionDetailsPage() {
                             const styles = getAttributeStyles(traitType, value);
                             return (
                               <div key={value} className="flex items-center">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={`text-xs h-auto py-1.5 px-2 justify-start w-full ${styles.bgClass} border ${styles.borderClass}`}
+                                <div
+                                  className={`flex text-xs h-auto py-1.5 px-2 justify-start w-full items-center rounded-md border ${styles.borderClass} ${styles.bgClass} cursor-pointer transition-colors hover:bg-gray-800/70`}
                                   style={{ color: styles.textColor }}
                                   onClick={() => handleAttributeFilter(traitType, value)}
                                 >
@@ -642,9 +640,10 @@ export default function CollectionDetailsPage() {
                                       accentColor: chainTheme.primary,
                                       borderColor: styles.textColor
                                     }}
+                                    onCheckedChange={() => handleAttributeFilter(traitType, value)}
                                   />
                                   {value}
-                                </Button>
+                                </div>
                               </div>
                             );
                           })}
@@ -703,20 +702,27 @@ export default function CollectionDetailsPage() {
                                 {getSortedAttributeValues(traitType, values).map((value) => {
                                   const styles = getAttributeStyles(traitType, value);
                                   return (
-                                    <Button
+                                    <div
                                       key={value}
-                                      variant="outline"
-                                      size="sm"
-                                      className={`text-xs justify-start ${styles.bgClass} border ${styles.borderClass}`}
+                                      className={`flex text-xs justify-start items-center gap-2 py-1.5 px-2 rounded-md border ${styles.borderClass} ${styles.bgClass} cursor-pointer transition-colors hover:bg-gray-800/70`}
                                       style={{ color: styles.textColor }}
                                       onClick={() => handleAttributeFilter(traitType, value)}
                                     >
-                                      <Checkbox
-                                        checked={isAttributeSelected(traitType, value)}
-                                        className="mr-2 h-3 w-3"
-                                      />
-                                      <span className="truncate">{value}</span>
-                                    </Button>
+                                      <div className="flex-shrink-0">
+                                        <Checkbox
+                                          checked={isAttributeSelected(traitType, value)}
+                                          className="h-3 w-3"
+                                          id={`mobile-${traitType}-${value}`}
+                                          onCheckedChange={() => handleAttributeFilter(traitType, value)}
+                                        />
+                                      </div>
+                                      <label 
+                                        htmlFor={`mobile-${traitType}-${value}`}
+                                        className="truncate cursor-pointer"
+                                      >
+                                        {value}
+                                      </label>
+                                    </div>
                                   );
                                 })}
                               </div>
