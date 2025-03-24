@@ -314,7 +314,7 @@ export default function CollectionDetailsPage() {
       return newFilters;
     });
     
-    // Clear pagination cache
+    // Apply filter changes
     handleFilterChange();
   };
 
@@ -774,8 +774,15 @@ export default function CollectionDetailsPage() {
                         className="pl-10 bg-gray-800/50 border-gray-700"
                         value={searchQuery}
                         onChange={handleSearchChange}
-                        onKeyDown={handleSearchKeyDown}
+                        onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
                       />
+                      <Button 
+                        size="sm" 
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                        onClick={handleFilterChange}
+                      >
+                        Search
+                      </Button>
                     </div>
 
                     <div className="flex gap-2 w-full sm:w-auto">

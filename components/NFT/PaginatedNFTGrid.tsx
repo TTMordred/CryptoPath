@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
 import { fetchPaginatedNFTs } from '@/lib/api/nftService';
 import AnimatedNFTCard from './AnimatedNFTCard';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
@@ -62,6 +62,8 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [isLastPage, setIsLastPage] = useState(false);
+  const [pageHistory, setPageHistory] = useState<{[key: number]: boolean}>({});
   
   const { toast } = useToast();
   
@@ -86,13 +88,22 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
           attributes
         );
         
+        // Check if this is the last page based on NFT count
+        const isEmptyPage = result.nfts.length === 0;
+        const isPartialPage = result.nfts.length < itemsPerPage;
+        const calculatedLastPage = isEmptyPage || isPartialPage;
+        
         setNfts(result.nfts);
-        // Fix: Use totalCount consistently instead of totalItems
         setTotalPages(result.totalPages || Math.ceil(result.totalCount / itemsPerPage));
         setTotalItems(result.totalCount);
+        setIsLastPage(calculatedLastPage);
+        
+        // Record this page in history to optimize navigation
+        setPageHistory(prev => ({...prev, [currentPage]: true}));
         
         // Log for debugging
         console.log(`Loaded page ${currentPage} with ${result.nfts.length} NFTs. Total: ${result.totalCount}`);
+        console.log(`Is last page: ${calculatedLastPage}, Total pages: ${result.totalPages}`);
       } catch (err) {
         console.error('Error loading NFTs:', err);
         setError('Failed to load NFTs. Please try again.');
@@ -119,9 +130,19 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
     toast
   ]);
   
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    if (page < 1 || page > totalPages || page === currentPage) return;
+  // Handle page change with improved boundary logic
+  const handlePageChange = useCallback((page: number) => {
+    if (page < 1 || (isLastPage && page > currentPage) || page === currentPage) return;
+    
+    // Allow going to next page even if we haven't calculated total pages yet
+    // This handles collections where we don't know the exact total
+    if (page > totalPages && !pageHistory[page] && !isLastPage) {
+      // Allow exploration to continue
+      console.log("Exploring beyond known pages:", page);
+    } else if (page > totalPages) {
+      console.log("Attempted to go beyond last page:", page);
+      return;
+    }
     
     setCurrentPage(page);
     if (onPageChange) {
@@ -130,10 +151,10 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
     
     // Scroll to top of grid
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, [currentPage, totalPages, isLastPage, pageHistory, onPageChange]);
   
-  // Generate pagination items
-  const renderPaginationItems = () => {
+  // Generate pagination items with enhanced logic
+  const renderPaginationItems = useCallback(() => {
     const items = [];
     const maxVisible = 5; // Maximum number of page buttons to show
     
@@ -199,7 +220,7 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
     }
     
     return items;
-  };
+  }, [currentPage, totalPages, chainTheme, handlePageChange]);
   
   // Handle NFT click
   const handleNFTClick = (nft: NFT) => {
@@ -224,6 +245,7 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
       {/* Error message */}
       {error && !loading && (
         <div className="flex flex-col items-center justify-center p-8 border border-red-800 rounded-lg bg-red-900/20">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
           <p className="text-red-300 mb-4">{error}</p>
           <button
             className="px-4 py-2 bg-red-800 hover:bg-red-700 rounded-md text-white"
@@ -277,30 +299,32 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
           <div className="flex justify-center items-center">
             <Pagination>
               <PaginationContent className="flex gap-1">
-                {/* Custom Previous Button with better visibility */}
+                {/* Enhanced Previous Button */}
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
                   className={`h-9 w-9 ${chainTheme.borderClass} ${
-                    currentPage === 1 ? 'opacity-50' : 'hover:bg-gray-800'
+                    currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
                   }`}
+                  aria-label="Previous page"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
                 {renderPaginationItems()}
                 
-                {/* Custom Next Button with better visibility */}
+                {/* Enhanced Next Button */}
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={isLastPage}
                   className={`h-9 w-9 ${chainTheme.borderClass} ${
-                    currentPage === totalPages ? 'opacity-50' : 'hover:bg-gray-800'
+                    isLastPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
                   }`}
+                  aria-label="Next page"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -311,6 +335,7 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
           {/* Page indicator for small screens */}
           <div className="text-center text-sm text-gray-500 md:hidden">
             Page {currentPage} of {totalPages}
+            {isLastPage ? " (Last Page)" : ""}
           </div>
         </div>
       )}
