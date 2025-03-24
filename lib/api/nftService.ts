@@ -488,7 +488,8 @@ export async function fetchCollectionNFTs(
     sortDirection?: 'asc' | 'desc',
     searchQuery?: string,
     attributes?: Record<string, string[]>,
-    pageKey?: string
+    pageKey?: string,
+    startTokenId?: number
   } = {}
 ): Promise<{
   nfts: NFTMetadata[],
@@ -502,8 +503,91 @@ export async function fetchCollectionNFTs(
     sortDirection = 'asc',
     searchQuery = '',
     attributes = {},
-    pageKey
+    pageKey,
+    startTokenId
   } = options;
+  
+  // Special handling for startTokenId-based pagination
+  if (startTokenId !== undefined && sortBy === 'tokenId') {
+    try {
+      console.log(`Using token ID-based pagination starting from ID: ${startTokenId}`);
+      
+      // For known collections that can be fetched directly
+      const useDirectFetching = [
+        '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551', // CryptoPath Genesis on BNB Testnet
+        '0x7c09282c24c363073e0f30d74c301c312e5533ac'
+      ].includes(contractAddress.toLowerCase());
+      
+      let nfts: NFTMetadata[] = [];
+      
+      if (useDirectFetching) {
+        // Try direct contract fetching first for known collections
+        try {
+          nfts = await fetchContractNFTs(contractAddress, chainId, startTokenId, pageSize);
+        } catch (error) {
+          console.error("Direct contract fetching failed:", error);
+          // Fall through to API methods
+        }
+      }
+      
+      // If direct fetching didn't return results, try API methods
+      if (nfts.length === 0) {
+        // For APIs that support offset/paging with start IDs
+        // Fixed: Changed fetchCollectionByAPI to fetchCollectionNFTs
+        const apiResult = await fetchCollectionNFTs(
+          contractAddress, 
+          chainId, 
+          {
+            page, 
+            pageSize, 
+            sortBy, 
+            sortDirection,
+            searchQuery,
+            attributes
+          }
+        );
+        
+        // Filter results to only include NFTs with token IDs >= startTokenId
+        // Fixed: Added type annotation for nft parameter
+        if (apiResult.nfts.length > 0) {
+          nfts = apiResult.nfts.filter((nft: NFTMetadata) => {
+            const tokenId = parseInt(nft.tokenId);
+            return !isNaN(tokenId) && tokenId >= startTokenId;
+          }).slice(0, pageSize); // Limit to pageSize
+        }
+      }
+      
+      // Calculate what the next cursor should be
+      let nextTokenId: number | undefined;
+      if (nfts.length > 0) {
+        const lastNft = nfts[nfts.length - 1];
+        const lastTokenId = parseInt(lastNft.tokenId);
+        if (!isNaN(lastTokenId)) {
+          nextTokenId = lastTokenId + 1;
+        }
+      }
+      
+      // Get total count either from collection info or estimate
+      let totalCount = nfts.length > 0 ? Math.max(nfts.length + startTokenId, pageSize * 5) : 0;
+      try {
+        const info = await fetchCollectionInfo(contractAddress, chainId);
+        if (info && info.totalSupply && parseInt(info.totalSupply) > 0) {
+          totalCount = parseInt(info.totalSupply);
+        }
+      } catch (e) {
+        console.warn('Could not fetch total supply from collection info');
+      }
+      
+      return {
+        nfts,
+        totalCount,
+        pageKey: nfts.length > 0 && nextTokenId ? `synthetic:tokenId:${nextTokenId}:${sortDirection}` : undefined
+      };
+    } catch (error) {
+      console.error("Failed token ID based pagination:", error);
+      // Fall through to regular pagination
+    }
+  }
   
   // Check if we should use direct contract fetching for known collections
   const useDirectFetching = [
@@ -1743,26 +1827,82 @@ export async function fetchNFTsWithOptimizedCursor(
   }
   
   try {
-    // Fetch data from API
+    // Check if this is a synthetic cursor for offset-based pagination
+    let page: number | undefined;
+    let startTokenId: number | undefined;
+    
+    if (cursor && cursor.startsWith('synthetic:')) {
+      const parts = cursor.split(':');
+      
+      if (parts.length >= 3) {
+        if (parts[1] === 'page') {
+          // This is a page-based synthetic cursor
+          page = parseInt(parts[2]);
+          console.log(`Using synthetic page cursor: ${page}`);
+        } else if (parts[1] === 'tokenId') {
+          // This is a token ID based cursor
+          startTokenId = parseInt(parts[2]);
+          console.log(`Using synthetic tokenId cursor starting from: ${startTokenId}`);
+        }
+      }
+    } else if (cursor === '1') {
+      // First page
+      page = 1;
+    }
+    
+    // Fetch data from API - Now passing startTokenId correctly
     const result = await fetchCollectionNFTs(
       contractAddress,
       chainId,
       {
-        page: cursor === '1' ? 1 : undefined,
+        page, 
         pageSize,
         sortBy,
         sortDirection,
         searchQuery,
-        attributes
+        attributes,
+        pageKey: cursor && !cursor.startsWith('synthetic:') && cursor !== '1' ? cursor : undefined,
+        startTokenId
       }
     );
     
     // Calculate progress (rough estimate)
     const progress = Math.min(100, Math.round((result.nfts.length / (result.totalCount || 1)) * 100));
     
-    // Ensure we have a next cursor for collections that don't support cursors
-    // For these collections, we'll synthesize a cursor based on token IDs
-    const syntheticCursor = result.pageKey || generateSyntheticCursor(result.nfts, sortBy, sortDirection);
+    // Generate a new synthetic cursor based on the last NFT in this batch
+    let syntheticCursor: string | undefined;
+    
+    if (result.pageKey) {
+      // Use the provided pageKey if available (from API)
+      syntheticCursor = result.pageKey;
+    } else if (result.nfts.length > 0) {
+      // Generate our own cursor using the last NFT in the result set
+      if (sortBy === 'tokenId') {
+        // Get the last token ID
+        const lastNft = result.nfts[result.nfts.length - 1];
+        if (lastNft && lastNft.tokenId) {
+          const lastTokenId = parseInt(lastNft.tokenId);
+          if (!isNaN(lastTokenId)) {
+            // For next page, we want to start just after the last token
+            const nextTokenId = lastTokenId + 1;
+            syntheticCursor = `synthetic:tokenId:${nextTokenId}:${sortDirection}`;
+            console.log(`Generated new token-based cursor: ${syntheticCursor}`);
+          }
+        }
+      } else if (page) {
+        // For other sort types using page-based approach
+        syntheticCursor = `synthetic:page:${page + 1}`;
+        console.log(`Generated page-based cursor: ${syntheticCursor}`);
+      }
+    }
+    
+    // If we couldn't generate a cursor but have results, fallback to a page-based cursor
+    if (!syntheticCursor && result.nfts.length > 0) {
+      // We have results but no cursor - create a page-based one
+      const currentPage = page || 1;
+      syntheticCursor = `synthetic:page:${currentPage + 1}`;
+      console.log(`Fallback to page-based cursor: ${syntheticCursor}`);
+    }
     
     const response = {
       nfts: result.nfts,
@@ -1972,102 +2112,122 @@ export async function fetchPaginatedNFTs(
   }
   
   try {
-    // Look up previous page in cache to get cursor for current page
-    // This is essential for collections where direct page access isn't supported
-    let cursor: string | undefined;
-    let previousCursor: string | undefined;
-    
     // Special case for first page
     if (page === 1) {
-      cursor = '1'; // Starting cursor
-    } else {
-      // Try to find the previous page cursor from cache
-      const prevPageKey = `pagination-${contractAddress}-${chainId}-${page-1}-${pageSize}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
-      const prevPageData = PAGINATION_CACHE.get(prevPageKey);
+      console.log(`Fetching page 1 with cursor '1'`);
+      const result = await fetchNFTsWithOptimizedCursor(
+        contractAddress,
+        chainId,
+        '1',
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      );
       
-      if (prevPageData) {
-        cursor = prevPageData.data.cursor; // Get cursor for next page
-        console.log(`Found cursor for page ${page} from cache:`, cursor);
-      }
+      const totalCount = result.totalCount || Math.max(result.nfts.length, pageSize);
+      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
       
-      // If we don't have a cursor from previous page, we need to fetch sequentially
-      if (!cursor) {
-        console.log(`No cursor found for page ${page}, fetching sequentially`);
-        
-        // Start from page 1 and work our way up
-        let currentCursor = '1';
-        let currentPage = 1;
-        
-        while (currentPage < page && currentCursor) {
-          console.log(`Fetching intermediate page ${currentPage} to get to page ${page}`);
-          
-          // Fetch this page to get cursor for next page
-          const intermediateResult = await fetchNFTsWithOptimizedCursor(
-            contractAddress,
-            chainId,
-            currentCursor,
-            pageSize,
-            sortBy,
-            sortDirection,
-            searchQuery,
-            attributes
-          );
-          
-          // Store this page in cache
-          const intermediatePageKey = `pagination-${contractAddress}-${chainId}-${currentPage}-${pageSize}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
-          
-          PAGINATION_CACHE.set(intermediatePageKey, {
-            data: {
-              nfts: intermediateResult.nfts,
-              totalCount: intermediateResult.totalCount,
-              currentPage,
-              totalPages: Math.ceil(intermediateResult.totalCount / pageSize),
-              cursor: intermediateResult.nextCursor
-            },
-            timestamp: Date.now(),
-            page: currentPage // Add the page property here too
-          });
-          
-          currentCursor = intermediateResult.nextCursor || '';
-          
-          // If there's no next cursor, we've reached the end
-          if (!currentCursor) {
-            console.log(`Reached the end of collection at page ${currentPage}`);
-            break;
-          }
-          
-          currentPage++;
-          
-          // If we've reached our target page, use this cursor
-          if (currentPage === page) {
-            cursor = currentCursor;
-            console.log(`Found cursor for target page ${page}:`, cursor);
-          }
-          
-          // Avoid rate limits
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
-      }
-    }
-    
-    // If we still don't have a cursor and we're not on page 1, 
-    // we can't fetch this page directly
-    if (!cursor && page !== 1) {
-      console.log(`Could not determine cursor for page ${page}, returning empty results`);
-      return {
-        nfts: [],
-        totalCount: 0,
+      const paginationResult = {
+        nfts: result.nfts,
+        totalCount,
         currentPage: page,
-        totalPages: page - 1 // Assume this is beyond the last page
+        totalPages,
+        cursor: result.nextCursor
       };
+      
+      // Cache the result
+      PAGINATION_CACHE.set(cacheKey, {
+        data: paginationResult,
+        timestamp: Date.now(),
+        page
+      });
+      
+      return paginationResult;
     }
     
-    // Fetch the data using the cursor we've determined
-    console.log(`Fetching page ${page} with cursor:`, cursor);
+    // For subsequent pages, try to find the cursor from previous page
+    const prevPageKey = `pagination-${contractAddress}-${chainId}-${page-1}-${pageSize}-${sortBy}-${sortDirection}-${searchQuery}-${JSON.stringify(attributes)}`;
+    const prevPageData = PAGINATION_CACHE.get(prevPageKey);
+    
+    if (prevPageData && prevPageData.data.cursor) {
+      // Use the cursor from the previous page
+      console.log(`Found cursor for page ${page} from cache:`, prevPageData.data.cursor);
+      const result = await fetchNFTsWithOptimizedCursor(
+        contractAddress,
+        chainId,
+        prevPageData.data.cursor,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      );
+      
+      const totalCount = result.totalCount || Math.max(result.nfts.length, pageSize * page);
+      const totalPages = Math.max(page, Math.ceil(totalCount / pageSize));
+      
+      const paginationResult = {
+        nfts: result.nfts,
+        totalCount,
+        currentPage: page,
+        totalPages,
+        cursor: result.nextCursor
+      };
+      
+      PAGINATION_CACHE.set(cacheKey, {
+        data: paginationResult,
+        timestamp: Date.now(),
+        page
+      });
+      
+      return paginationResult;
+    }
+    
+    // If no cursor is found from previous page, try direct synthetic pagination
+    if (sortBy === 'tokenId') {
+      // Calculate a reasonable starting token ID for this page
+      const startTokenId = (page - 1) * pageSize + 1;
+      console.log(`No cursor found. Using synthetic tokenId pagination starting from: ${startTokenId}`);
+      
+      const result = await fetchNFTsWithOptimizedCursor(
+        contractAddress,
+        chainId,
+        `synthetic:tokenId:${startTokenId}:${sortDirection}`,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      );
+      
+      const totalCount = result.totalCount || Math.max(result.nfts.length, pageSize * page);
+      const totalPages = Math.max(page, Math.ceil(totalCount / pageSize));
+      
+      const paginationResult = {
+        nfts: result.nfts,
+        totalCount,
+        currentPage: page,
+        totalPages,
+        cursor: result.nextCursor
+      };
+      
+      PAGINATION_CACHE.set(cacheKey, {
+        data: paginationResult,
+        timestamp: Date.now(),
+        page
+      });
+      
+      return paginationResult;
+    }
+    
+    // Fallback to page-based synthetic cursor if we can't use token IDs
+    console.log(`Using fallback page-based pagination for page ${page}`);
     const result = await fetchNFTsWithOptimizedCursor(
       contractAddress,
       chainId,
-      cursor,
+      `synthetic:page:${page}`,
       pageSize,
       sortBy,
       sortDirection,
@@ -2075,24 +2235,21 @@ export async function fetchPaginatedNFTs(
       attributes
     );
     
-    // Calculate total pages based on total count
     const totalCount = result.totalCount || Math.max(result.nfts.length, pageSize * page);
     const totalPages = Math.max(page, Math.ceil(totalCount / pageSize));
     
-    // Prepare result with next cursor for pagination
     const paginationResult = {
       nfts: result.nfts,
       totalCount,
       currentPage: page,
       totalPages,
-      cursor: result.nextCursor // Store cursor for next page
+      cursor: result.nextCursor
     };
     
-    // Cache the result - FIX: Add page property
     PAGINATION_CACHE.set(cacheKey, {
       data: paginationResult,
       timestamp: Date.now(),
-      page: page // Add the missing page property here
+      page
     });
     
     return paginationResult;
@@ -2101,7 +2258,6 @@ export async function fetchPaginatedNFTs(
     
     // Provide fallback with mock data
     const mockData = generateMockNFTs(contractAddress, chainId, page, pageSize);
-    // Ensure we have a reasonable total for mocks - at least 50x the page size
     const totalEstimate = Math.max(1000, page * pageSize * 2);
     const totalPages = Math.ceil(totalEstimate / pageSize);
     
@@ -2110,7 +2266,7 @@ export async function fetchPaginatedNFTs(
       totalCount: totalEstimate,
       currentPage: page,
       totalPages,
-      cursor: mockData.length === pageSize ? 'mock-next-cursor' : undefined
+      cursor: `mock:tokenId:${(page * pageSize) + 1}:${sortDirection}`
     };
   }
 }
@@ -2392,53 +2548,41 @@ export async function fetchPaginatedNFTsForGrid(
   }
   
   try {
-    // For page 1, fetch directly
-    if (page === 1) {
-      const result = await fetchNFTsWithOptimizedCursor(
-        contractAddress,
-        chainId,
-        '1',
+    // Calculate start index based on page
+    const startIndex = (page - 1) * pageSize;
+    
+    const result = await fetchCollectionNFTs(
+      contractAddress,
+      chainId,
+      {
+        page,
         pageSize,
         sortBy,
         sortDirection,
         searchQuery,
         attributes
-      );
-      
-      // Ensure we have a valid totalCount - default to at least the length of returned NFTs
-      const totalCount = result.totalCount || Math.max(result.nfts.length, 100);
-      const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-      
-      const paginationResult = {
-        nfts: result.nfts,
-        currentPage: page,
-        totalPages,
-        totalCount
-      };
-      
-      // Cache the result
-      PAGINATION_CACHE.set(cacheKey, {
-        data: paginationResult,
-        timestamp: Date.now(),
-        page: page
-      });
-      
-      return paginationResult;
-    }
+      }
+    );
     
-    // ...existing code for subsequent pages...
+    // Ensure we have a valid totalCount - default to at least the length of returned NFTs
+    const totalCount = result.totalCount || Math.max(result.nfts.length, startIndex + pageSize);
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
     
-    // Ensure we always return totalCount even when error occurs
-    const mockData = generateMockNFTs(contractAddress, chainId, page, pageSize);
-    const totalCount = Math.max(1000, mockData.length * 50); // Ensure a reasonable default total
-    const totalPages = Math.ceil(totalCount / pageSize);
-    
-    return {
-      nfts: mockData,
+    const paginationResult = {
+      nfts: result.nfts,
       currentPage: page,
       totalPages,
       totalCount
     };
+    
+    // Cache the result
+    PAGINATION_CACHE.set(cacheKey, {
+      data: paginationResult,
+      timestamp: Date.now(),
+      page: page
+    });
+    
+    return paginationResult;
   } catch (error) {
     console.error('Error in fetchPaginatedNFTs:', error);
     
