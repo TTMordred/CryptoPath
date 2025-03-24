@@ -11,7 +11,7 @@ import {
 import {
   CollectionNFT,
   CollectionNFTsResponse,
-  fetchCollectionInfo as alchemyFetchCollectionInfo,
+  fetchCollectionInfo as _alchemyFetchCollectionInfo,
   fetchCollectionNFTs as alchemyFetchCollectionNFTs
 } from './alchemyNFTApi';
 import { getChainProvider, getExplorerUrl, chainConfigs } from './chainProviders';
@@ -487,7 +487,8 @@ export async function fetchCollectionNFTs(
     sortBy?: string,
     sortDirection?: 'asc' | 'desc',
     searchQuery?: string,
-    attributes?: Record<string, string[]>
+    attributes?: Record<string, string[]>,
+    pageKey?: string
   } = {}
 ): Promise<{
   nfts: NFTMetadata[],
@@ -1594,9 +1595,8 @@ export async function fetchPopularCollections(chainId: string): Promise<Collecti
 }
 
 import { 
-  fetchCollectionNFTs, 
-  fetchUserNFTs, 
-  fetchCollectionInfo 
+  fetchCollectionNFTs as _duplicateAlchemyFetchCollectionNFTs, 
+  fetchUserNFTs as alchemyFetchUserNFTs
 } from './alchemyNFTApi';
 
 // Cache system for NFTs
@@ -1658,12 +1658,14 @@ export async function fetchNFTsWithOptimizedCursor(
     const result = await fetchCollectionNFTs(
       contractAddress,
       chainId,
-      cursor === '1' ? 1 : undefined, // Special case for first page
-      pageSize,
-      sortBy,
-      sortDirection,
-      searchQuery,
-      attributes
+      {
+        page: cursor === '1' ? 1 : undefined,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      }
     );
     
     // Calculate progress (rough estimate)
@@ -1720,12 +1722,14 @@ export async function fetchNFTsWithProgressiveLoading(
   let result = await fetchCollectionNFTs(
     contractAddress,
     chainId,
-    1, // Start with page 1
-    initialPageSize,
-    sortBy,
-    sortDirection,
-    searchQuery,
-    attributes
+    {
+      page: 1,
+      pageSize: initialPageSize,
+      sortBy,
+      sortDirection,
+      searchQuery,
+      attributes
+    }
   );
   
   const allNfts = [...result.nfts];
@@ -1758,13 +1762,14 @@ export async function fetchNFTsWithProgressiveLoading(
       result = await fetchCollectionNFTs(
         contractAddress,
         chainId,
-        undefined,
-        batchSize,
-        sortBy,
-        sortDirection,
-        searchQuery,
-        attributes,
-        pageKey
+        {
+          pageKey,
+          pageSize: batchSize,
+          sortBy,
+          sortDirection,
+          searchQuery,
+          attributes
+        }
       );
       
       allNfts.push(...result.nfts);
@@ -1775,7 +1780,7 @@ export async function fetchNFTsWithProgressiveLoading(
       }
       
       // Update pageKey for next batch
-      pageKey = result.pageKey;
+      pageKey = result.pageKey || '';
       batchCount++;
       
       // Break if we've loaded enough or there's no more data
@@ -1838,12 +1843,14 @@ export async function fetchPaginatedNFTs(
     const result = await fetchCollectionNFTs(
       contractAddress,
       chainId,
-      page, // Use page number directly
-      pageSize,
-      sortBy,
-      sortDirection,
-      searchQuery,
-      attributes
+      {
+        page,
+        pageSize,
+        sortBy,
+        sortDirection,
+        searchQuery,
+        attributes
+      }
     );
     
     // Calculate total pages

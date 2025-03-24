@@ -1,325 +1,238 @@
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { Sparkles, ArrowRight, ExternalLink, Info, Tag, Clock, Users } from 'lucide-react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ArrowRight, ExternalLink, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { getChainColorTheme } from '@/lib/api/chainProviders';
 
-// Define type for featured NFT item
-interface FeaturedNFT {
+interface NFTSpotlight {
   id: string;
   name: string;
-  contractAddress: string;
-  tokenId: string;
   description: string;
-  imageUrl: string;
+  image: string;
   chain: string;
-  price?: string;
-  seller?: string;
-  timeLeft?: string;
-  collection?: {
-    name: string;
-    imageUrl: string;
-    verified: boolean;
-  };
-  rarity?: string;
-  rarityRank?: number;
+  contractAddress: string;
+  artist?: string;
 }
 
+const spotlights: NFTSpotlight[] = [
+  {
+    id: 'cryptopath-genesis',
+    name: 'CryptoPath Genesis Collection',
+    description: 'Be part of the CryptoPath revolution with our limited Genesis NFT collection. Exclusive benefits, governance rights, and early access to new features await the owners!',
+    image: '/Img/logo/logo3.svg', // Replace with actual path
+    chain: '0x61', // BNB Testnet
+    contractAddress: '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551',
+    artist: 'CryptoPath Team'
+  },
+  {
+    id: 'pancake-squad',
+    name: 'Pancake Squad',
+    description: 'A collection of 10,000 unique, cute, and sometimes fierce PancakeSwap bunny NFTs that serve as your membership to the Pancake Squad.',
+    image: 'https://i.seadn.io/s/primary-drops/0xc291cc12018a6fcf423699bce985ded86bac47cb/33406336:about:media:6f541d5a-5309-41ad-8f73-74f092ed1314.png?auto=format&dpr=1&w=1200',
+    chain: '0x38', // BNB Chain
+    contractAddress: '0xdcbcf766dcd33a7a8abe6b01a8b0e44a006c4ac1',
+    artist: 'PancakeSwap'
+  },
+  {
+    id: 'bayc',
+    name: 'Bored Ape Yacht Club',
+    description: 'The Bored Ape Yacht Club is a collection of 10,000 unique Bored Ape NFTs, unique digital collectibles living on the Ethereum blockchain.',
+    image: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=1000',
+    chain: '0x1', // Ethereum
+    contractAddress: '0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d',
+    artist: 'Yuga Labs'
+  }
+];
+
 export default function FeaturedSpotlight() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [featuredNFTs, setFeaturedNFTs] = useState<FeaturedNFT[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const spotlight = spotlights[currentIndex];
+  const chainTheme = getChainColorTheme(spotlight.chain);
   
-  // Load featured NFTs (in a real app this would come from an API)
+  // Auto-rotate spotlights
   useEffect(() => {
-    // Simulating API call with a timeout
-    const loadFeaturedNFTs = async () => {
-      setIsLoading(true);
-      // In a real app, you would fetch this data from your backend
-      const mockFeaturedNFTs: FeaturedNFT[] = [
-        {
-          id: 'featured-1',
-          name: 'CryptoPath Genesis #42',
-          contractAddress: '0x2fF12fE4B3C4DEa244c4BdF682d572A90Df3B551',
-          tokenId: '42',
-          description: 'Special edition CryptoPath Genesis NFT with exclusive utility for platform governance.',
-          imageUrl: '/Img/nft/sample-1.jpg',
-          chain: '0x61', // BNB Testnet
-          price: '10 BNB',
-          seller: '0x742d35Cc6634C0532925a3b844Bc454e4438f44e',
-          timeLeft: '2 days',
-          collection: {
-            name: 'CryptoPath Genesis',
-            imageUrl: '/Img/logo/cryptopath.png',
-            verified: true
-          },
-          rarity: 'Legendary',
-          rarityRank: 1
-        },
-        {
-          id: 'featured-2',
-          name: 'Azuki #9605',
-          contractAddress: '0xED5AF388653567Af2F388E6224dC7C4b3241C544',
-          tokenId: '9605',
-          description: 'Azuki starts with a collection of 10,000 avatars that give you membership access to The Garden.',
-          imageUrl: '/Img/nft/sample-2.jpg',
-          chain: '0x1', // Ethereum Mainnet
-          price: '12.3 ETH',
-          seller: '0x3bE0271C63cE5ED0B5Fc10D2693f06c96ED78Dc1',
-          timeLeft: '5 hours',
-          collection: {
-            name: 'Azuki',
-            imageUrl: 'https://i.seadn.io/gae/H8jOCJuQokNqGBpkBN5wk1oZwO7LM8bNnrHCaekV2nKjnCqw6UB5oaH8XyNeBDj6bA_n1mjejzhFQUP3O1NfjFLHr3FOaeHcTOOT?auto=format&dpr=1&w=1000',
-            verified: true
-          },
-          rarity: 'Epic',
-          rarityRank: 245
-        },
-        {
-          id: 'featured-3',
-          name: 'Bored Ape Yacht Club #7495',
-          contractAddress: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
-          tokenId: '7495',
-          description: 'The Bored Ape Yacht Club is a collection of 10,000 unique Bored Ape NFTs.',
-          imageUrl: '/Img/nft/sample-3.jpg',
-          chain: '0x1', // Ethereum Mainnet
-          price: '68.5 ETH',
-          seller: '0x7Fe37118c2D1DB4A67A0Ee8C8510BB2D7696fD63',
-          timeLeft: '12 hours',
-          collection: {
-            name: 'Bored Ape Yacht Club',
-            imageUrl: 'https://i.seadn.io/gae/Ju9CkWtV-1Okvf45wo8UctR-M9He2PjILP0oOvxE89AyiPPGtrR3gysu1Zgy0hjd2xKIgjJJtWIc0ybj4Vd7wv8t3pxDGHoJBzDB?auto=format&dpr=1&w=1000',
-            verified: true
-          },
-          rarity: 'Mythic',
-          rarityRank: 123
-        }
-      ];
-      
-      // Wait a bit to simulate network latency
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setFeaturedNFTs(mockFeaturedNFTs);
-      setIsLoading(false);
-    };
+    const intervalId = setInterval(() => {
+      if (!isAnimating) {
+        setIsAnimating(true);
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % spotlights.length);
+          setIsAnimating(false);
+        }, 500);
+      }
+    }, 8000);
     
-    loadFeaturedNFTs();
-    
-    // Auto-rotate featured NFTs every 7 seconds
-    const interval = setInterval(() => {
-      setCurrentIndex(prevIndex => 
-        prevIndex === featuredNFTs.length - 1 ? 0 : prevIndex + 1
-      );
-    }, 7000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    return () => clearInterval(intervalId);
+  }, [isAnimating]);
   
-  // Handle click on a featured NFT
-  const handleNFTClick = (nft: FeaturedNFT) => {
-    router.push(`/NFT/collection/${nft.contractAddress}?network=${nft.chain}`);
+  // Network name mapping
+  const getNetworkName = (chainId: string) => {
+    const networks: Record<string, string> = {
+      '0x1': 'Ethereum',
+      '0xaa36a7': 'Sepolia',
+      '0x38': 'BNB Chain',
+      '0x61': 'BNB Testnet'
+    };
+    return networks[chainId] || 'Unknown Network';
   };
   
-  // No items to display
-  if (featuredNFTs.length === 0 && !isLoading) {
-    return null;
-  }
-  
-  // Current featured NFT
-  const currentNFT = featuredNFTs[currentIndex];
+  const handleNext = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % spotlights.length);
+        setIsAnimating(false);
+      }, 500);
+    }
+  };
 
   return (
-    <div className="relative mb-8">
-      {/* Title */}
-      <div className="flex items-center mb-4">
-        <Sparkles className="mr-2 h-5 w-5 text-yellow-400" />
-        <h2 className="text-2xl font-bold text-white">Featured NFTs</h2>
-      </div>
+    <div className="relative w-full h-[500px] rounded-2xl overflow-hidden mb-12">
+      {/* Background blur gradient */}
+      <div 
+        className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/60 z-10"
+        style={{
+          background: `linear-gradient(45deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.7) 50%, ${chainTheme.primary}15 100%)`
+        }}
+      />
       
-      {isLoading ? (
-        // Loading skeleton
-        <div className="h-[400px] rounded-xl bg-black/50 border border-gray-800 animate-pulse backdrop-blur-sm overflow-hidden"></div>
-      ) : (
-        // Spotlight card
+      {/* Featured image */}
+      <AnimatePresence mode="wait">
         <motion.div
-          key={currentNFT.id}
-          initial={{ opacity: 0, scale: 0.98 }}
+          key={spotlight.id}
+          className="absolute inset-0 w-full h-full"
+          initial={{ opacity: 0, scale: 1.1 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
-          className="relative"
+          exit={{ opacity: 0, scale: 0.95 }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
         >
-          <div className="relative h-[400px] overflow-hidden rounded-xl border border-gray-800 bg-gradient-to-r from-black/60 to-gray-900/80 backdrop-blur-md">
-            {/* Background image with overlay */}
-            <div className="absolute inset-0 z-0 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/50 z-10"></div>
-              <motion.div 
-                initial={{ scale: 1.1 }} 
-                animate={{ scale: 1 }} 
-                transition={{ duration: 20, repeat: Infinity, repeatType: 'reverse' }}
-                className="w-full h-full"
+          <Image
+            src={spotlight.image}
+            alt={spotlight.name}
+            fill
+            className="object-cover"
+            priority
+          />
+        </motion.div>
+      </AnimatePresence>
+      
+      {/* Content overlay */}
+      <div className="absolute inset-0 z-20 flex items-center">
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={spotlight.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <Image
-                  src={currentNFT.imageUrl}
-                  alt={currentNFT.name}
-                  fill
-                  className="object-cover opacity-40"
-                  priority
-                />
-              </motion.div>
-            </div>
-            
-            {/* NFT Content Grid */}
-            <div className="relative z-10 h-full grid grid-cols-1 md:grid-cols-2 p-6 md:p-8">
-              {/* Left column - NFT details */}
-              <div className="flex flex-col justify-center space-y-6">
-                {/* Collection info */}
-                <div className="flex items-center space-x-2">
-                  <div className="relative h-8 w-8 rounded-full overflow-hidden border-2 border-gray-700">
-                    <Image
-                      src={currentNFT.collection?.imageUrl || '/Img/logo/cryptopath.png'}
-                      alt={currentNFT.collection?.name || 'Collection'}
-                      fill
-                      className="object-cover"
+                {/* Network Badge */}
+                <Badge 
+                  className={`mb-4 py-1 px-3 ${chainTheme.backgroundClass}`}
+                  style={{ color: chainTheme.primary }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Image 
+                      src={spotlight.chain.includes('0x38') || spotlight.chain.includes('0x61') 
+                        ? '/icons/bnb.svg' 
+                        : '/icons/eth.svg'} 
+                      alt="Chain"
+                      width={14}
+                      height={14}
                     />
+                    {getNetworkName(spotlight.chain)}
                   </div>
-                  <div className="flex items-center">
-                    <span className="text-gray-300 mr-1">{currentNFT.collection?.name}</span>
-                    {currentNFT.collection?.verified && (
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 2, repeat: Infinity, repeatType: 'reverse' }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-500">
-                          <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </motion.div>
-                    )}
-                  </div>
+                </Badge>
+                
+                {/* Title with sparkle effect */}
+                <div className="mb-4 relative">
+                  <h1 className="text-4xl md:text-5xl font-bold text-white">
+                    {spotlight.name}
+                  </h1>
+                  <motion.div
+                    className="absolute -top-6 -left-6 text-yellow-400"
+                    animate={{
+                      rotate: [0, 20, -20, 0],
+                      scale: [1, 1.2, 1],
+                      opacity: [0.7, 1, 0.7]
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                  >
+                    <Sparkles className="h-8 w-8" />
+                  </motion.div>
                 </div>
                 
-                {/* NFT name */}
-                <h1 className="text-3xl md:text-4xl font-bold text-white">{currentNFT.name}</h1>
+                {/* Artist */}
+                {spotlight.artist && (
+                  <div className="mb-4">
+                    <span className="text-gray-400">by </span>
+                    <span className="text-white font-medium">{spotlight.artist}</span>
+                  </div>
+                )}
                 
                 {/* Description */}
-                <p className="text-gray-300 line-clamp-3">{currentNFT.description}</p>
+                <p className="text-gray-300 text-lg mb-8 line-clamp-3">
+                  {spotlight.description}
+                </p>
                 
-                {/* Price & details */}
-                <div className="flex flex-wrap gap-3">
-                  {currentNFT.price && (
-                    <div className="flex items-center bg-black/40 rounded-lg px-3 py-2 border border-gray-800">
-                      <Tag className="mr-2 h-4 w-4 text-green-400" />
-                      <span className="text-white font-semibold">{currentNFT.price}</span>
-                    </div>
-                  )}
-                  
-                  {currentNFT.timeLeft && (
-                    <div className="flex items-center bg-black/40 rounded-lg px-3 py-2 border border-gray-800">
-                      <Clock className="mr-2 h-4 w-4 text-yellow-400" />
-                      <span className="text-gray-300">{currentNFT.timeLeft}</span>
-                    </div>
-                  )}
-                  
-                  {currentNFT.rarity && (
-                    <div className="flex items-center bg-black/40 rounded-lg px-3 py-2 border border-gray-800">
-                      <Sparkles className="mr-2 h-4 w-4 text-purple-400" />
-                      <span className="text-gray-300">{currentNFT.rarity}</span>
-                      {currentNFT.rarityRank && (
-                        <span className="ml-1 text-gray-400 text-sm">#{currentNFT.rarityRank}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Buttons */}
-                <div className="flex space-x-3 mt-4">
-                  <Button
-                    onClick={() => handleNFTClick(currentNFT)}
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-black font-semibold"
-                  >
-                    View Details
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                  
-                  <Link href={`https://${currentNFT.chain === '0x1' ? 'etherscan.io' : 'testnet.bscscan.com'}/token/${currentNFT.contractAddress}?a=${currentNFT.tokenId}`} target="_blank">
-                    <Button variant="outline" className="border-gray-700 hover:bg-gray-800">
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Explorer
+                {/* CTA Buttons */}
+                <div className="flex flex-wrap gap-4">
+                  <Link href={`/NFT/collection/${spotlight.contractAddress}?network=${spotlight.chain}`}>
+                    <Button 
+                      className="group" 
+                      style={{ 
+                        background: chainTheme.primary,
+                        color: spotlight.chain.includes('0x38') || spotlight.chain.includes('0x61') ? 'black' : 'white'
+                      }}
+                    >
+                      Explore Collection
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Button>
                   </Link>
-                </div>
-              </div>
-              
-              {/* Right column - NFT image */}
-              <div className="hidden md:flex items-center justify-center p-6">
-                <motion.div 
-                  className="relative aspect-square w-full max-w-[320px] rounded-xl overflow-hidden border-4 border-gray-800 shadow-2xl"
-                  whileHover={{ scale: 1.03, rotate: 1 }}
-                  transition={{ duration: 0.3 }}
-                  animate={{ 
-                    y: [0, 10, 0],
-                    boxShadow: [
-                      '0 20px 30px rgba(0, 0, 0, 0.3)',
-                      '0 25px 40px rgba(0, 0, 0, 0.5)',
-                      '0 20px 30px rgba(0, 0, 0, 0.3)'
-                    ]
-                  }}
-                  drag
-                  dragConstraints={{
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                  }}
-                  dragElastic={0.1}
-                >
-                  <Image
-                    src={currentNFT.imageUrl}
-                    alt={currentNFT.name}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 320px"
-                    priority
-                  />
                   
-                  {/* Rarity badge */}
-                  {currentNFT.rarity && (
-                    <div className="absolute top-2 right-2">
-                      <Badge className={`${currentNFT.rarity === 'Legendary' ? 'bg-yellow-500/80' : currentNFT.rarity === 'Mythic' ? 'bg-purple-500/80' : 'bg-blue-500/80'} text-white font-semibold shadow-md`}>
-                        {currentNFT.rarity}
-                      </Badge>
-                    </div>
-                  )}
-                </motion.div>
-                
-                {/* Shadow element */}
-                <div className="absolute bottom-12 w-64 h-8 bg-black/40 filter blur-xl rounded-full"></div>
-              </div>
-            </div>
+                  <Button variant="outline" className="bg-black/40 backdrop-blur-sm">
+                    Learn More <Zap className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
-          
-          {/* Navigation dots */}
-          {featuredNFTs.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
-              {featuredNFTs.map((_, i) => (
-                <button
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-all ${i === currentIndex ? 'bg-white w-4' : 'bg-gray-500'}`}
-                  onClick={() => setCurrentIndex(i)}
-                  aria-label={`View featured NFT ${i + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </motion.div>
-      )}
+        </div>
+      </div>
+      
+      {/* Navigation dots */}
+      <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 flex gap-2">
+        {spotlights.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrentIndex(index)}
+            className={`w-2.5 h-2.5 rounded-full transition-all ${
+              index === currentIndex 
+                ? `w-8 ${chainTheme.backgroundClass}` 
+                : 'bg-white/30 hover:bg-white/50'
+            }`}
+            aria-label={`View spotlight ${index + 1}`}
+          />
+        ))}
+      </div>
+      
+      {/* Next button */}
+      <button
+        onClick={handleNext}
+        className="absolute right-4 top-1/2 transform -translate-y-1/2 z-30 bg-black/30 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/50 transition-all"
+        aria-label="Next spotlight"
+      >
+        <ArrowRight className="h-6 w-6" />
+      </button>
     </div>
   );
 }

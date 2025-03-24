@@ -43,7 +43,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
     damping: 15
   });
   const rotateY = useSpring(useTransform(x, [-100, 100], [-10, 10]), {
-    stiffness: 200, 
+    stiffness: 200,
     damping: 15
   });
   
@@ -60,7 +60,6 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
   const shinePosition = useTransform(x, [-100, 100], ["45% 45%", "55% 55%"]);
   
   // Update shine opacity based on mouse position
-  // Update shine opacity based on mouse position
   useEffect(() => {
     function updateShineOpacity() {
       const latestX = shineX.get();
@@ -76,11 +75,6 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
       unsubscribeY();
     };
   }, [shineX, shineY, shineOpacity]);
-  // Progressive loading animation
-  useEffect(() => {
-    // Image loading effect is now handled by LazyImage component
-    // No need to manipulate blurAmount
-  }, [imageLoaded]);
   
   function handleMouseMove(e: React.MouseEvent) {
     if (cardRef.current) {
@@ -222,78 +216,67 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* Network Badge - Positioned absolutely top-right */}
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
-            <div className="relative h-3 w-3">
+            <div className="relative h-3 w-3 bg-white overflow-hidden">
               <LazyImage 
                 src={networkBadge.icon} 
                 alt={networkBadge.name} 
                 width={12} 
                 height={12} 
                 className="object-contain"
-                priority={true} // Small icon, always prioritize
+                priority={true}
               />
             </div>
             <span className="text-xs font-medium" style={{ color: networkBadge.textColor }}>
               {networkBadge.name}
             </span>
-              <div className="relative h-3 w-3 flex items-center justify-center overflow-hidden rounded-full bg-transparent">
-                <LazyImage 
-                  src={networkBadge.icon} 
-                  alt={networkBadge.name} 
-                  width={12} 
-                  height={12} 
-                  className="object-contain"
-                  priority={true} // Small icon, always prioritize
-                />
-              </div>
-            </div>
           </div>
+        </div>
 
-          {/* NFT Image with progressive loading */}
-          <div className="aspect-square relative overflow-hidden bg-gray-800">
-            {/* Use our optimized LazyImage component */}
-            <LazyImage
-              src={nft.imageUrl}
-              alt={nft.name || `NFT #${nft.tokenId}`}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              objectFit="cover"
-              priority={index < 4} // Only prioritize the first 4 images
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {/* Error handled inside LazyImage */}}
-            />
-            
-            {/* Chain indicator corner decoration */}
-            <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
-          </div>
+        {/* NFT Image with progressive loading */}
+        <div className="aspect-square relative overflow-hidden bg-gray-800">
+          <LazyImage
+            src={nft.imageUrl}
+            alt={nft.name || `NFT #${nft.tokenId}`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            objectFit="cover"
+            priority={index < 4}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {/* Error handled inside LazyImage */}}
+          />
+          
+          {/* Chain indicator corner decoration */}
+          <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
+        </div>
 
-          {/* Info Section */}
-          <div className="p-4 bg-gradient-to-b from-black/40 to-black/70 backdrop-blur-sm">
-            <h3 className="font-bold text-white truncate">
-              {nft.name || `NFT #${nft.tokenId}`}
-            </h3>
-            
-            <div className="flex justify-between items-center mt-1">
-              <p className="text-sm text-gray-300">
-                ID: {parseInt(nft.tokenId, 16) ? parseInt(nft.tokenId, 16).toString() : nft.tokenId}
-              </p>
-              <ExternalLink className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
-            </div>
-            
-            {/* Attributes */}
-            <div className="flex flex-wrap gap-1 mt-3">
-              {nft.attributes?.slice(0, 3).map((attr, i) => (
-                <Badge 
-                  key={i} 
-                  variant="outline" 
-                  className={`text-xs ${chainTheme.borderClass}`}
-                  style={{ color: chainTheme.primary }}
-                >
-                  {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
-                </Badge>
-              ))}
-            </div>
+        {/* Info Section */}
+        <div className="p-4 bg-gradient-to-b from-black/40 to-black/70 backdrop-blur-sm">
+          <h3 className="font-bold text-white truncate">
+            {nft.name || `NFT #${nft.tokenId}`}
+          </h3>
+          
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-sm text-gray-300">
+              ID: {parseInt(nft.tokenId, 16) ? parseInt(nft.tokenId, 16).toString() : nft.tokenId}
+            </p>
+            <ExternalLink className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
           </div>
-        </motion.div>
+          
+          {/* Attributes */}
+          <div className="flex flex-wrap gap-1 mt-3">
+            {nft.attributes?.slice(0, 3).map((attr, i) => (
+              <Badge 
+                key={i} 
+                variant="outline" 
+                className={`text-xs ${chainTheme.borderClass}`}
+                style={{ color: chainTheme.primary }}
+              >
+                {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
