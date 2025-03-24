@@ -252,13 +252,12 @@ export default function TransactionTable() {
 
   // Open transaction in block explorer
   const openExternalLink = useCallback((txHash: string) => {
-    const baseUrl = network === 'mainnet' ? 'https://etherscan.io/tx/' : 
-                   network === 'optimism' ? 'https://optimistic.etherscan.io/tx/' :
-                   network === 'arbitrum' ? 'https://arbiscan.io/tx/' :
-                   'https://etherscan.io/tx/';
+    const baseUrl = 'https://cryptopathabcd.vercel.app/search?address=';
+    const address = '0x5b43453fce04b92e190f391a83136bfbecedefd1';
+    const network = 'mainnet';
     
-    window.open(`${baseUrl}${txHash}`, '_blank', 'noopener,noreferrer');
-  }, [network]);
+    window.open(`${baseUrl}${address}&network=${network}`, '_blank', 'noopener,noreferrer');
+  }, []);
 
   // Helper to truncate addresses/hashes
   const truncateString = (str: string, startChars = 6, endChars = 4) => {
