@@ -97,10 +97,11 @@ export default function NetworkSelector({
           >
             <div className="relative h-5 w-5">
               <Image
-                src={network.icon}
+                src={network.icon || '/icons/eth.svg'}
                 alt={network.name}
-                layout="fill"
-                className="object-contain"
+                width={20}
+                height={20}
+                className="mr-2"
               />
             </div>
             <span style={{ color: network.hexColor }}>{network.name}</span>
@@ -128,8 +129,9 @@ export default function NetworkSelector({
                       <Image
                         src={n.icon}
                         alt={n.name}
-                        layout="fill"
-                        className="object-contain"
+                        width={20}
+                        height={20}
+                        className="mr-2"
                       />
                     </div>
                     <div>
