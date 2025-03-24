@@ -35,7 +35,7 @@ interface ChartData {
 
 // Memoized components
 const LoadingState = memo(({ coinName }: { coinName?: string }) => (
-  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-xl backdrop-blur-sm">
+  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-xl backdrop-blur-sm animate-fade-in">
     <motion.div
       animate={{ rotate: 360 }}
       transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
@@ -48,7 +48,7 @@ const LoadingState = memo(({ coinName }: { coinName?: string }) => (
 LoadingState.displayName = "LoadingState";
 
 const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => void }) => (
-  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-red-900/20 to-gray-800/50 rounded-xl backdrop-blur-sm">
+  <div className="flex flex-col items-center justify-center h-[400px] space-y-4 bg-gradient-to-b from-red-900/20 to-gray-800/50 rounded-xl backdrop-blur-sm animate-fade-in">
     <motion.div
       initial={{ scale: 0 }}
       animate={{ scale: 1 }}
@@ -245,7 +245,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] animate-fade-in">
         <CardHeader className="p-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
