@@ -86,7 +86,7 @@ const isPotentialSpam = (nft: NFT): boolean => {
 
 export default function NFTGallery() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
+  const address = (searchParams as ReturnType<typeof useSearchParams>)?.get("address") ?? null
   const [nfts, setNFTs] = useState<NFT[]>([])
   const [totalCount, setTotalCount] = useState<number>(0)
   const [pageKeys, setPageKeys] = useState<(string | null)[]>([null])

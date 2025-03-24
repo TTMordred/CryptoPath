@@ -22,9 +22,9 @@ const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
 export default function Transactions() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const address = searchParams.get("address")
-  const networkParam = searchParams.get("network") || "mainnet"
-  const providerParam = searchParams.get("provider") || "etherscan"
+  const address = searchParams?.get("address") ?? null
+  const networkParam = searchParams?.get("network") ?? "mainnet"
+  const providerParam = searchParams?.get("provider") ?? "etherscan"
   const [network, setNetwork] = useState(networkParam)
   const [provider, setProvider] = useState(providerParam)
   const [pendingTxCount, setPendingTxCount] = useState<number | null>(null)

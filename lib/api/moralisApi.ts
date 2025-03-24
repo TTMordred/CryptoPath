@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
-const MORALIS_API_KEY = process.env.MORALIS_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjY4ODEyMzE5LWNiMDAtNDA3MC1iOTEyLWIzNTllYjI4ZjQyOCIsIm9yZ0lkIjoiNDM3Nzk0IiwidXNlcklkIjoiNDUwMzgyIiwidHlwZUlkIjoiYTU5Mzk2NGYtZWUxNi00NGY3LWIxMDUtZWNhMzAwMjUwMDg4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDI3ODk3MzEsImV4cCI6NDg5ODU0OTczMX0.4XB5n8uVFQkMwMO2Ck4FbNQw8daQp1uDdMvXmYFr9WA';
+const MORALIS_API_KEY = process.env.NEXT_PUBLIC_MORALIS_API_KEY || process.env.MORALIS_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjY4ODEyMzE5LWNiMDAtNDA3MC1iOTEyLWIzNTllYjI4ZjQyOCIsIm9yZ0lkIjoiNDM3Nzk0IiwidXNlcklkIjoiNDUwMzgyIiwidHlwZUlkIjoiYTU5Mzk2NGYtZWUxNi00NGY3LWIxMDUtZWNhMzAwMjUwMDg4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDI3ODk3MzEsImV4cCI6NDg5ODU0OTczMX0.4XB5n8uVFQkMwMO2Ck4FbNQw8daQp1uDdMvXmYFr9WA';
 
 // Simple in-memory cache for API responses
 const responseCache = new Map<string, {data: any, timestamp: number}>();
@@ -20,6 +20,13 @@ const CHAIN_MAPPING: Record<string, string> = {
 };
 
 /**
+ * Check if API key is valid for use
+ */
+export function isValidApiKey() {
+  return !!MORALIS_API_KEY && MORALIS_API_KEY.length > 20;
+}
+
+/**
  * Makes a rate-limited request to Moralis API
  */
 async function moralisRequest(
@@ -27,6 +34,11 @@ async function moralisRequest(
   params: Record<string, any> = {},
   chainId: string
 ): Promise<any> {
+  // Validate API key
+  if (!isValidApiKey()) {
+    throw new Error("Moralis API key not available or invalid");
+  }
+  
   // Validate chain
   const chain = CHAIN_MAPPING[chainId];
   if (!chain) {

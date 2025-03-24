@@ -10,7 +10,7 @@ import SearchBarOffChain from "@/components/search-offchain/SearchBarOffChain"
 
 export default function Transactions() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
+  const address = searchParams?.get("address") ?? null
   return (
     <div className="min-h-screen text-white">
       <main className="container mx-auto p-4">

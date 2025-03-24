@@ -54,7 +54,7 @@ function getNameForAddress(address: string): string | null {
 export default function TransactionGraphOffChain() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const address = searchParams.get("address");
+  const address = searchParams?.get("address") ?? null;
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

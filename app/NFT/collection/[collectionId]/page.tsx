@@ -891,7 +891,7 @@ export default function CollectionDetailsPage() {
                           attributes={selectedAttributes}
                           viewMode={viewMode}
                           onNFTClick={handleNFTClick}
-                          itemsPerPage={20} // Reduced to exactly 20 items per page
+                          itemsPerPage={20} // Using exactly 20 items per page
                           defaultPage={currentPage}
                           onPageChange={(page) => {
                             setCurrentPage(page);

@@ -1,4 +1,4 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 
 // Rate limiting configuration
@@ -8,30 +8,26 @@ const MAX_REQUESTS_PER_WINDOW = 50; // 50 requests per minute
 // Basic in-memory rate limiter
 const rateLimiter = new Map<string, { count: number, resetAt: number }>();
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  // Only allow GET requests
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
+export async function GET(req: NextRequest) {
+  // Get URL from searchParams
+  const url = req.nextUrl.searchParams.get('url');
+  
+  if (!url) {
+    return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 });
   }
 
-  // Apply rate limiting based on IP address
-  const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+  // Apply rate limiting based on IP
+  const ip = req.headers.get('x-forwarded-for') || 'unknown';
   const clientId = String(ip);
   
   // Check rate limit
   if (!checkRateLimit(clientId)) {
-    return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    return NextResponse.json(
+      { error: 'Too many requests. Please try again later.' },
+      { status: 429 }
+    );
   }
-  
-  const { url } = req.query;
-  
-  if (!url || typeof url !== 'string') {
-    return res.status(400).json({ error: 'URL parameter is required' });
-  }
-  
+
   try {
     // Validate that the URL is for the expected API
     if (
@@ -40,7 +36,7 @@ export default async function handler(
       !url.includes('etherscan.io/api') &&
       !url.includes('bscscan.com/api')
     ) {
-      return res.status(403).json({ error: 'Invalid API URL' });
+      return NextResponse.json({ error: 'Invalid API URL' }, { status: 403 });
     }
     
     // Make the request to the NFT API service
@@ -55,7 +51,7 @@ export default async function handler(
     });
     
     // Return the data from the API
-    return res.status(response.status).json(response.data);
+    return NextResponse.json(response.data, { status: response.status });
   } catch (error: any) {
     console.error('API proxy error:', error);
     
@@ -63,22 +59,22 @@ export default async function handler(
     if (error.response) {
       // The request was made and the server responded with a status code
       // that falls out of the range of 2xx
-      return res.status(error.response.status).json({
+      return NextResponse.json({
         error: 'External API error',
         details: error.response.data
-      });
+      }, { status: error.response.status });
     } else if (error.request) {
       // The request was made but no response was received
-      return res.status(504).json({
+      return NextResponse.json({
         error: 'External API timeout',
         message: 'The request timed out'
-      });
+      }, { status: 504 });
     } else {
       // Something happened in setting up the request that triggered an Error
-      return res.status(500).json({
+      return NextResponse.json({
         error: 'Server error',
         message: error.message
-      });
+      }, { status: 500 });
     }
   }
 }

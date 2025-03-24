@@ -49,6 +49,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
       <div className="flex justify-between items-center mb-5">
         <div className="flex items-center">
           <div className="bg-amber/20 rounded-full p-2 mr-3">
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image className="h-5 w-5 text-amber" aria-hidden="true" />
           </div>
           <h3 className="text-gray-300 font-medium">NFT Collection</h3>
@@ -89,6 +90,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                   />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center bg-shark-700 text-shark-400">
+                    {/* eslint-disable-next-line jsx-a11y/alt-text */}
                     <Image className="h-8 w-8" aria-hidden="true" />
                   </div>
                 )}
@@ -115,6 +117,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
           ))
         ) : (
           <div className="flex flex-col items-center justify-center h-[250px]">
+            {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image className="h-12 w-12 text-shark-400 mb-4" aria-hidden="true" />
             <p className="text-shark-300 text-center">
               No NFTs found for this wallet
@@ -178,6 +181,7 @@ const NFTsCard: React.FC<NFTsCardProps> = ({ nfts, isLoading }) => {
                 />
               ) : (
                 <div className="w-full h-64 flex items-center justify-center bg-shark-700 text-shark-400 rounded-md mb-4">
+                  {/* eslint-disable-next-line jsx-a11y/alt-text */}
                   <Image className="h-12 w-12" aria-hidden="true" />
                 </div>
               )}
