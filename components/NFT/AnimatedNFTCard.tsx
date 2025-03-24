@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Info, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
@@ -28,7 +28,6 @@ interface AnimatedNFTCardProps {
 
 export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [blurAmount, setBlurAmount] = useState(20); // For progressive loading blur effect
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Chain-specific styling
@@ -61,41 +60,29 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
   const shinePosition = useTransform(x, [-100, 100], ["45% 45%", "55% 55%"]);
   
   // Update shine opacity based on mouse position
+  // Update shine opacity based on mouse position
   useEffect(() => {
-    const unsubscribeX = shineX.onChange(latestX => {
+    function updateShineOpacity() {
+      const latestX = shineX.get();
       const latestY = shineY.get();
       shineOpacity.set((latestX + latestY) / 8);
-    });
+    }
     
-    const unsubscribeY = shineY.onChange(latestY => {
-      const latestX = shineX.get();
-      shineOpacity.set((latestX + latestY) / 8);
-    });
+    const unsubscribeX = shineX.on("change", updateShineOpacity);
+    const unsubscribeY = shineY.on("change", updateShineOpacity);
     
     return () => {
       unsubscribeX();
       unsubscribeY();
     };
   }, [shineX, shineY, shineOpacity]);
-  
   // Progressive loading animation
   useEffect(() => {
-    if (imageLoaded) {
-      const timer = setInterval(() => {
-        setBlurAmount((prev) => {
-          if (prev <= 0) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 4;
-        });
-      }, 50);
-      
-      return () => clearInterval(timer);
-    }
+    // Image loading effect is now handled by LazyImage component
+    // No need to manipulate blurAmount
   }, [imageLoaded]);
   
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+  function handleMouseMove(e: React.MouseEvent) {
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -248,18 +235,18 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
             <span className="text-xs font-medium" style={{ color: networkBadge.textColor }}>
               {networkBadge.name}
             </span>
+              <div className="relative h-3 w-3 flex items-center justify-center overflow-hidden rounded-full bg-transparent">
+                <LazyImage 
+                  src={networkBadge.icon} 
+                  alt={networkBadge.name} 
+                  width={12} 
+                  height={12} 
+                  className="object-contain"
+                  priority={true} // Small icon, always prioritize
+                />
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Card Content with Shine Effect */}
-        <div className="relative">
-          <motion.div 
-            className="absolute inset-0 w-full h-full bg-gradient-to-tr from-transparent via-white/10 to-white/20 z-10 pointer-events-none"
-            style={{ 
-              opacity: shineOpacity,
-              backgroundPosition: shinePosition
-            }}
-          />
 
           {/* NFT Image with progressive loading */}
           <div className="aspect-square relative overflow-hidden bg-gray-800">
@@ -306,8 +293,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
               ))}
             </div>
           </div>
-        </div>
-      </motion.div>
+        </motion.div>
     </motion.div>
   );
 }
