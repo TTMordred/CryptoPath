@@ -671,14 +671,11 @@ function TransactionGraph() {
 
   // Update onNodeClick to match the expected signature
   const handleNodeClick = useCallback(
-    (node: any, event: MouseEvent) => {
-      if (node.id && typeof node.id === 'string' && node.id.startsWith('tx-')) {
-        return; // Skip clicks on transaction nodes
-      }
-      
-      router.push(`/search/?address=${node.id}&network=${network}&provider=${provider}`);
+    (node: { [others: string]: any }, event: MouseEvent) => {
+      const n = node as GraphNode;
+      router.push(`/search?address=${n.id}&network=mainnet`);
     },
-    [router, network, provider]
+    [router]
   );
   
   // Handle link/edge click to show transaction details

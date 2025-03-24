@@ -388,7 +388,7 @@ export default function TransactionExplorer() {
                     <TableCell>{tx.age}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Link href={`/address/${tx.from}`}>
+                        <Link href={`/search?address=${tx.from}&network=mainnet`}>
                           <span className="cursor-pointer hover:underline text-[#F5B056]">
                             {truncateAddress(tx.from)}
                           </span>
@@ -405,7 +405,7 @@ export default function TransactionExplorer() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <Link href={`/address/${tx.to}`}>
+                        <Link href={`/search?address=${tx.to}&network=mainnet`}>
                           <span className="cursor-pointer hover:underline text-[#F5B056]">
                             {truncateAddress(tx.to)}
                           </span>

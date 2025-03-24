@@ -87,38 +87,21 @@ export default function SearchBar() {
   }
   
   const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!address.trim()) return
-    
-    // Validate address before proceeding
-    if (!validateAddress(address.trim())) {
-      toast.error("Invalid address format", { 
-        description: addressError || "Please check the address format and try again.",
-        action: {
-          label: 'Learn More',
-          onClick: () => window.open('https://ethereum.org/en/developers/docs/intro-to-ethereum/#ethereum-accounts', '_blank'),
-        }
-      });
-      return;
-    }
-    
-    setIsLoading(true)
-    
+    e.preventDefault();
+    if (!address.trim()) return;
+
+    setIsLoading(true);
+
     try {
-      // Simulate loading time
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      if (searchType === "onchain") {
-        router.push(`/search/?address=${encodeURIComponent(address)}&network=${network}&provider=${provider}`)
-      } else {
-        router.push(`/search-offchain/?address=${encodeURIComponent(address)}`)
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      router.push(`/search?address=${encodeURIComponent(address)}&network=mainnet`);
     } catch (error) {
-      console.error("Search error:", error)
-      toast.error("An error occurred during search. Please try again.")
+      console.error("Search error:", error);
+      toast.error("An error occurred during search. Please try again.");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const clearAddress = () => {
     setAddress("")

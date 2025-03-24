@@ -671,7 +671,7 @@ export default function WalletInfo() {
                     variant="outline" 
                     size="sm"
                     className="flex-1 border-amber-500/30 bg-gradient-to-b from-amber-900/20 to-transparent hover:from-amber-900/40 text-amber-400"
-                    onClick={() => window.open(blockExplorerUrl + walletData.address, '_blank')}
+                    onClick={() => window.open(`/search?address=${walletData.address}&network=mainnet`, '_blank')}
                   >
                     <ExternalLink className="mr-1 h-4 w-4" />
                     View on {getExplorerName()}
@@ -828,6 +828,14 @@ export default function WalletInfo() {
                 variant="outline" 
                 className="border-amber-500/30 text-amber-400"
                 onClick={() => window.open(blockExplorerUrl + walletData.address, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Open Explorer
+              </Button>
+              <Button 
+                variant="outline" 
+                className="border-amber-500/30 text-amber-400"
+                onClick={() => window.open(`https://cryptopathabcd.vercel.app/search?address=${walletData.address}&network=mainnet`, '_blank')}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Open Explorer

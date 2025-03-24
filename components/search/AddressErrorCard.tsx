@@ -28,7 +28,7 @@ export default function AddressErrorCard({ address, errorMessage }: AddressError
   }
   
   const navigateToExample = (address: string) => {
-    router.push(`/search/?address=${address}&network=mainnet&provider=infura`)
+    router.push(`/search/?address=${address}&network=mainnet&provider=infura`);
   }
   
   const changeAddress = () => {
