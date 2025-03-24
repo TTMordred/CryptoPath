@@ -1,389 +1,346 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Loader2, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { fetchPaginatedNFTs } from '@/lib/api/nftService';
 import AnimatedNFTCard from './AnimatedNFTCard';
-import { 
-  fetchCollectionNFTs,
-  estimateCollectionMemoryUsage,
-  getNFTIndexingStatus,
-  fetchPaginatedNFTs
-} from '@/lib/api/nftService';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import {
   Pagination,
   PaginationContent,
+  PaginationEllipsis,
   PaginationItem,
   PaginationLink,
-  PaginationEllipsis,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination';
+} from "@/components/ui/pagination";
+
+interface NFT {
+  id: string;
+  tokenId: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  chain: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+}
 
 interface PaginatedNFTGridProps {
   contractAddress: string;
   chainId: string;
+  searchQuery?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
-  searchQuery?: string;
   attributes?: Record<string, string[]>;
   viewMode?: 'grid' | 'list';
-  onNFTClick?: (nft: any) => void;
+  onNFTClick?: (nft: NFT) => void;
   itemsPerPage?: number;
   defaultPage?: number;
   onPageChange?: (page: number) => void;
 }
 
-export default function PaginatedNFTGrid({
+const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
   contractAddress,
   chainId,
+  searchQuery = '',
   sortBy = 'tokenId',
   sortDirection = 'asc',
-  searchQuery = '',
   attributes = {},
   viewMode = 'grid',
   onNFTClick,
-  itemsPerPage = 20, // Reduced to exactly 20 for optimal API usage
+  itemsPerPage = 20,
   defaultPage = 1,
   onPageChange
-}: PaginatedNFTGridProps) {
-  // State for pagination and data
-  const [nfts, setNfts] = useState<any[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [currentPage, setCurrentPage] = useState(defaultPage);
+}) => {
+  const [nfts, setNfts] = useState<NFT[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(defaultPage);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [indexingStatus, setIndexingStatus] = useState<{
-    status: 'completed' | 'in_progress' | 'not_started';
-    progress: number;
-  }>({ status: 'completed', progress: 100 });
+  const [isLastPage, setIsLastPage] = useState(false);
+  const [pageHistory, setPageHistory] = useState<{[key: number]: boolean}>({});
   
-  // For better UX when loading new pages
-  const [fadeState, setFadeState] = useState("in");
+  const { toast } = useToast();
   
-  // Get chain theme for styling
+  // Get theme colors based on chain
   const chainTheme = getChainColorTheme(chainId);
   
-  // Fetch NFTs for the current page
-  const fetchNFTsForPage = useCallback(async (page: number) => {
-    if (!contractAddress) return;
-    
-    setLoading(true);
-    setFadeState("out");
-    
-    try {
-      // Check indexing status
-      const indexing = await getNFTIndexingStatus(contractAddress, chainId);
-      setIndexingStatus(indexing);
-      
-      // Use our optimized paginated fetch function
-      const result = await fetchPaginatedNFTs(
-        contractAddress,
-        chainId,
-        page,
-        itemsPerPage,
-        sortBy,
-        sortDirection,
-        searchQuery,
-        attributes
-      );
-      
-      // Calculate total pages
-      const pages = Math.ceil(result.totalCount / itemsPerPage);
-      console.log(`DEBUG: Total count ${result.totalCount}, items per page ${itemsPerPage}, total pages: ${pages}`);
-      
-      setNfts(result.nfts);
-      setTotalCount(result.totalCount);
-      setTotalPages(pages > 0 ? pages : 1);
+  // Load NFTs when parameters change
+  useEffect(() => {
+    const loadNFTs = async () => {
+      setLoading(true);
       setError(null);
       
-      // Fade in the new content
-      setTimeout(() => {
-        setFadeState("in");
-      }, 100);
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      setError('Failed to load NFTs. Please try again.');
-      setFadeState("in");
-    } finally {
-      setLoading(false);
-    }
-  }, [contractAddress, chainId, itemsPerPage, sortBy, sortDirection, searchQuery, attributes]);
-  
-  // Load initial data
-  useEffect(() => {
-    fetchNFTsForPage(currentPage);
-  }, [currentPage, fetchNFTsForPage]);
-  
-  // Update current page if default page changes from parent
-  useEffect(() => {
-    if (defaultPage !== currentPage) {
-      setCurrentPage(defaultPage);
-    }
-  }, [defaultPage]);
-  
-  // Handle explicit page navigation
-  const handlePageChange = (page: number) => {
-    // Validate page range
-    if (page < 1 || page > totalPages) return;
+      try {
+        const result = await fetchPaginatedNFTs(
+          contractAddress,
+          chainId,
+          currentPage,
+          itemsPerPage,
+          sortBy,
+          sortDirection,
+          searchQuery,
+          attributes
+        );
+        
+        // Check if this is the last page based on NFT count
+        const isEmptyPage = result.nfts.length === 0;
+        const isPartialPage = result.nfts.length < itemsPerPage;
+        const calculatedLastPage = isEmptyPage || isPartialPage;
+        
+        setNfts(result.nfts);
+        setTotalPages(result.totalPages || Math.ceil(result.totalCount / itemsPerPage));
+        setTotalItems(result.totalCount);
+        setIsLastPage(calculatedLastPage);
+        
+        // Record this page in history to optimize navigation
+        setPageHistory(prev => ({...prev, [currentPage]: true}));
+        
+        // Log for debugging
+        console.log(`Loaded page ${currentPage} with ${result.nfts.length} NFTs. Total: ${result.totalCount}`);
+        console.log(`Is last page: ${calculatedLastPage}, Total pages: ${result.totalPages}`);
+      } catch (err) {
+        console.error('Error loading NFTs:', err);
+        setError('Failed to load NFTs. Please try again.');
+        toast({
+          title: 'Error',
+          description: 'Failed to load NFTs. Please try again.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    // Scroll to top of grid
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    loadNFTs();
+  }, [
+    contractAddress,
+    chainId,
+    currentPage,
+    itemsPerPage,
+    sortBy,
+    sortDirection,
+    searchQuery,
+    JSON.stringify(attributes),
+    toast
+  ]);
+  
+  // Handle page change with improved boundary logic
+  const handlePageChange = useCallback((page: number) => {
+    if (page < 1 || (isLastPage && page > currentPage) || page === currentPage) return;
     
-    // Change page
+    // Allow going to next page even if we haven't calculated total pages yet
+    // This handles collections where we don't know the exact total
+    if (page > totalPages && !pageHistory[page] && !isLastPage) {
+      // Allow exploration to continue
+      console.log("Exploring beyond known pages:", page);
+    } else if (page > totalPages) {
+      console.log("Attempted to go beyond last page:", page);
+      return;
+    }
+    
     setCurrentPage(page);
-    
-    // Notify parent if callback provided
     if (onPageChange) {
       onPageChange(page);
     }
+    
+    // Scroll to top of grid
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage, totalPages, isLastPage, pageHistory, onPageChange]);
+  
+  // Generate pagination items with enhanced logic
+  const renderPaginationItems = useCallback(() => {
+    const items = [];
+    const maxVisible = 5; // Maximum number of page buttons to show
+    
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    const endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    
+    // Adjust start if we're near the end
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+    
+    // Add first page if not included
+    if (startPage > 1) {
+      items.push(
+        <PaginationItem key="first">
+          <PaginationLink onClick={() => handlePageChange(1)}>1</PaginationLink>
+        </PaginationItem>
+      );
+      
+      // Add ellipsis if there's a gap
+      if (startPage > 2) {
+        items.push(
+          <PaginationItem key="ellipsis-start">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+    }
+    
+    // Add page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      items.push(
+        <PaginationItem key={i}>
+          <PaginationLink 
+            isActive={currentPage === i}
+            onClick={() => handlePageChange(i)}
+            className={currentPage === i ? chainTheme.backgroundClass : ''}
+          >
+            {i}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    // Add last page if not included
+    if (endPage < totalPages) {
+      // Add ellipsis if there's a gap
+      if (endPage < totalPages - 1) {
+        items.push(
+          <PaginationItem key="ellipsis-end">
+            <PaginationEllipsis />
+          </PaginationItem>
+        );
+      }
+      
+      items.push(
+        <PaginationItem key="last">
+          <PaginationLink onClick={() => handlePageChange(totalPages)}>
+            {totalPages}
+          </PaginationLink>
+        </PaginationItem>
+      );
+    }
+    
+    return items;
+  }, [currentPage, totalPages, chainTheme, handlePageChange]);
+  
+  // Handle NFT click
+  const handleNFTClick = (nft: NFT) => {
+    if (onNFTClick) {
+      onNFTClick(nft);
+    }
   };
   
-  // Generate page numbers to display
-  const getPageNumbers = () => {
-    const pages = [];
-    
-    // Always show first page
-    pages.push(1);
-    
-    // Middle pages
-    const rangeStart = Math.max(2, currentPage - 1);
-    const rangeEnd = Math.min(totalPages - 1, currentPage + 1);
-    
-    // Add ellipsis after first page if needed
-    if (rangeStart > 2) {
-      pages.push(-1); // -1 represents ellipsis
-    }
-    
-    // Add middle pages
-    for (let i = rangeStart; i <= rangeEnd; i++) {
-      pages.push(i);
-    }
-    
-    // Add ellipsis before last page if needed
-    if (rangeEnd < totalPages - 1) {
-      pages.push(-2); // -2 represents ellipsis
-    }
-    
-    // Always show last page if there's more than one page
-    if (totalPages > 1) {
-      pages.push(totalPages);
-    }
-    
-    return pages;
-  };
+  // Calculate item range for display
+  const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
   
-  // Empty state
-  if (!loading && nfts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-gray-700 rounded-xl bg-gray-900/50">
-        <Search className="h-10 w-10 text-gray-500 mb-4" />
-        <p className="text-gray-400 mb-2">No NFTs found for this collection.</p>
-        <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
-      </div>
-    );
-  }
-  
-  // Loading state for initial load
-  if (loading && nfts.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-400">
-            Loading NFTs...
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-500">Estimated size:</span>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-400 cursor-help">
-                    {estimateCollectionMemoryUsage(totalCount || 1000)}
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Estimated memory usage for full collection</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-        
-        {/* Loading skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: itemsPerPage }).map((_, index) => (
-            <div key={index} className="aspect-square bg-gray-800/40 rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-  
-  // Error state
-  if (error && nfts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-red-700 rounded-xl bg-red-900/20">
-        <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
-        <p className="text-red-400 mb-2">{error}</p>
-        <Button onClick={() => fetchNFTsForPage(currentPage)} variant="outline" className="mt-4">
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-4">
-      {/* Collection indexing status */}
-      {indexingStatus.status !== 'completed' && (
-        <div className="mb-4 bg-gray-800/30 p-4 rounded-lg border border-gray-700">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-amber-400">Collection indexing in progress</span>
-            <span>{Math.round(indexingStatus.progress)}% complete</span>
-          </div>
-          <Progress value={indexingStatus.progress} className="h-1" />
-          <p className="text-xs text-gray-400 mt-2">
-            This collection is still being indexed. More NFTs will appear as indexing completes.
-          </p>
+    <div className="space-y-6">
+      {/* Loading state */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <Loader2 className="h-10 w-10 animate-spin" style={{ color: chainTheme.primary }} />
         </div>
       )}
       
-      {/* Stats bar with debug info */}
-      <div className="flex flex-wrap justify-between items-center mb-4 p-3 bg-gray-800/30 rounded-md">
-        <div className="text-sm text-gray-300">
-          Showing page {currentPage} of {totalPages} ({nfts.length} of {totalCount.toLocaleString()} total items)
-        </div>
-        
-        {/* Memory usage estimate */}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-400 cursor-help">
-                {estimateCollectionMemoryUsage(totalCount)}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Estimated memory usage for full collection</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      
-      {/* Loading overlay for page changes */}
-      {loading && nfts.length > 0 && (
-        <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-10 flex items-center justify-center rounded-xl">
-          <div className="h-10 w-10 rounded-full border-2 border-t-transparent animate-spin"
-              style={{ borderColor: `${chainTheme.primary} transparent transparent transparent` }} />
+      {/* Error message */}
+      {error && !loading && (
+        <div className="flex flex-col items-center justify-center p-8 border border-red-800 rounded-lg bg-red-900/20">
+          <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+          <p className="text-red-300 mb-4">{error}</p>
+          <button
+            className="px-4 py-2 bg-red-800 hover:bg-red-700 rounded-md text-white"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
         </div>
       )}
-
-      {/* NFT Grid with fade transition */}
-      <div className={`relative transition-opacity duration-300 ${fadeState === "out" ? "opacity-30" : "opacity-100"}`}>
-        <div className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
-            : 'grid grid-cols-1 gap-4'
-        }>
-          <AnimatePresence mode="wait">
-            {nfts.map((nft, index) => (
-              <motion.div
-                key={`${nft.id}-${currentPage}`}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, delay: Math.min(0.05 * (index % 12), 0.5) }}
-              >
-                <AnimatedNFTCard
-                  nft={nft}
-                  index={index}
-                  onClick={() => onNFTClick && onNFTClick(nft)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </div>
       
-      {/* Enhanced Navigation Controls - Always Visible */}
-      <div className="mt-8 flex justify-center">
-        <div className="w-full max-w-3xl">
-          <div className="bg-gray-800/80 rounded-lg p-4 border border-gray-700">
-            <div className="flex justify-between items-center mb-2">
-              <div className="text-sm text-gray-300">
-                Page {currentPage} of {totalPages}
-              </div>
-              {totalPages > 1 && (
-                <div className="text-sm text-gray-300">
-                  {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalCount)} of {totalCount}
-                </div>
-              )}
+      {/* NFT Grid */}
+      {!loading && !error && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className={viewMode === 'grid' 
+            ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
+            : "grid grid-cols-1 gap-4"
+          }
+        >
+          {nfts.length > 0 ? (
+            nfts.map((nft, index) => (
+              <AnimatedNFTCard
+                key={nft.id}
+                nft={nft}
+                onClick={() => handleNFTClick(nft)}
+                index={index}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-12 border border-gray-800 rounded-lg bg-black/30">
+              <p className="text-gray-400">No NFTs found for this collection.</p>
             </div>
-            
-            <div className="flex justify-center">
-              <div className="flex items-center gap-2">
-                {/* Previous button - always visible */}
+          )}
+        </motion.div>
+      )}
+      
+      {/* Enhanced Pagination Controls - Always visible when we have items */}
+      {!loading && nfts.length > 0 && (
+        <div className="space-y-4">
+          {/* Items count info - Now above pagination for better visibility */}
+          <div className="text-center text-sm text-gray-400 mb-4">
+            {totalItems > 0 ? (
+              <>Showing {startItem}-{endItem} of {totalItems.toLocaleString()} items</>
+            ) : (
+              <>No items to display</>
+            )}
+          </div>
+        
+          <div className="flex justify-center items-center">
+            <Pagination>
+              <PaginationContent className="flex gap-1">
+                {/* Enhanced Previous Button */}
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage === 1 || loading}
-                  className="h-10 w-10 bg-gray-700 hover:bg-gray-600"
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`h-9 w-9 ${chainTheme.borderClass} ${
+                    currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
+                  }`}
+                  aria-label="Previous page"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 
-                {/* Page numbers - enhanced visibility */}
-                {totalPages > 1 && getPageNumbers().map((pageNum, i) => (
-                  pageNum < 0 ? (
-                    <span key={`ellipsis-${i}`} className="px-2 py-2 text-gray-400">
-                      …
-                    </span>
-                  ) : (
-                    <Button
-                      key={pageNum}
-                      variant={pageNum === currentPage ? "default" : "outline"}
-                      onClick={() => handlePageChange(pageNum)}
-                      disabled={loading}
-                      className={`h-10 w-10 ${
-                        pageNum === currentPage 
-                          ? chainTheme.backgroundClass
-                          : 'bg-gray-700 hover:bg-gray-600'
-                      }`}
-                      style={
-                        pageNum === currentPage 
-                          ? { color: chainTheme.primary === '#F0B90B' ? 'black' : 'white' }
-                          : undefined
-                      }
-                    >
-                      {pageNum}
-                    </Button>
-                  )
-                ))}
+                {renderPaginationItems()}
                 
-                {/* Next button - always visible */}
+                {/* Enhanced Next Button */}
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage === totalPages || loading}
-                  className="h-10 w-10 bg-gray-700 hover:bg-gray-600"
+                  disabled={isLastPage}
+                  className={`h-9 w-9 ${chainTheme.borderClass} ${
+                    isLastPage ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-800'
+                  }`}
+                  aria-label="Next page"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
-              </div>
-            </div>
+              </PaginationContent>
+            </Pagination>
+          </div>
+          
+          {/* Page indicator for small screens */}
+          <div className="text-center text-sm text-gray-500 md:hidden">
+            Page {currentPage} of {totalPages}
+            {isLastPage ? " (Last Page)" : ""}
           </div>
         </div>
-      </div>
-      
-      {/* Optimized loading note */}
-      <div className="text-center text-xs text-gray-500 mt-4">
-        Optimized pagination with 20 items per page to minimize API usage
-      </div>
+      )}
     </div>
   );
-}
+};
+
+export default PaginatedNFTGrid;

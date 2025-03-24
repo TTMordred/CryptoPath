@@ -38,9 +38,9 @@ const transactionCache = new Map<string, {data: Transaction[], timestamp: number
 
 export default function TransactionTable() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
-  const network = searchParams.get("network") || "mainnet"
-  const provider = searchParams.get("provider") || "etherscan"
+  const address = searchParams?.get("address") ?? null
+  const network = searchParams?.get("network") ?? "mainnet"
+  const provider = searchParams?.get("provider") ?? "etherscan"
   
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)

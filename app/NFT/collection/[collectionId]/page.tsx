@@ -173,6 +173,14 @@ export default function CollectionDetailsPage() {
 
     setLoading(true);
     try {
+      // For BNB Chain, show a loading toast to indicate it might take some time
+      if (networkId === '0x38' || networkId === '0x61') {
+        toast({
+          title: 'Loading BNB Chain NFTs',
+          description: 'This may take a moment as we fetch data from BSCScan...',
+        });
+      }
+      
       const metadata = await fetchCollectionInfo(collectionId, networkId);
       setCollection({...metadata, chain: networkId});
 
@@ -194,7 +202,10 @@ export default function CollectionDetailsPage() {
       }));
       
       setNfts(nftsWithChain);
-      setTotalPages(Math.ceil(nftData.totalCount / pageSize));
+      
+      // Calculate total pages - may be different for BNB Chain
+      const totalPagesCount = Math.max(1, Math.ceil(nftData.totalCount / pageSize));
+      setTotalPages(totalPagesCount);
 
       // Extract attributes for filtering
       const attributeMap: Record<string, string[]> = {};
@@ -213,9 +224,9 @@ export default function CollectionDetailsPage() {
       
       // Add network as a filter attribute
       attributeMap['Network'] = [
-        chainId === '0x1' ? 'Ethereum' : 
-        chainId === '0xaa36a7' ? 'Sepolia' : 
-        chainId === '0x38' ? 'BNB Chain' : 
+        networkId === '0x1' ? 'Ethereum' : 
+        networkId === '0xaa36a7' ? 'Sepolia' : 
+        networkId === '0x38' ? 'BNB Chain' : 
         'BNB Testnet'
       ];
       
@@ -303,7 +314,7 @@ export default function CollectionDetailsPage() {
       return newFilters;
     });
     
-    // Clear pagination cache
+    // Apply filter changes
     handleFilterChange();
   };
 
@@ -633,10 +644,8 @@ export default function CollectionDetailsPage() {
                             const styles = getAttributeStyles(traitType, value);
                             return (
                               <div key={value} className="flex items-center">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  className={`text-xs h-auto py-1.5 px-2 justify-start w-full ${styles.bgClass} border ${styles.borderClass}`}
+                                <div
+                                  className={`flex text-xs h-auto py-1.5 px-2 justify-start w-full items-center rounded-md border ${styles.borderClass} ${styles.bgClass} cursor-pointer transition-colors hover:bg-gray-800/70`}
                                   style={{ color: styles.textColor }}
                                   onClick={() => handleAttributeFilter(traitType, value)}
                                 >
@@ -647,9 +656,10 @@ export default function CollectionDetailsPage() {
                                       accentColor: chainTheme.primary,
                                       borderColor: styles.textColor
                                     }}
+                                    onCheckedChange={() => handleAttributeFilter(traitType, value)}
                                   />
                                   {value}
-                                </Button>
+                                </div>
                               </div>
                             );
                           })}
@@ -708,20 +718,27 @@ export default function CollectionDetailsPage() {
                                 {getSortedAttributeValues(traitType, values).map((value) => {
                                   const styles = getAttributeStyles(traitType, value);
                                   return (
-                                    <Button
+                                    <div
                                       key={value}
-                                      variant="outline"
-                                      size="sm"
-                                      className={`text-xs justify-start ${styles.bgClass} border ${styles.borderClass}`}
+                                      className={`flex text-xs justify-start items-center gap-2 py-1.5 px-2 rounded-md border ${styles.borderClass} ${styles.bgClass} cursor-pointer transition-colors hover:bg-gray-800/70`}
                                       style={{ color: styles.textColor }}
                                       onClick={() => handleAttributeFilter(traitType, value)}
                                     >
-                                      <Checkbox
-                                        checked={isAttributeSelected(traitType, value)}
-                                        className="mr-2 h-3 w-3"
-                                      />
-                                      <span className="truncate">{value}</span>
-                                    </Button>
+                                      <div className="flex-shrink-0">
+                                        <Checkbox
+                                          checked={isAttributeSelected(traitType, value)}
+                                          className="h-3 w-3"
+                                          id={`mobile-${traitType}-${value}`}
+                                          onCheckedChange={() => handleAttributeFilter(traitType, value)}
+                                        />
+                                      </div>
+                                      <label 
+                                        htmlFor={`mobile-${traitType}-${value}`}
+                                        className="truncate cursor-pointer"
+                                      >
+                                        {value}
+                                      </label>
+                                    </div>
                                   );
                                 })}
                               </div>
@@ -757,8 +774,15 @@ export default function CollectionDetailsPage() {
                         className="pl-10 bg-gray-800/50 border-gray-700"
                         value={searchQuery}
                         onChange={handleSearchChange}
-                        onKeyDown={handleSearchKeyDown}
+                        onKeyDown={(e) => e.key === 'Enter' && handleFilterChange()}
                       />
+                      <Button 
+                        size="sm" 
+                        className="absolute right-1 top-1/2 transform -translate-y-1/2"
+                        onClick={handleFilterChange}
+                      >
+                        Search
+                      </Button>
                     </div>
 
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -874,7 +898,7 @@ export default function CollectionDetailsPage() {
                           attributes={selectedAttributes}
                           viewMode={viewMode}
                           onNFTClick={handleNFTClick}
-                          itemsPerPage={20} // Reduced to exactly 20 items per page
+                          itemsPerPage={20} // Using exactly 20 items per page
                           defaultPage={currentPage}
                           onPageChange={(page) => {
                             setCurrentPage(page);
