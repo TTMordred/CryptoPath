@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchPaginatedNFTs } from '@/lib/api/nftService';
 import AnimatedNFTCard from './AnimatedNFTCard';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 import {
   Pagination,
   PaginationContent,
@@ -86,8 +87,12 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
         );
         
         setNfts(result.nfts);
-        setTotalPages(result.totalPages);
+        // Fix: Use totalCount consistently instead of totalItems
+        setTotalPages(result.totalPages || Math.ceil(result.totalCount / itemsPerPage));
         setTotalItems(result.totalCount);
+        
+        // Log for debugging
+        console.log(`Loaded page ${currentPage} with ${result.nfts.length} NFTs. Total: ${result.totalCount}`);
       } catch (err) {
         console.error('Error loading NFTs:', err);
         setError('Failed to load NFTs. Please try again.');
@@ -203,12 +208,16 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
     }
   };
   
+  // Calculate item range for display
+  const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+  
   return (
     <div className="space-y-6">
       {/* Loading state */}
       {loading && (
         <div className="flex justify-center items-center py-12">
-          <Loader2 className={`h-10 w-10 animate-spin text-${chainTheme.primary}`} />
+          <Loader2 className="h-10 w-10 animate-spin" style={{ color: chainTheme.primary }} />
         </div>
       )}
       
@@ -253,34 +262,56 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
         </motion.div>
       )}
       
-      {/* Pagination controls */}
-      {!loading && totalPages > 1 && (
-        <Pagination className="my-8">
-          <PaginationContent>
-            <PaginationItem>
-              <PaginationPrevious
-                onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
-                className={`${currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              />
-            </PaginationItem>
-            
-            {renderPaginationItems()}
-            
-            <PaginationItem>
-              <PaginationNext
-                onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
-                className={`${currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              />
-            </PaginationItem>
-          </PaginationContent>
-        </Pagination>
-      )}
-      
-      {/* Items count info */}
+      {/* Enhanced Pagination Controls - Always visible when we have items */}
       {!loading && nfts.length > 0 && (
-        <div className="text-center text-sm text-gray-400">
-          Showing {(currentPage - 1) * itemsPerPage + 1}-
-          {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
+        <div className="space-y-4">
+          {/* Items count info - Now above pagination for better visibility */}
+          <div className="text-center text-sm text-gray-400 mb-4">
+            {totalItems > 0 ? (
+              <>Showing {startItem}-{endItem} of {totalItems.toLocaleString()} items</>
+            ) : (
+              <>No items to display</>
+            )}
+          </div>
+        
+          <div className="flex justify-center items-center">
+            <Pagination>
+              <PaginationContent className="flex gap-1">
+                {/* Custom Previous Button with better visibility */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => currentPage > 1 && handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`h-9 w-9 ${chainTheme.borderClass} ${
+                    currentPage === 1 ? 'opacity-50' : 'hover:bg-gray-800'
+                  }`}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {renderPaginationItems()}
+                
+                {/* Custom Next Button with better visibility */}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => currentPage < totalPages && handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`h-9 w-9 ${chainTheme.borderClass} ${
+                    currentPage === totalPages ? 'opacity-50' : 'hover:bg-gray-800'
+                  }`}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </PaginationContent>
+            </Pagination>
+          </div>
+          
+          {/* Page indicator for small screens */}
+          <div className="text-center text-sm text-gray-500 md:hidden">
+            Page {currentPage} of {totalPages}
+          </div>
         </div>
       )}
     </div>
