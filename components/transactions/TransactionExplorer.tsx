@@ -253,6 +253,15 @@ export default function TransactionExplorer() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+  // Open transaction in block explorer
+  const openExternalLink = useCallback((txHash: string) => {
+    const baseUrl = 'https://cryptopathabcd.vercel.app/search?address=';
+    const address = '0x5b43453fce04b92e190f391a83136bfbecedefd1';
+    const network = 'mainnet';
+    
+    window.open(`${baseUrl}${address}&network=${network}`, '_blank', 'noopener,noreferrer');
+  }, []);
+
   return (
     <div className="min-h-screen bg-transparent text-white font-exo2">
       <div className="container mx-auto p-4">
@@ -497,4 +506,4 @@ const formatFee = (fee: string) => {
   if (!fee) return '0';
   const value = parseFloat(fee);
   return value.toFixed(6);
-}; 
+};
