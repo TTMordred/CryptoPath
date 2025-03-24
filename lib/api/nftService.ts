@@ -501,25 +501,23 @@ export async function fetchCollectionNFTs(
     sortBy = 'tokenId',
     sortDirection = 'asc',
     searchQuery = '',
-    attributes = {}
+    attributes = {},
+    pageKey
   } = options;
   
-  // Check if we should use direct contract fetching or API
-  // For well-known collections or testnet, use direct contract fetching
+  // Check if we should use direct contract fetching for known collections
   const useDirectFetching = [
-    // Our CryptoPath Genesis on BNB Testnet
-    '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551',
-    // Some popular testnet or demo collections
+    '0x2ff12fe4b3c4dea244c4bdf682d572a90df3b551', // CryptoPath Genesis on BNB Testnet
     '0x7c09282c24c363073e0f30d74c301c312e5533ac'
   ].includes(contractAddress.toLowerCase());
   
   try {
     let nfts: NFTMetadata[] = [];
     let totalCount = 0;
-    let pageKey: string | undefined = undefined;
+    let resultPageKey: string | undefined = undefined;
     
     if (useDirectFetching) {
-      // Check cache first
+      // Simply proceed with direct fetching if this is a known collection
       const cacheKey = `${chainId}-${contractAddress.toLowerCase()}-nfts`;
       const cachedData = collectionNFTsCache.get(cacheKey);
       
@@ -539,92 +537,155 @@ export async function fetchCollectionNFTs(
       
       totalCount = nfts.length > 0 ? parseInt(await fetchCollectionInfo(contractAddress, chainId).then(info => info.totalSupply)) : 0;
     } else {
-      // Define fallback strategy based on chain
+      // Define API strategies based on chain
       if (isBNBChain(chainId)) {
-        // BNB Chain: Try BSCScan -> Moralis -> Contract fallback
+        // BNB Chain: Try Moralis first (priority), then BSCScan, finally contract fallback
         let success = false;
         
-        if (apiStatus.bscscan) {
+        // Try Moralis first for BNB Chain (preferred)
+        if (MORALIS_API_KEY) {
           try {
+            console.log('Trying Moralis for BNB Chain');
+            const result = await fetchNFTsFromMoralis(contractAddress, chainId, page, pageSize);
+            nfts = result.nfts;
+            totalCount = result.totalCount;
+            success = true;
+            console.log('Successfully fetched from Moralis');
+          } catch (error) {
+            console.warn("Moralis NFT fetch failed:", error);
+            apiStatus.moralis = false;
+            apiStatus.lastChecked = Date.now();
+          }
+        } else {
+          console.log('Skipping Moralis - No API key available');
+        }
+        
+        // Try BSCScan as fallback for BNB Chain
+        if (!success && BSCSCAN_API_KEY) {
+          try {
+            console.log('Trying BSCScan for BNB Chain');
             const result = await fetchNFTsFromBSCScan(contractAddress, chainId, page, pageSize);
             nfts = result.nfts;
             totalCount = result.totalCount;
             success = true;
+            console.log('Successfully fetched from BSCScan');
           } catch (error) {
             console.warn("BSCScan NFT fetch failed:", error);
             apiStatus.bscscan = false;
             apiStatus.lastChecked = Date.now();
           }
+        } else if (!success) {
+          console.log('Skipping BSCScan - No API key available');
         }
         
-        if (!success && apiStatus.moralis) {
+        // Last resort for BNB Chain: direct contract fetching
+        if (!success) {
+          console.log('Falling back to direct contract fetching for BNB Chain');
+          const startIndex = (page - 1) * pageSize;
           try {
-            const result = await fetchNFTsFromMoralis(contractAddress, chainId, page, pageSize);
-            nfts = result.nfts;
-            totalCount = result.totalCount;
-            success = true;
-          } catch (error) {
-            console.warn("Moralis NFT fetch failed:", error);
-            apiStatus.moralis = false;
-            apiStatus.lastChecked = Date.now();
+            nfts = await fetchContractNFTs(contractAddress, chainId, startIndex, pageSize);
+            // Generate a mock total count if contract fetching worked but we don't know the total
+            totalCount = nfts.length > 0 ? Math.max(nfts.length, pageSize * 2) : 0;
+            
+            // If we have collection info, use that for total supply
+            try {
+              const info = await fetchCollectionInfo(contractAddress, chainId);
+              if (info && info.totalSupply) {
+                totalCount = parseInt(info.totalSupply);
+              }
+            } catch (e) {
+              console.warn('Could not fetch total supply from collection info');
+            }
+          } catch (contractError) {
+            console.error('Contract fetching failed:', contractError);
+            // Return empty list as last resort
+            nfts = [];
+            totalCount = 0;
           }
         }
-        
-        if (!success) {
-          // Last resort: direct contract fetching
-          const startIndex = (page - 1) * pageSize;
-          nfts = await fetchContractNFTs(contractAddress, chainId, startIndex, pageSize);
-          totalCount = nfts.length > 0 ? parseInt(await fetchCollectionInfo(contractAddress, chainId).then(info => info.totalSupply)) : 0;
-        }
       } else {
-        // Ethereum: Try Alchemy -> Moralis -> Etherscan -> Contract fallback
+        // Ethereum: Try Alchemy (priority) -> Moralis -> Etherscan -> Contract fallback
         let success = false;
         
-        if (apiStatus.alchemy) {
+        // Try Alchemy first for Ethereum (preferred)
+        if (ALCHEMY_API_KEY) {
           try {
+            console.log('Trying Alchemy for Ethereum');
             const result = await fetchNFTsFromAlchemy(contractAddress, chainId, page, pageSize);
             nfts = result.nfts;
             totalCount = result.totalCount;
-            pageKey = result.pageKey;
+            resultPageKey = result.pageKey;
             success = true;
+            console.log('Successfully fetched from Alchemy');
           } catch (error) {
             console.warn("Alchemy NFT fetch failed:", error);
             apiStatus.alchemy = false;
             apiStatus.lastChecked = Date.now();
           }
+        } else {
+          console.log('Skipping Alchemy - No API key available');
         }
         
-        if (!success && apiStatus.moralis) {
+        // Try Moralis as second option for Ethereum
+        if (!success && MORALIS_API_KEY) {
           try {
+            console.log('Trying Moralis for Ethereum');
             const result = await fetchNFTsFromMoralis(contractAddress, chainId, page, pageSize);
             nfts = result.nfts;
             totalCount = result.totalCount;
             success = true;
+            console.log('Successfully fetched from Moralis');
           } catch (error) {
             console.warn("Moralis NFT fetch failed:", error);
             apiStatus.moralis = false;
             apiStatus.lastChecked = Date.now();
           }
+        } else if (!success) {
+          console.log('Skipping Moralis - No API key available');
         }
         
-        if (!success && apiStatus.etherscan) {
+        // Try Etherscan as third option for Ethereum
+        if (!success && ETHERSCAN_API_KEY) {
           try {
+            console.log('Trying Etherscan for Ethereum');
             const result = await fetchNFTsFromEtherscan(contractAddress, chainId, page, pageSize);
             nfts = result.nfts;
             totalCount = result.totalCount;
             success = true;
+            console.log('Successfully fetched from Etherscan');
           } catch (error) {
             console.warn("Etherscan NFT fetch failed:", error);
             apiStatus.etherscan = false;
             apiStatus.lastChecked = Date.now();
           }
+        } else if (!success) {
+          console.log('Skipping Etherscan - No API key available');
         }
         
+        // Last resort for Ethereum: direct contract fetching
         if (!success) {
-          // Last resort: direct contract fetching
+          console.log('Falling back to direct contract fetching for Ethereum');
           const startIndex = (page - 1) * pageSize;
-          nfts = await fetchContractNFTs(contractAddress, chainId, startIndex, pageSize);
-          totalCount = nfts.length > 0 ? parseInt(await fetchCollectionInfo(contractAddress, chainId).then(info => info.totalSupply)) : 0;
+          try {
+            nfts = await fetchContractNFTs(contractAddress, chainId, startIndex, pageSize);
+            // Generate a mock total count if contract fetching worked but we don't know the total
+            totalCount = nfts.length > 0 ? Math.max(nfts.length, pageSize * 2) : 0;
+            
+            // If we have collection info, use that for total supply
+            try {
+              const info = await fetchCollectionInfo(contractAddress, chainId);
+              if (info && info.totalSupply) {
+                totalCount = parseInt(info.totalSupply);
+              }
+            } catch (e) {
+              console.warn('Could not fetch total supply from collection info');
+            }
+          } catch (contractError) {
+            console.error('Contract fetching failed:', contractError);
+            // Return empty list as last resort
+            nfts = [];
+            totalCount = 0;
+          }
         }
       }
     }
@@ -642,23 +703,30 @@ export async function fetchCollectionNFTs(
     // Apply attribute filtering
     if (Object.keys(attributes).length > 0) {
       nfts = nfts.filter(nft => {
-        for (const [traitType, values] of Object.entries(attributes)) {
-          if (values.length === 0) continue;
+        if (!nft.attributes) return false;
+        
+        // Check if NFT matches all selected attribute filters
+        return Object.entries(attributes).every(([traitType, values]) => {
+          if (values.length === 0) return true; // Skip this attribute if no values selected
           
-          const nftAttribute = nft.attributes?.find(attr => attr.trait_type === traitType);
+          const nftAttribute = nft.attributes?.find(attr => 
+            attr.trait_type.toLowerCase() === traitType.toLowerCase()
+          );
+          
           if (!nftAttribute || !values.includes(nftAttribute.value)) {
             return false;
           }
-        }
-        return true;
+          return true;
+        });
       });
     }
     
     // Apply sorting
     nfts.sort((a, b) => {
       if (sortBy === 'tokenId') {
-        const idA = parseInt(a.tokenId, 16) || 0;
-        const idB = parseInt(b.tokenId, 16) || 0;
+        // Handle numeric tokenIds properly
+        const idA = parseInt(a.tokenId, 10) || 0;
+        const idB = parseInt(b.tokenId, 10) || 0;
         return sortDirection === 'asc' ? idA - idB : idB - idA;
       } else if (sortBy === 'name') {
         return sortDirection === 'asc' 
@@ -681,7 +749,7 @@ export async function fetchCollectionNFTs(
     return {
       nfts,
       totalCount,
-      pageKey
+      pageKey: resultPageKey
     };
   } catch (error) {
     console.error(`Error fetching NFTs for collection ${contractAddress}:`, error);
@@ -732,7 +800,7 @@ async function fetchNFTsFromAlchemy(
 }
 
 /**
- * Fetch NFTs from Moralis API
+ * Fetch NFTs from Moralis API with better error handling
  */
 async function fetchNFTsFromMoralis(
   contractAddress: string, 
@@ -752,74 +820,79 @@ async function fetchNFTsFromMoralis(
     ? (chainId === '0x38' ? 'bsc' : 'bsc testnet')
     : (chainId === '0x1' ? 'eth' : chainId === '0xaa36a7' ? 'sepolia' : 'goerli');
   
-  const options = {
-    method: 'GET',
-    url: `https://deep-index.moralis.io/api/v2/nft/${contractAddress}`,
-    params: {
-      chain: moralisChain,
-      format: 'decimal',
-      limit: pageSize,
-      cursor: '', // Moralis uses cursor-based pagination
-      offset: (page - 1) * pageSize
-    },
-    headers: {
-      accept: 'application/json',
-      'X-API-Key': MORALIS_API_KEY
-    }
-  };
-  
-  const response = await axios.request(options);
-  
-  if (response.status !== 200) {
-    throw new Error(`Moralis API error: ${response.status}`);
-  }
-  
-  const data = response.data;
-  
-  // Map Moralis data to our format
-  const nfts: NFTMetadata[] = data.result.map((item: any) => {
-    // Try to parse metadata
-    let attributes: {trait_type: string, value: string}[] = [];
-    let name = `NFT #${item.token_id}`;
-    let description = '';
-    let imageUrl = '';
-    
-    try {
-      if (item.metadata) {
-        const metadata = typeof item.metadata === 'string' 
-          ? JSON.parse(item.metadata) 
-          : item.metadata;
-        
-        name = metadata.name || name;
-        description = metadata.description || '';
-        imageUrl = metadata.image || '';
-        
-        if (metadata.attributes && Array.isArray(metadata.attributes)) {
-          attributes = metadata.attributes.map((attr: any) => ({
-            trait_type: attr.trait_type || '',
-            value: attr.value || ''
-          }));
-        }
+  try {
+    const options = {
+      method: 'GET',
+      url: `https://deep-index.moralis.io/api/v2/nft/${contractAddress}`,
+      params: {
+        chain: moralisChain,
+        format: 'decimal',
+        limit: pageSize,
+        cursor: '', // Moralis uses cursor-based pagination
+        offset: (page - 1) * pageSize
+      },
+      headers: {
+        accept: 'application/json',
+        'X-API-Key': MORALIS_API_KEY
       }
-    } catch (e) {
-      console.warn('Error parsing Moralis NFT metadata:', e);
+    };
+    
+    const response = await axios.request(options);
+    
+    if (response.status !== 200) {
+      throw new Error(`Moralis API error: ${response.status}`);
     }
+    
+    const data = response.data;
+    
+    // Map Moralis data to our format
+    const nfts: NFTMetadata[] = data.result.map((item: any) => {
+      // Try to parse metadata
+      let attributes: {trait_type: string, value: string}[] = [];
+      let name = `NFT #${item.token_id}`;
+      let description = '';
+      let imageUrl = '';
+      
+      try {
+        if (item.metadata) {
+          const metadata = typeof item.metadata === 'string' 
+            ? JSON.parse(item.metadata) 
+            : item.metadata;
+          
+          name = metadata.name || name;
+          description = metadata.description || '';
+          imageUrl = metadata.image || '';
+          
+          if (metadata.attributes && Array.isArray(metadata.attributes)) {
+            attributes = metadata.attributes.map((attr: any) => ({
+              trait_type: attr.trait_type || '',
+              value: attr.value || ''
+            }));
+          }
+        }
+      } catch (e) {
+        console.warn('Error parsing Moralis NFT metadata:', e);
+      }
+      
+      return {
+        id: `${contractAddress.toLowerCase()}-${item.token_id}`,
+        tokenId: item.token_id,
+        name,
+        description,
+        imageUrl,
+        attributes,
+        chain: chainId
+      };
+    });
     
     return {
-      id: `${contractAddress.toLowerCase()}-${item.token_id}`,
-      tokenId: item.token_id,
-      name,
-      description,
-      imageUrl,
-      attributes,
-      chain: chainId
+      nfts,
+      totalCount: data.total || nfts.length
     };
-  });
-  
-  return {
-    nfts,
-    totalCount: data.total || nfts.length
-  };
+  } catch (error) {
+    console.error('Error in fetchNFTsFromMoralis:', error);
+    throw error;
+  }
 }
 
 /**
@@ -950,7 +1023,7 @@ async function fetchNFTsFromEtherscan(
 }
 
 /**
- * Fetch NFTs from BSCScan API
+ * Fetch NFTs from BSCScan API with better error handling
  */
 async function fetchNFTsFromBSCScan(
   contractAddress: string, 
@@ -975,100 +1048,115 @@ async function fetchNFTsFromBSCScan(
   // Get token info from BSCScan
   const apiUrl = `https://${domain}/api?module=account&action=tokennfttx&contractaddress=${contractAddress}&page=${page}&offset=${pageSize}&sort=asc&apikey=${BSCSCAN_API_KEY}`;
   
-  const response = await fetch(apiUrl);
-  if (!response.ok) {
-    throw new Error(`BSCScan API error: ${response.status}`);
-  }
-  
-  const data = await response.json();
-  
-  if (data.status !== '1') {
-    throw new Error(`BSCScan API error: ${data.message}`);
-  }
-  
-  // Need to deduplicate token IDs as transfer events might have duplicates
-  const tokenSet = new Set<string>();
-  const transferEvents = data.result || [];
-  
-  transferEvents.forEach((tx: any) => {
-    tokenSet.add(tx.tokenID);
-  });
-  
-  const tokenIds = Array.from(tokenSet).slice(0, pageSize);
-  
-  // For each token ID, try to get metadata from the NFT contract
-  const nftPromises = tokenIds.map(async (tokenId) => {
-    try {
-      // Try direct contract query for token URI and metadata
-      const provider = getChainProvider(chainId);
-      const abi = ["function tokenURI(uint256 tokenId) view returns (string)"];
-      const contract = new ethers.Contract(contractAddress, abi, provider);
-      
-      // Get token URI
-      const tokenUri = await contract.tokenURI(tokenId).catch(() => '');
-      
-      // Fetch metadata if token URI is available
-      let metadata: any = {};
-      if (tokenUri) {
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`BSCScan API error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.status !== '1') {
+      // Handle rate limits gracefully
+      if (data.message?.includes('rate limit')) {
+        console.warn('BSCScan rate limit reached');
+        return { nfts: [], totalCount: 0 };
+      }
+      throw new Error(`BSCScan API error: ${data.message}`);
+    }
+    
+    // Need to deduplicate token IDs as transfer events might have duplicates
+    const tokenSet = new Set<string>();
+    const transferEvents = data.result || [];
+    
+    transferEvents.forEach((tx: any) => {
+      tokenSet.add(tx.tokenID);
+    });
+    
+    const tokenIds = Array.from(tokenSet).slice(0, pageSize);
+    
+    // For each token ID, try to get metadata from the NFT contract
+    const nftPromises = tokenIds.map(async (tokenId) => {
+      try {
+        // Try direct contract query for token URI and metadata
+        const provider = getChainProvider(chainId);
+        const abi = ["function tokenURI(uint256 tokenId) view returns (string)"];
+        const contract = new ethers.Contract(contractAddress, abi, provider);
+        
+        // Get token URI
+        let tokenUri = '';
         try {
-          // Handle IPFS URIs
-          const metadataUrl = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
-          const metadataResponse = await fetch(metadataUrl);
-          if (metadataResponse.ok) {
-            metadata = await metadataResponse.json();
-          }
+          tokenUri = await contract.tokenURI(tokenId).catch(() => '');
         } catch (e) {
-          console.warn(`Error fetching metadata for token ${tokenId}:`, e);
+          console.warn(`Error getting tokenURI for token ${tokenId}:`, e);
+        }
+        
+        // Fetch metadata if token URI is available
+        let metadata: any = {};
+        if (tokenUri) {
+          try {
+            // Handle IPFS URIs
+            const metadataUrl = tokenUri.replace('ipfs://', 'https://ipfs.io/ipfs/');
+            const metadataResponse = await fetch(metadataUrl);
+            if (metadataResponse.ok) {
+              metadata = await metadataResponse.json();
+            }
+          } catch (e) {
+            console.warn(`Error fetching metadata for token ${tokenId}:`, e);
+          }
+        }
+        
+        // Create NFTMetadata object
+        return {
+          id: `${contractAddress.toLowerCase()}-${tokenId}`,
+          tokenId,
+          name: metadata.name || `NFT #${tokenId}`,
+          description: metadata.description || '',
+          imageUrl: metadata.image || '',
+          attributes: metadata.attributes || [],
+          chain: chainId
+        };
+      } catch (e) {
+        console.warn(`Error getting NFT data for token ${tokenId}:`, e);
+        // Return placeholder for errors
+        return {
+          id: `${contractAddress.toLowerCase()}-${tokenId}`,
+          tokenId,
+          name: `NFT #${tokenId}`,
+          description: '',
+          imageUrl: '',
+          attributes: [],
+          chain: chainId
+        };
+      }
+    });
+    
+    const nfts = await Promise.all(nftPromises);
+    
+    // Get total count - this is a rough estimate based on transfer events
+    const apiUrlForCount = `https://${domain}/api?module=stats&action=tokensupply&contractaddress=${contractAddress}&apikey=${BSCSCAN_API_KEY}`;
+    
+    let totalCount = tokenSet.size;
+    try {
+      const countResponse = await fetch(apiUrlForCount);
+      if (countResponse.ok) {
+        const countData = await countResponse.json();
+        if (countData.status === '1') {
+          totalCount = parseInt(countData.result, 10);
         }
       }
-      
-      // Create NFTMetadata object
-      return {
-        id: `${contractAddress.toLowerCase()}-${tokenId}`,
-        tokenId,
-        name: metadata.name || `NFT #${tokenId}`,
-        description: metadata.description || '',
-        imageUrl: metadata.image || '',
-        attributes: metadata.attributes || [],
-        chain: chainId
-      };
     } catch (e) {
-      console.warn(`Error getting NFT data for token ${tokenId}:`, e);
-      // Return placeholder for errors
-      return {
-        id: `${contractAddress.toLowerCase()}-${tokenId}`,
-        tokenId,
-        name: `NFT #${tokenId}`,
-        description: '',
-        imageUrl: '',
-        attributes: [],
-        chain: chainId
-      };
+      console.warn('Error getting total token count:', e);
     }
-  });
-  
-  const nfts = await Promise.all(nftPromises);
-  
-  // Get total count - this is a rough estimate based on transfer events
-  const apiUrlForCount = `https://${domain}/api?module=stats&action=tokensupply&contractaddress=${contractAddress}&apikey=${BSCSCAN_API_KEY}`;
-  
-  let totalCount = tokenSet.size;
-  try {
-    const countResponse = await fetch(apiUrlForCount);
-    if (countResponse.ok) {
-      const countData = await countResponse.json();
-      if (countData.status === '1') {
-        totalCount = parseInt(countData.result, 10);
-      }
-    }
-  } catch (e) {
-    console.warn('Error getting total token count:', e);
+    
+    return {
+      nfts,
+      totalCount
+    };
+  } catch (error) {
+    console.error('Error in fetchNFTsFromBSCScan:', error);
+    throw error;
   }
-  
-  return {
-    nfts,
-    totalCount
-  };
 }
 
 /**

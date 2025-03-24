@@ -137,7 +137,7 @@ export default function VirtualizedNFTGrid({
           
           setNfts(result.nfts);
           setTotalCount(result.totalCount);
-          setHasNextPage(result.hasMoreBatches);
+          setHasNextPage(!!result.hasMoreBatches);
           setLoadingProgress(result.progress);
         } else {
           // First load with cursor-based pagination
@@ -228,7 +228,10 @@ export default function VirtualizedNFTGrid({
   
   // Load more when the virtualized rows include the loading row
   useEffect(() => {
-    const lastRow = rowVirtualizer.range.end;
+    const range = rowVirtualizer.range;
+    if (!range) return;
+    
+    const lastRow = range.endIndex;
     const totalRows = rowCount;
     
     // If we're within 3 rows of the end and there are more items to load, load more
@@ -236,7 +239,7 @@ export default function VirtualizedNFTGrid({
       loadMoreNFTs();
     }
   }, [
-    rowVirtualizer.range.end, 
+    rowVirtualizer.range?.endIndex, 
     rowCount, 
     isLoading, 
     hasNextPage, 
@@ -379,10 +382,10 @@ export default function VirtualizedNFTGrid({
       
       {/* Error message */}
       {loadingError && (
-        <div class="mt-6 p-4 bg-red-900/30 border border-red-800 rounded-md">
-          <p class="text-red-300">{loadingError}</p>
+        <div className="mt-6 p-4 bg-red-900/30 border border-red-800 rounded-md">
+          <p className="text-red-300">{loadingError}</p>
           <button
-            class="mt-2 text-red-300 underline"
+            className="mt-2 text-red-300 underline"
             onClick={() => window.location.reload()}
           >
             Reload page
@@ -392,10 +395,10 @@ export default function VirtualizedNFTGrid({
       
       {/* Empty state */}
       {!isLoading && nfts.length === 0 && (
-        <div class="flex flex-col items-center justify-center py-16 px-4 border border-dashed border-gray-700 rounded-lg mt-6">
-          <div class="text-gray-400 text-center">
-            <h3 class="text-xl mb-2">No NFTs Found</h3>
-            <p class="mb-4">
+        <div className="flex flex-col items-center justify-center py-16 px-4 border border-dashed border-gray-700 rounded-lg mt-6">
+          <div className="text-gray-400 text-center">
+            <h3 className="text-xl mb-2">No NFTs Found</h3>
+            <p className="mb-4">
               {isFiltered 
                 ? 'No NFTs match your current filters. Try adjusting your search or filters.'
                 : 'This collection appears to be empty or still loading.'}
@@ -403,7 +406,7 @@ export default function VirtualizedNFTGrid({
             {isFiltered && (
               <button
                 onClick={() => window.location.reload()}
-                class="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
               >
                 Clear Filters
               </button>

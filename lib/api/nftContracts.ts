@@ -391,111 +391,208 @@ export async function fetchContractNFTs(
   count: number = 20
 ): Promise<NFTMetadata[]> {
   try {
+    // Get provider for the specified chain
     const provider = getChainProvider(chainId);
-    const nftStandard = await detectNFTStandard(contractAddress, chainId);
     
-    if (nftStandard === 'UNKNOWN') {
-      throw new Error('Contract does not appear to be an NFT collection');
-    }
-    
-    if (nftStandard === 'ERC1155') {
-      throw new Error('Batch fetching for ERC1155 not implemented');
-    }
-
-    // For BNB Chain, use cached BSCScan API to improve performance
-    if ((nftStandard === 'BNB721' || chainId === '0x38' || chainId === '0x61')) {
-      try {
-        const data = await cachedBscScanApiCall({
-          module: 'token',
-          action: 'tokennfttx',
-          contractaddress: contractAddress,
-          page: '1',
-          offset: count.toString(),
-          startblock: '0',
-          sort: 'asc'
-        }, chainId);
-        
-        if (data.status === '1' && data.result) {
-          interface BSCNFTTransaction {
-            tokenID: string;
-            tokenName: string;
-            tokenSymbol: string;
-          }
-
-          // Get unique token IDs from transactions with type checking
-          const transactions = data.result as BSCNFTTransaction[];
-          const uniqueTokenIds = [...new Set(transactions
-            .map(tx => tx.tokenID)
-            .filter((id: string) => id && id.length > 0)
-          )];
-          
-          // Fetch metadata for each token
-          const nftPromises = uniqueTokenIds.map(tokenId =>
-            fetchNFTData(contractAddress, tokenId, chainId)
-          );
-          
-          const nfts = await Promise.all(nftPromises);
-          return nfts.filter(nft => nft !== null) as NFTMetadata[];
-        }
-      } catch (err) {
-        console.warn("BSCScan API error:", err);
-        // Fall back to direct contract call
-      }
-    }
-    
-    // If BSCScan API fails or for other chains, try direct contract call
-    const contract = getNFTContract(contractAddress, provider);
+    // Try to determine if this is an ERC721 or ERC1155 contract
+    // But handle contracts that don't implement supportsInterface
+    const interfaceSupport = {
+      erc721: false,
+      erc1155: false
+    };
     
     try {
-      // Check if the contract supports enumeration
-      const supportsEnumeration = await contract.supportsInterface('0x780e9d63');
+      // ERC165 interface ID for ERC721 and ERC1155
+      const ERC721_INTERFACE_ID = '0x80ac58cd';
+      const ERC1155_INTERFACE_ID = '0xd9b67a26';
       
-      if (!supportsEnumeration) {
-        throw new Error('Contract does not support enumeration');
-      }
+      const supportsInterfaceAbi = [
+        "function supportsInterface(bytes4 interfaceId) view returns (bool)"
+      ];
       
-      const totalSupply = await contract.totalSupply();
-      
-      // Make sure we don't try to fetch beyond the total supply
-      const endIndex = Math.min(startIndex + count, totalSupply.toNumber());
-      
-      // Fetch token IDs
-      const fetchPromises = [];
-      for (let i = startIndex; i < endIndex; i++) {
-        fetchPromises.push(contract.tokenByIndex(i));
-      }
-      
-      const tokenIds = await Promise.all(fetchPromises);
-      
-      // Fetch metadata for each token
-      const nftPromises = tokenIds.map(tokenId =>
-        fetchNFTData(contractAddress, tokenId.toString(), chainId)
+      const interfaceContract = new ethers.Contract(
+        contractAddress,
+        supportsInterfaceAbi,
+        provider
       );
       
-      const nfts = await Promise.all(nftPromises);
-      
-      // Filter out null results
-      return nfts.filter(nft => nft !== null) as NFTMetadata[];
-    } catch (err) {
-      console.error("Error enumerating NFTs:", err);
-      if (nftStandard === 'BNB721') {
-        toast.error("Failed to fetch BNB NFTs. The contract may not support enumeration.");
-      } else {
-        toast.error("Failed to enumerate NFTs");
+      // Try to check interfaces - but don't fail if not supported
+      try {
+        interfaceSupport.erc721 = await interfaceContract.supportsInterface(ERC721_INTERFACE_ID);
+      } catch (e) {
+        // Contract doesn't support supportsInterface, assume ERC721
+        interfaceSupport.erc721 = true;
       }
-      return [];
+      
+      try {
+        interfaceSupport.erc1155 = await interfaceContract.supportsInterface(ERC1155_INTERFACE_ID);
+      } catch (e) {
+        // Contract doesn't support supportsInterface
+        interfaceSupport.erc1155 = false;
+      }
+    } catch (e) {
+      console.warn('Error checking contract interface support:', e);
+      // Fallback to assuming ERC721
+      interfaceSupport.erc721 = true;
+    }
+    
+    // Determine contract type based on interface support or fallback to ERC721
+    let contractType = 'erc721';
+    if (interfaceSupport.erc1155) {
+      contractType = 'erc1155';
+    }
+    
+    // Different fetching strategy based on contract type
+    if (contractType === 'erc721') {
+      return await fetchERC721NFTs(contractAddress, chainId, provider, startIndex, count);
+    } else {
+      return await fetchERC1155NFTs(contractAddress, chainId, provider, startIndex, count);
     }
   } catch (error) {
-    console.error("Error batch fetching NFTs:", error);
-    
-    // Provide more specific error messages for BNB Chain
-    if (chainId === '0x38' || chainId === '0x61') {
-      toast.error("Failed to fetch BNB NFTs. Please check the contract address.");
-    } else {
-      toast.error("Failed to fetch NFTs from contract");
-    }
+    console.error('Error enumerating NFTs:', error);
+    // Return empty array instead of propagating error
     return [];
   }
+}
+
+/**
+ * Fetch ERC721 NFTs with fallback strategies
+ */
+async function fetchERC721NFTs(
+  contractAddress: string,
+  chainId: string,
+  provider: ethers.providers.Provider,
+  startIndex: number,
+  count: number
+): Promise<NFTMetadata[]> {
+  // Combined ABI with all the functions we might need
+  const abi = [
+    // ERC721 Enumerable functions
+    "function totalSupply() view returns (uint256)",
+    "function tokenByIndex(uint256 index) view returns (uint256)",
+    // Regular ERC721 functions
+    "function balanceOf(address owner) view returns (uint256)",
+    "function ownerOf(uint256 tokenId) view returns (address)",
+    "function tokenURI(uint256 tokenId) view returns (string)",
+    // Some contracts use tokenOfOwnerByIndex
+    "function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)"
+  ];
+  
+  const contract = new ethers.Contract(contractAddress, abi, provider);
+  
+  let tokenIds: string[] = [];
+  
+  try {
+    // Try to use ERC721Enumerable if supported
+    const totalSupply = await contract.totalSupply();
+    
+    // Make sure we don't exceed the total supply
+    const endIndex = Math.min(startIndex + count, totalSupply.toNumber());
+    
+    // Get tokenIds from indexes
+    const tokenIdPromises = [];
+    for (let i = startIndex; i < endIndex; i++) {
+      tokenIdPromises.push(contract.tokenByIndex(i).then((id: any) => id.toString()));
+    }
+    
+    tokenIds = await Promise.all(tokenIdPromises);
+  } catch (e) {
+    console.warn('Contract does not support ERC721Enumerable, trying alternative approach:', e);
+    
+    // If the contract doesn't support enumeration, try a sequential approach
+    // Try with a range of token IDs in the expected range
+    const maxId = startIndex + count * 10; // Try a wider range to find valid tokens
+    const checkPromises = [];
+    
+    for (let i = startIndex; i < maxId && tokenIds.length < count; i++) {
+      checkPromises.push(
+        (async () => {
+          try {
+            // Check if this tokenId exists by calling ownerOf
+            await contract.ownerOf(i);
+            return i.toString();
+          } catch {
+            // Token doesn't exist or is burned
+            return null;
+          }
+        })()
+      );
+      
+      // Process in smaller batches to avoid overloading the provider
+      if (checkPromises.length >= 10 || i === maxId - 1) {
+        const results = await Promise.all(checkPromises);
+        tokenIds.push(...results.filter(Boolean) as string[]);
+        checkPromises.length = 0;
+      }
+    }
+    
+    // Only use the requested count
+    tokenIds = tokenIds.slice(0, count);
+  }
+  
+  // Now fetch metadata for each token
+  const nftsPromises = tokenIds.map(async (tokenId) => {
+    try {
+      let tokenURI = '';
+      try {
+        tokenURI = await contract.tokenURI(tokenId);
+      } catch (e) {
+        console.warn(`Error getting tokenURI for ${tokenId}:`, e);
+      }
+      
+      let metadata: any = {};
+      if (tokenURI) {
+        try {
+          // Handle IPFS URIs
+          const metadataUrl = tokenURI.replace('ipfs://', 'https://ipfs.io/ipfs/');
+          const metadataResponse = await fetch(metadataUrl);
+          if (metadataResponse.ok) {
+            metadata = await metadataResponse.json();
+          }
+        } catch (e) {
+          console.warn(`Error fetching metadata for token ${tokenId}:`, e);
+        }
+      }
+      
+      return {
+        id: `${contractAddress.toLowerCase()}-${tokenId}`,
+        tokenId,
+        name: metadata.name || `NFT #${tokenId}`,
+        description: metadata.description || '',
+        imageUrl: metadata.image || '',
+        attributes: metadata.attributes || [],
+        chain: chainId
+      };
+    } catch (e) {
+      console.warn(`Error processing token ${tokenId}:`, e);
+      return {
+        id: `${contractAddress.toLowerCase()}-${tokenId}`,
+        tokenId,
+        name: `NFT #${tokenId}`,
+        description: '',
+        imageUrl: '',
+        attributes: [],
+        chain: chainId
+      };
+    }
+  });
+  
+  return await Promise.all(nftsPromises);
+}
+
+/**
+ * Fetch ERC1155 NFTs
+ */
+async function fetchERC1155NFTs(
+  contractAddress: string,
+  chainId: string,
+  provider: ethers.providers.Provider,
+  startIndex: number,
+  count: number
+): Promise<NFTMetadata[]> {
+  // ERC1155 doesn't have a standard enumeration mechanism
+  // We'll make a best effort to get token IDs from known collections
+  return [];  // Implement ERC1155 support if needed
 }
 
 /**
