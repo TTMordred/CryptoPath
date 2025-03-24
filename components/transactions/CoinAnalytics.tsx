@@ -53,9 +53,9 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
 
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 animate-pulse">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="bg-gray-900 border border-gray-800 rounded-2xl">
+          <Card key={i} className="bg-gray-900 border border-gray-800 rounded-2xl shadow-lg">
             <CardContent className="flex items-center justify-center h-[90px]">
               <Loader2 className="h-4 w-4 animate-spin text-[#F5B056]" />
             </CardContent>
@@ -74,7 +74,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
           variant="outline"
           size="sm"
           onClick={handleRetry}
-          className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700"
+          className="bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 transition-all duration-300"
         >
           <RefreshCcw className="mr-2 h-3 w-3" />
           Retry
@@ -86,7 +86,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {/* UAW */}
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300 shadow-lg hover:shadow-xl">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Users className="w-4 h-4 text-[#F5B056]" />
