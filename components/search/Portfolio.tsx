@@ -34,7 +34,7 @@ interface TokenBalance {
 
 export default function Portfolio() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
+  const address = searchParams?.get("address") ?? null
   const [portfolio, setPortfolio] = useState<TokenBalance[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
