@@ -135,8 +135,7 @@ const WalletSection: React.FC = () => {
                   {!wallet.isDefault && (
                     <Button
                       variant="ghost"
-                      size="sm"
-                      className="text-white/70 hover:text-amber hover:bg-black/40 transition-colors duration-200"
+                      size="icon"
                       onClick={() => handleSetDefault(wallet.address)} // Dùng address thay vì id
                     >
                       Set Default
@@ -144,7 +143,7 @@ const WalletSection: React.FC = () => {
                   )}
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     className="text-white/70 hover:text-red-500 hover:bg-black/40 transition-colors duration-200 rounded-full"
                     onClick={() => handleDeleteWallet(wallet.address)} // Dùng address thay vì id
                   >

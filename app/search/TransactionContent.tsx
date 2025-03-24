@@ -68,44 +68,24 @@ export default function Transactions() {
   
   // Handle network change
   const handleNetworkChange = (value: string) => {
-    setNetwork(value)
-    
-    // Update the URL to include the new network
+    setNetwork(value);
     if (address) {
-      router.push(`/search?address=${address}&network=${value}&provider=${provider}`)
+      router.push(`/search?address=${address}&network=${value}&provider=${provider}`);
     } else {
-      router.push(`/search?network=${value}&provider=${provider}`)
+      router.push(`/search?network=${value}&provider=${provider}`);
     }
-  }
-  
+  };
+
   // Handle provider change
   const handleProviderChange = (value: string) => {
-    setIsLoading(true);
     setProvider(value);
-    
-    // Get available networks for the new provider
-    const availableNetworks = getAvailableNetworks().map(net => net.value);
-    
-    // If current network is not available in the new provider, use first available
-    let newNetwork = network;
-    if (!availableNetworks.includes(network)) {
-      newNetwork = availableNetworks[0];
-    }
-    
-    setNetwork(newNetwork);
-    
-    // Update the URL
     if (address) {
-      router.push(`/search?address=${address}&network=${newNetwork}&provider=${value}`)
+      router.push(`/search?address=${address}&network=${network}&provider=${value}`);
     } else {
-      router.push(`/search?network=${newNetwork}&provider=${value}`)
+      router.push(`/search?network=${network}&provider=${value}`);
     }
+  };
 
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 500);
-  }
-  
   // Fetch pending transactions for the current network
   useEffect(() => {
     if (network) {

@@ -10,6 +10,7 @@ import { Loader2, Copy, ExternalLink, RefreshCcw, ArrowUpDown } from "lucide-rea
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 import { utils } from 'ethers'
+import Link from 'next/link'
 
 interface Transaction {
   id: string
@@ -390,8 +391,8 @@ export default function TransactionTable() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTransactions.map((tx) => (
-                    <TableRow key={tx.id}>
+                  {filteredTransactions.map((tx, index) => (
+                    <TableRow key={index}>
                       <TableCell className="font-mono">
                         <div className="flex items-center gap-1">
                           <span className="text-[#F5B056] text-sm">
@@ -418,10 +419,18 @@ export default function TransactionTable() {
                         </span>
                       </TableCell>
                       <TableCell className="font-mono text-[#F5B056] text-sm">
-                        {truncateString(tx.from)}
+                        <Link href={`/search?address=${tx.from}&network=mainnet`}>
+                          <span className="cursor-pointer hover:underline text-[#F5B056]">
+                            {truncateString(tx.from)}
+                          </span>
+                        </Link>
                       </TableCell>
                       <TableCell className="font-mono text-[#F5B056] text-sm">
-                        {tx.to ? truncateString(tx.to) : "Contract Creation"}
+                        <Link href={`/search?address=${tx.to}&network=mainnet`}>
+                          <span className="cursor-pointer hover:underline text-[#F5B056]">
+                            {truncateString(tx.to)}
+                          </span>
+                        </Link>
                       </TableCell>
                       <TableCell>{tx.value}</TableCell>
                       <TableCell className={isMobile ? "hidden" : ""}>

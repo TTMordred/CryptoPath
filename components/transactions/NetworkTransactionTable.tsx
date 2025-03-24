@@ -276,7 +276,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 <TableCell>{typeof tx.timestamp === 'number' ? getRelativeTime(tx.timestamp) : getRelativeTime(new Date(tx.timestamp).getTime() / 1000)}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    <Link href={`/address/${tx.from}`}>
+                    <Link href={`/search?address=${tx.from}&network=mainnet`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {truncateAddress(tx.from)}
                       </span>
@@ -293,7 +293,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    <Link href={`/address/${tx.to}`}>
+                    <Link href={`/search?address=${tx.to}&network=mainnet`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {truncateAddress(tx.to)}
                       </span>
