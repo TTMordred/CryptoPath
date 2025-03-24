@@ -1760,10 +1760,14 @@ export async function fetchNFTsWithOptimizedCursor(
     // Calculate progress (rough estimate)
     const progress = Math.min(100, Math.round((result.nfts.length / (result.totalCount || 1)) * 100));
     
+    // Ensure we have a next cursor for collections that don't support cursors
+    // For these collections, we'll synthesize a cursor based on token IDs
+    const syntheticCursor = result.pageKey || generateSyntheticCursor(result.nfts, sortBy, sortDirection);
+    
     const response = {
       nfts: result.nfts,
       totalCount: result.totalCount,
-      nextCursor: result.pageKey,
+      nextCursor: syntheticCursor,
       progress
     };
     
@@ -1775,6 +1779,45 @@ export async function fetchNFTsWithOptimizedCursor(
     console.error('Error in fetchNFTsWithOptimizedCursor:', error);
     throw error;
   }
+}
+
+/**
+ * Generate a synthetic cursor when API doesn't provide one
+ * This helps with collections that don't support cursor-based pagination
+ */
+function generateSyntheticCursor(
+  nfts: any[],
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc'
+): string | undefined {
+  // If no NFTs, there's no next page
+  if (!nfts || nfts.length === 0) {
+    return undefined;
+  }
+  
+  // For token ID based sorting, create a cursor based on the last token ID
+  if (sortBy === 'tokenId') {
+    const lastNft = sortDirection === 'asc' ? nfts[nfts.length - 1] : nfts[0];
+    if (lastNft && lastNft.tokenId) {
+      // For ascending, next token would be lastTokenId + 1
+      // For descending, next token would be lastTokenId - 1
+      const lastTokenId = parseInt(lastNft.tokenId);
+      if (!isNaN(lastTokenId)) {
+        const nextId = sortDirection === 'asc' ? lastTokenId + 1 : lastTokenId - 1;
+        // Only return a synthetic cursor if nextId is positive (valid)
+        if (nextId >= 0) {
+          return `synthetic:${sortBy}:${nextId}:${sortDirection}`;
+        }
+      }
+    }
+  }
+  
+  // For other sort types, just indicate there might be a next page if we have a full page
+  if (nfts.length >= 20) { // Assume a full page is at least 20 items
+    return 'synthetic:nextpage';
+  }
+  
+  return undefined;
 }
 
 /**
