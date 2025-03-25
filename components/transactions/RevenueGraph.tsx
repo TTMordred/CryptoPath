@@ -498,22 +498,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
               <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
               
               <div className="flex items-center gap-2">
-                {/* Add refresh button with cooldown */}
-                <Button 
-                  variant="outline" 
-                  size="icon"
-                  onClick={handleManualRefresh}
-                  disabled={isRefreshCoolingDown}
-                  className="bg-gray-800/70 border-gray-700/50 h-9 w-9"
-                  title={isRefreshCoolingDown ? `Refresh in ${refreshCountdown}s` : "Refresh data"}
-                >
-                  {isRefreshCoolingDown ? (
-                    <span className="text-xs">{refreshCountdown}s</span>
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-                
+                {/* Removed the refresh button */}
                 <Select
                   value={selectedCoin?.id}
                   onValueChange={handleCoinChange}
@@ -526,9 +511,9 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
                         Loading...
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between w-full">
+                      <div className="flex items-center w-full">
                         <span className="truncate">{selectedCoin?.name || "Select coin"}</span>
-                        <ChevronDown className="h-4 w-4 opacity-50" />
+                        {/* Removed the duplicate ChevronDown icon here */}
                       </div>
                     )}
                   </SelectTrigger>
