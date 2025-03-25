@@ -102,7 +102,7 @@ export default function NetworkStats() {
     <div className="text-white font-exo2">
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
+          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Clock className="w-5 h-5 text-[#F5B056]" />
@@ -120,7 +120,7 @@ export default function NetworkStats() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
+          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Loader2 className="w-5 h-5 text-[#F5B056] animate-spin" />
@@ -138,7 +138,7 @@ export default function NetworkStats() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
+          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Gauge className="w-5 h-5 text-[#F5B056]" />
@@ -156,7 +156,7 @@ export default function NetworkStats() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] transition-all duration-300">
+          <Card className="bg-gray-900 border border-gray-800 rounded-2xl font-quantico hover:border-[#F5B056] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Calculator className="w-5 h-5 text-[#F5B056]" />
@@ -182,4 +182,4 @@ export default function NetworkStats() {
       </div>
     </div>
   );
-} 
+}

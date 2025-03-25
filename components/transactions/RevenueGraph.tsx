@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts";
 import { fetchAvailableCoins, CoinOption, TOKEN_CONTRACTS } from "@/services/cryptoService";
 import { Loader2, AlertCircle, RefreshCcw, TrendingUp, ChevronDown } from "lucide-react";
 import {
@@ -73,7 +73,7 @@ interface RevenueGraphProps {
   onCoinChange: (coin: CoinOption | null) => void;
 }
 
-const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
+const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
   const [data, setData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -137,64 +137,63 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
   }, [onCoinChange]);
 
   // Optimize data fetching with proper cleanup and error handling
-  useEffect(() => {
+  const fetchData = useCallback(async () => {
+    if (!selectedCoin) return;
+
     let mounted = true;
     let retryAttempt = 0;
     const maxRetries = 3;
     const retryDelay = 2000; // 2 seconds
 
-    const fetchData = async () => {
-      if (!selectedCoin) return;
+    try {
+      setLoading(true);
+      setError(null);
 
-      try {
-        setLoading(true);
-        setError(null);
+      // Use Binance API for fetching historical data
+      const response = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=1d&limit=30`);
+      const data = await response.json();
 
-        // Use Binance API for fetching historical data
-        const response = await fetch(`https://data-api.binance.vision/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=1d&limit=30`);
-        const data = await response.json();
+      if (!mounted) return;
 
-        if (!mounted) return;
+      if (!data || data.length === 0) {
+        throw new Error('No data available for this coin');
+      }
 
-        if (!data || data.length === 0) {
-          throw new Error('No data available for this coin');
-        }
+      const chartData: ChartData[] = data.map((item: any) => {
+        const date = new Date(item[0]);
+        return {
+          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          price: Number(item[4]), // Closing price
+          volume: Number(item[5]) // Volume
+        };
+      });
 
-        const chartData: ChartData[] = data.map((item: any) => {
-          const date = new Date(item[0]);
-          return {
-            date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            price: Number(item[4]), // Closing price
-            volume: Number(item[5]) // Volume
-          };
-        });
-
-        setData(chartData);
-        setLoading(false);
-        retryAttempt = 0; // Reset retry counter on success
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        if (mounted) {
-          if (retryAttempt < maxRetries) {
-            retryAttempt++;
-            console.log(`Retrying (${retryAttempt}/${maxRetries})...`);
-            setTimeout(fetchData, retryDelay);
-          } else {
-            setError(err instanceof Error ? err.message : 'Failed to fetch data');
-            setLoading(false);
-          }
+      setData(chartData);
+      setLoading(false);
+      retryAttempt = 0; // Reset retry counter on success
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      if (mounted) {
+        if (retryAttempt < maxRetries) {
+          retryAttempt++;
+          console.log(`Retrying (${retryAttempt}/${maxRetries})...`);
+          setTimeout(fetchData, retryDelay);
+        } else {
+          setError(err instanceof Error ? err.message : 'Failed to fetch data');
+          setLoading(false);
         }
       }
-    };
-
-    // Add a small delay before fetching to prevent rate limiting
-    const timeoutId = setTimeout(fetchData, 100);
+    }
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
     };
-  }, [selectedCoin?.id]);
+  }, [selectedCoin]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(fetchData, 100);
+    return () => clearTimeout(timeoutId);
+  }, [fetchData]);
 
   // Memoize chart data
   const chartConfig = useMemo(() => ({
@@ -312,6 +311,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
                 <Chart width="100%" height="100%">
                   <LineChart data={data}>
                     {chartConfig.gradients}
+                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                     <XAxis 
                       dataKey="date"
                       stroke="#666"
@@ -388,7 +388,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = ({ onCoinChange }) => {
       </AnimatePresence>
     </div>
   );
-};
+});
 RevenueGraph.displayName = "RevenueGraph";
 
 export default RevenueGraph;

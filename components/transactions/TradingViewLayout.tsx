@@ -49,8 +49,7 @@ export default function TradingViewLayout() {
         
         // Set default to BTC/USDT, or first available pair
         const defaultPair = filteredPairs.find((pair: TradingPair) => pair.symbol === 'BTCUSDT') || filteredPairs[0];
-        // Small delay to ensure stable initialization
-        setTimeout(() => setSelectedPair(defaultPair), 100);
+        setSelectedPair(defaultPair);
         
       } catch (err) {
         console.error('Error fetching trading pairs:', err);
@@ -75,7 +74,7 @@ export default function TradingViewLayout() {
       // Force refresh by resetting and then setting the pair
       const currentPair = selectedPair;
       setSelectedPair(null);
-      setTimeout(() => setSelectedPair(currentPair), 100);
+      setTimeout(() => setSelectedPair(currentPair), 50);
     }
   };
 

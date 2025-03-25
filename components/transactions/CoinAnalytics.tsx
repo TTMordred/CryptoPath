@@ -86,7 +86,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
       {/* UAW */}
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300 shadow-lg hover:shadow-xl">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300 shadow-lg hover:shadow-xl">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Users className="w-4 h-4 text-[#F5B056]" />
@@ -104,7 +104,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Incoming Transactions */}
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <ArrowDownToLine className="w-4 h-4 text-[#3b82f6]" />
@@ -122,7 +122,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Incoming Volume */}
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Coins className="w-4 h-4 text-[#22c55e]" />
@@ -140,7 +140,7 @@ export default function CoinAnalytics({ selectedCoin }: CoinAnalyticsProps) {
       </Card>
 
       {/* Contract Balance */}
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
         <CardHeader>
           <div className="flex items-center justify-center gap-2">
             <Building2 className="w-4 h-4 text-[#a855f7]" />

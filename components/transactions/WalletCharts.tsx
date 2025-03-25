@@ -52,7 +52,7 @@ export default function WalletCharts() {
       <div className="space-y-6 animate-pulse">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[1, 2].map((i) => (
-            <Card key={i} className="bg-gray-900 border border-gray-800 rounded-2xl">
+            <Card key={i} className="bg-gray-900 border border-gray-800 rounded-2xl hover:shadow-lg transition-shadow duration-300">
               <CardContent className="flex items-center justify-center h-[300px]">
                 <Loader2 className="h-8 w-8 animate-spin text-[#F5B056]" />
               </CardContent>
@@ -99,7 +99,7 @@ export default function WalletCharts() {
     <div className="text-white font-exo2">
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* Market Share Chart */}
-        <Card className="md:col-span-2 bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
+        <Card className="md:col-span-2 bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] hover:shadow-lg transition-shadow duration-300">
           <CardHeader className="p-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-[#F5B056]" />
@@ -151,7 +151,7 @@ export default function WalletCharts() {
 
         {/* Stats Grid */}
         <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Wallet className="w-5 h-5 text-[#F5B056]" />
@@ -165,7 +165,7 @@ export default function WalletCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Activity className="w-5 h-5 text-[#3b82f6]" />
@@ -179,7 +179,7 @@ export default function WalletCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Database className="w-5 h-5 text-[#22c55e]" />
@@ -193,7 +193,7 @@ export default function WalletCharts() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] transition-all duration-300">
+          <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px] font-quantico hover:border-[#fff] hover:shadow-lg transition-all duration-300">
             <CardHeader>
               <div className="flex items-center justify-center gap-2">
                 <Cpu className="w-5 h-5 text-[#a855f7]" />
@@ -210,4 +210,4 @@ export default function WalletCharts() {
       </div>
     </div>
   );
-} 
+}
