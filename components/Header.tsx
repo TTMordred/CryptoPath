@@ -223,6 +223,9 @@ const HeaderContent = () => {
           <Link href="/Swap" className="text-white text-sm hover:text-[#F5B056] transition">
             Swap
           </Link>
+          <Link href="/Staking" className="text-white text-sm hover:text-[#F5B056] transition">
+            Staking
+          </Link>
           <Link href="/clickgame" className="text-white text-sm hover:text-[#F5B056] transition">
             Click2Earn
           </Link>
@@ -329,6 +332,13 @@ const HeaderContent = () => {
                 onClick={() => setIsOpen(false)}
               >
                 Swap
+              </Link>
+              <Link
+                href="/Staking"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
+                onClick={() => setIsOpen(false)}
+              >
+                Staking
               </Link>
               <Link
                 href="/clickgame"

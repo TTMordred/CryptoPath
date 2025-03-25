@@ -25,6 +25,9 @@ interface WalletContextType {
   tbnbBalance: string;
   wbnbBalance: string;
   pathBalance: string;
+  stakedBalance: string;
+  pendingRewards: string;
+  updateStakingInfo: () => Promise<void>;
   updateBalances: () => Promise<void>;
   updateWbnbBalance: () => Promise<void>;
   updatePathBalance: () => Promise<void>;
@@ -37,6 +40,8 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
   const [tbnbBalance, setTbnbBalance] = useState('0');
   const [wbnbBalance, setWbnbBalance] = useState('0');
   const [pathBalance, setPathBalance] = useState('0');
+  const [stakedBalance, setStakedBalance] = useState('0');
+  const [pendingRewards, setPendingRewards] = useState('0');
 
   const getProvider = () => new ethers.providers.Web3Provider(window.ethereum);
 
@@ -189,9 +194,12 @@ export const WalletProvider = ({ children }: { children: React.ReactNode }) => {
       tbnbBalance,
       wbnbBalance,
       pathBalance,
+      stakedBalance,
+      pendingRewards,
       updateBalances: updateAllBalances,
       updateWbnbBalance,
-      updatePathBalance
+      updatePathBalance,
+      updateStakingInfo: async () => {} // Add implementation as needed
     }}>
       {children}
     </WalletContext.Provider>
