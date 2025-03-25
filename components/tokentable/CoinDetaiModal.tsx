@@ -108,7 +108,7 @@ const CoinDetailModal = ({ coinId, isOpen, onClose }: CoinDetailModalProps) => {
     
     progressFill: `h-full bg-[#F6b355] transition-all duration-1000 ease-in-out`,
     
-    retryButton: `mt-4 flex items-center gap-2 hover:bg-[#F6b355] hover:text-white transition-all duration-300`,
+    retryButton: `mt-0 flex items-center gap-2 hover:bg-[#F6b355] hover:text-white transition-all duration-300`,
     
     separator: `my-6 opacity-30 bg-[#F6b355]/20`,
     

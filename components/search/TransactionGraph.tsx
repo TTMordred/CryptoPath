@@ -323,9 +323,9 @@ const TransactionDetails = ({ transaction, isOpen, onClose, network }: Transacti
 function TransactionGraph() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const address = searchParams.get("address");
-  const network = searchParams.get("network") || "mainnet";
-  const provider = searchParams.get("provider") || "etherscan";
+  const address = searchParams?.get("address") ?? null;
+  const network = searchParams?.get("network") ?? "mainnet";
+  const provider = searchParams?.get("provider") ?? "etherscan";
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

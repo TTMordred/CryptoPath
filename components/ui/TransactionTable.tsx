@@ -20,7 +20,7 @@ interface Transaction {
 
 export default function TransactionTable() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
+  const address = searchParams?.get("address") ?? null
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -227,6 +227,13 @@ const nextConfig = {
     // In development mode, disable the strict checking to allow any image
     unoptimized: process.env.NODE_ENV === 'development',
     // unoptimized: false,
+    domains: [
+      // Your existing domains
+      'nft-cdn.alchemy.com', // Add this domain
+      'assets.pancakeswap.finance',
+      'i.seadn.io',
+      // other domains...
+    ],
   },
   env: {
     ETHERSCAN_API_KEY: process.env.ETHERSCAN_API_KEY,
@@ -258,10 +265,7 @@ const nextConfig = {
     return config;
   },
   // Add important settings for Vercel deployment
-  experimental: {
-    // Allow more time for API routes that make external calls
-    serverComponentsExternalPackages: [],
-  },
+  // experimental options removed as they are not needed
   // Add extra security headers
   async headers() {
     return [

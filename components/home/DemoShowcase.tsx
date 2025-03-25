@@ -2,7 +2,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
+import Image from "next/legacy/image";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';

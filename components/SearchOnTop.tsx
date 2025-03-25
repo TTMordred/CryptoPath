@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useSearch, SearchType } from '@/hooks/use-search';
 import { useRouter } from 'next/navigation';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import Image from "next/image";
+import Image from "next/legacy/image";
 import { fetchCryptoPrices } from '@/services/cryptoDataService';
 
 const SearchOnTop = () => {

@@ -36,7 +36,7 @@ const ProfileSection: React.FC = () => {
           </div>
 
           {/* Profile Image */}
-          <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 rounded-[40px] shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:border-[#f9c27a] transition-all duration-300">
+          <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 rounded-[40px] shadow-[0_8px_20px_rgba(0,0,0,0.3)] hover:border-[#f9c27a] transition-all duration-300 z-[99]">
             <ImageUploader
               type="profile"
               currentImage={profile.profileImage}
@@ -51,7 +51,7 @@ const ProfileSection: React.FC = () => {
           <div className="space-y-4">
             <label className="flex items-center text-sm font-medium text-[#f6b355] gap-2">
               <UserRound className="h-4 w-4" />
-              Username
+              User name
             </label>
             <Input
               value={profile.username || ''}

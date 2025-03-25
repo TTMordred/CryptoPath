@@ -225,7 +225,7 @@ const CoinTable = () => {
               disabled={page === 1 || isFetching}
               className="gap-1 border-blue-800/50 hover:bg-blue-900/20 hover:text-blue-400"
             >
-              <ChevronUp className="h-4 w-4 rotate-90" />
+              <ChevronDown className="h-4 w-4 rotate-90" />
               Previous
             </Button>
             <span className="text-sm">

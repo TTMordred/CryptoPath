@@ -17,7 +17,7 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
 
   // Determine active section based on URL
   const isMarketplace = pathname === '/NFT';
-  const isCollections = pathname.includes('/NFT/collection');
+  const isCollections = pathname ? pathname.includes('/NFT/collection') : false;
   
   useEffect(() => {
     setMounted(true);
@@ -114,13 +114,13 @@ export default function NFTLayout({ children }: { children: React.ReactNode }) {
               <li>
                 <div className="flex items-center">
                   <ChevronRight className="w-4 h-4 mx-1" />
-                  <span className={pathname === '/NFT/collection' ? 'text-white' : ''}>
-                    Collections
-                  </span>
+                  <Link href="/NFT/collection" className="hover:text-white">
+                  Collections
+                  </Link>
                 </div>
               </li>
             )}
-            {pathname.includes('/NFT/collection/') && pathname !== '/NFT/collection' && (
+            {pathname && pathname.includes('/NFT/collection/') && pathname !== '/NFT/collection' && (
               <li>
                 <div className="flex items-center">
                   <ChevronRight className="w-4 h-4 mx-1" />

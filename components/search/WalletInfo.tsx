@@ -28,9 +28,9 @@ interface WalletData {
 
 export default function WalletInfo() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
-  const network = searchParams.get("network") || "mainnet"
-  const provider = searchParams.get("provider") || "etherscan"
+  const address = searchParams?.get("address") ?? null
+  const network = searchParams?.get("network") ?? "mainnet"
+  const provider = searchParams?.get("provider") ?? "etherscan"
   const [walletData, setWalletData] = useState<WalletData | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

@@ -6,11 +6,12 @@ import TransactionTableOffChain from "@/components/search-offchain/TransactionTa
 import Portfolio from "@/components/search/Portfolio"
 import { useSearchParams } from "next/navigation"
 import SearchBarOffChain from "@/components/search-offchain/SearchBarOffChain"
+import ChainalysisDisplay from "@/components/Chainalysis"
 
 
 export default function Transactions() {
   const searchParams = useSearchParams()
-  const address = searchParams.get("address")
+  const address = searchParams?.get("address") ?? null
   return (
     <div className="min-h-screen text-white">
       <main className="container mx-auto p-4">
@@ -20,11 +21,14 @@ export default function Transactions() {
         {address ? (
           <>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div>
-                <WalletInfo />
-                <Portfolio />
-              </div>
-              <TransactionGraphOffChain />
+
+            <WalletInfo />
+            <TransactionGraphOffChain />
+
+            </div>
+            <ChainalysisDisplay address={address}/>
+            <div className="mb-8">
+            <Portfolio />
             </div>
             <TransactionTableOffChain />
           </>

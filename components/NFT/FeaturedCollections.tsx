@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import Image from "next/image";
 import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +38,45 @@ export default function FeaturedCollections({ collections = [] }: FeaturedCollec
       owners: 6350,
       verified: true,
       category: 'Art'
+    },
+    {
+      id: '0x059edd72cd353df5106d2b9cc5ab83a52287ac3a',
+      name: 'Chromie Squiggle by Snowfro',
+      description: 'The Chromie Squiggle is the first Art Blocks project ever created - a simple generative algorithm creating unique squiggles with different colors, frequencies, and amplitudes.',
+      image: 'https://i.seadn.io/gae/0qG8Y78s198F2QkwOJ92xsHi8qhqBZyjyhw9FWIWHd6lXDcGH_4ReP3T7P3xdLYbfJAkfjF0_TLHQzLH32Rgd9hSINR12Kb5-tZ5?auto=format&dpr=1&w=256',
+      bannerImage: 'https://i.seadn.io/gae/d7X5YRFEgJGG-MNt8u9P-oFHvxHPv3LFdYcIr2g_99X9L9YDown2KZ4wLGvFUaBULHzJvKlL75h23QYrCVCkSdCSOMXcpl-J-M4qHw?auto=format&dpr=1&w=1920',
+      floorPrice: '11.8',
+      volume24h: '135.62',
+      totalItems: 9250,
+      owners: 3828,
+      verified: true,
+      category: 'Art Blocks'
+    },
+    {
+      id: '0x39ee2c7b3cb80254225884ca001f57118c8f21b6',
+      name: 'Memeland Potatoz',
+      description: '9,999 SMALL SPECIES LEADING THE WAY TO MEMELAND.',
+      image: 'https://i.seadn.io/gcs/files/129b97582f0071212ee7cf440644fc28.gif?auto=format&dpr=1&w=256',
+      bannerImage: 'https://i.seadn.io/gcs/files/62448fe425d5e5e2bd44ded754865f37.png?auto=format&dpr=1&w=1200',
+      floorPrice: '0.2448',
+      volume24h: '78.35',
+      totalItems: 9999,
+      owners: 4800,
+      verified: true,
+      category: 'Meme'
+    },
+    {
+      id: '0xc274a97f1691ef390f662067e95a6eff1f99b504',
+      name: 'Tin Fun NFT',
+      description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
+      image: 'https://i.seadn.io/s/raw/files/a531bedf317b5ffe5a35d559b5c94cd9.jpg?auto=format&dpr=1&w=256',
+      bannerImage: 'https://i.seadn.io/s/primary-drops/0xc274a97f1691ef390f662067e95a6eff1f99b504/31341974:about:media:98e2f8a2-a8aa-46d9-9267-87108353c759.jpeg?auto=format&dpr=1&w=1920',
+      floorPrice: '0.0929',
+      volume24h: '15.75',
+      totalItems: 9999,
+      owners: 4200,
+      verified: true,
+      category: 'China'
     },
     {
       id: '0x60e4d786628fea6478f785a6d7e704777c86a7c6',
