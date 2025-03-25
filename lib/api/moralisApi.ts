@@ -1,6 +1,278 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 
-const MORALIS_API_KEY = process.env.MORALIS_API_KEY;
+const MORALIS_API_KEY = process.env.NEXT_PUBLIC_MORALIS_API_KEY || process.env.MORALIS_API_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6IjY4ODEyMzE5LWNiMDAtNDA3MC1iOTEyLWIzNTllYjI4ZjQyOCIsIm9yZ0lkIjoiNDM3Nzk0IiwidXNlcklkIjoiNDUwMzgyIiwidHlwZUlkIjoiYTU5Mzk2NGYtZWUxNi00NGY3LWIxMDUtZWNhMzAwMjUwMDg4IiwidHlwZSI6IlBST0pFQ1QiLCJpYXQiOjE3NDI3ODk3MzEsImV4cCI6NDg5ODU0OTczMX0.4XB5n8uVFQkMwMO2Ck4FbNQw8daQp1uDdMvXmYFr9WA';
+
+// Simple in-memory cache for API responses
+const responseCache = new Map<string, {data: any, timestamp: number}>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache TTL
+
+// Rate limiting 
+const REQUEST_DELAY = 500; // ms between requests
+let lastRequestTime = 0;
+
+// Chain mapping from chain ID to Moralis chain name
+const CHAIN_MAPPING: Record<string, string> = {
+  '0x1': 'eth',
+  '0xaa36a7': 'sepolia',
+  '0x38': 'bsc',
+  '0x61': 'bsc testnet'
+};
+
+/**
+ * Check if API key is valid for use
+ */
+export function isValidApiKey() {
+  return !!MORALIS_API_KEY && MORALIS_API_KEY.length > 20;
+}
+
+/**
+ * Makes a rate-limited request to Moralis API
+ */
+async function moralisRequest(
+  endpoint: string,
+  params: Record<string, any> = {},
+  chainId: string
+): Promise<any> {
+  // Validate API key
+  if (!isValidApiKey()) {
+    throw new Error("Moralis API key not available or invalid");
+  }
+  
+  // Validate chain
+  const chain = CHAIN_MAPPING[chainId];
+  if (!chain) {
+    throw new Error(`Unsupported chain ID: ${chainId}`);
+  }
+  
+  // Create cache key
+  const cacheKey = `${endpoint}-${chain}-${JSON.stringify(params)}`;
+  
+  // Check cache first
+  const cachedResponse = responseCache.get(cacheKey);
+  if (cachedResponse && (Date.now() - cachedResponse.timestamp < CACHE_TTL)) {
+    return cachedResponse.data;
+  }
+  
+  // Ensure rate limiting
+  const now = Date.now();
+  const elapsed = now - lastRequestTime;
+  if (elapsed < REQUEST_DELAY) {
+    await new Promise(resolve => setTimeout(resolve, REQUEST_DELAY - elapsed));
+  }
+  
+  try {
+    // Add API key and chain to parameters
+    const requestParams = {
+      ...params,
+      chain: chain
+    };
+    
+    // Make API request
+    const response = await axios.get(`https://deep-index.moralis.io/api/v2/${endpoint}`, {
+      params: requestParams,
+      headers: {
+        'Accept': 'application/json',
+        'X-API-Key': MORALIS_API_KEY
+      }
+    });
+    
+    // Update last request time
+    lastRequestTime = Date.now();
+    
+    // Cache the result
+    responseCache.set(cacheKey, {
+      data: response.data,
+      timestamp: Date.now()
+    });
+    
+    return response.data;
+  } catch (error: any) {
+    console.error(`Moralis API error (${endpoint}):`, error.response?.data || error.message);
+    throw error;
+  }
+}
+
+/**
+ * Get NFTs by contract address
+ */
+export async function getNFTsByContract(
+  contractAddress: string,
+  chainId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<any> {
+  try {
+    const response = await moralisRequest(
+      `nft/${contractAddress}`,
+      { 
+        limit, 
+        cursor,
+        normalizeMetadata: true,
+        media_items: true
+      },
+      chainId
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching NFTs by contract:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get NFT metadata for a specific token
+ */
+export async function getNFTMetadata(
+  contractAddress: string,
+  tokenId: string,
+  chainId: string
+): Promise<any> {
+  try {
+    const response = await moralisRequest(
+      `nft/${contractAddress}/${tokenId}`,
+      { normalizeMetadata: true, media_items: true },
+      chainId
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching NFT metadata:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get contract metadata
+ */
+export async function getContractMetadata(
+  contractAddress: string,
+  chainId: string
+): Promise<any> {
+  try {
+    const response = await moralisRequest(
+      `nft/${contractAddress}/metadata`,
+      {},
+      chainId
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching contract metadata:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get NFTs owned by a wallet address
+ */
+export async function getNFTsByWallet(
+  walletAddress: string,
+  chainId: string,
+  cursor?: string,
+  limit: number = 20
+): Promise<any> {
+  try {
+    const response = await moralisRequest(
+      `${walletAddress}/nft`,
+      { 
+        limit, 
+        cursor,
+        normalizeMetadata: true,
+        media_items: true 
+      },
+      chainId
+    );
+    return response;
+  } catch (error) {
+    console.error('Error fetching NFTs by wallet:', error);
+    throw error;
+  }
+}
+
+/**
+ * Transform Moralis NFT data to match our CollectionNFT format
+ */
+export function transformMoralisNFT(nft: any, chainId: string): any {
+  // Extract image URL from metadata
+  let imageUrl = '';
+  
+  // Handle different media formats - Moralis has inconsistent response structures
+  if (nft.media) {
+    if (Array.isArray(nft.media)) {
+      // If media is an array, find the first image item
+      const mediaItem = nft.media.find((m: any) => 
+        m.media_collection && ['image', 'image_large', 'image_thumbnail'].includes(m.media_collection)
+      );
+      if (mediaItem && mediaItem.media_url) {
+        imageUrl = mediaItem.media_url;
+      }
+    } else if (typeof nft.media === 'object' && nft.media !== null) {
+      // If media is an object (BNB Chain specific format)
+      if (nft.media.original_media_url) {
+        imageUrl = nft.media.original_media_url;
+      } else if (nft.media.media_url) {
+        imageUrl = nft.media.media_url;
+      }
+    }
+  }
+  
+  // Fallback to normalized metadata image
+  if (!imageUrl && nft.normalized_metadata && nft.normalized_metadata.image) {
+    imageUrl = nft.normalized_metadata.image;
+    
+    // Handle IPFS URLs
+    if (imageUrl.startsWith('ipfs://')) {
+      imageUrl = `https://ipfs.io/ipfs/${imageUrl.slice(7)}`;
+    }
+  }
+  
+  // Additional fallback for the raw metadata
+  if (!imageUrl && nft.metadata) {
+    try {
+      // Sometimes metadata is a string that needs parsing
+      const parsedMetadata = typeof nft.metadata === 'string' 
+        ? JSON.parse(nft.metadata) 
+        : nft.metadata;
+      
+      if (parsedMetadata.image) {
+        imageUrl = parsedMetadata.image;
+        if (imageUrl.startsWith('ipfs://')) {
+          imageUrl = `https://ipfs.io/ipfs/${imageUrl.slice(7)}`;
+        }
+      }
+    } catch (e) {
+      console.warn('Error parsing NFT metadata:', e);
+    }
+  }
+  
+  // Get attributes safely - checking all possible paths
+  let attributes = [];
+  if (nft.normalized_metadata && Array.isArray(nft.normalized_metadata.attributes)) {
+    attributes = nft.normalized_metadata.attributes;
+  } else if (nft.metadata) {
+    try {
+      const parsedMetadata = typeof nft.metadata === 'string' 
+        ? JSON.parse(nft.metadata) 
+        : nft.metadata;
+      
+      if (Array.isArray(parsedMetadata.attributes)) {
+        attributes = parsedMetadata.attributes;
+      }
+    } catch (e) {
+      // Ignore parsing errors for attributes
+    }
+  }
+  
+  return {
+    id: `${nft.token_address.toLowerCase()}-${nft.token_id}`,
+    tokenId: nft.token_id,
+    name: nft.normalized_metadata?.name || `NFT #${nft.token_id}`,
+    description: nft.normalized_metadata?.description || '',
+    imageUrl: imageUrl,
+    attributes: attributes,
+    chain: chainId
+  };
+}
+
 const BASE_URL = 'https://deep-index.moralis.io/api/v2';
 
 interface MoralisChain {

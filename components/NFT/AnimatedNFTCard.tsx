@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { Info, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
@@ -28,7 +28,6 @@ interface AnimatedNFTCardProps {
 
 export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [blurAmount, setBlurAmount] = useState(20); // For progressive loading blur effect
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Chain-specific styling
@@ -44,7 +43,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
     damping: 15
   });
   const rotateY = useSpring(useTransform(x, [-100, 100], [-10, 10]), {
-    stiffness: 200, 
+    stiffness: 200,
     damping: 15
   });
   
@@ -62,15 +61,14 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
   
   // Update shine opacity based on mouse position
   useEffect(() => {
-    const unsubscribeX = shineX.onChange(latestX => {
+    function updateShineOpacity() {
+      const latestX = shineX.get();
       const latestY = shineY.get();
       shineOpacity.set((latestX + latestY) / 8);
-    });
+    }
     
-    const unsubscribeY = shineY.onChange(latestY => {
-      const latestX = shineX.get();
-      shineOpacity.set((latestX + latestY) / 8);
-    });
+    const unsubscribeX = shineX.on("change", updateShineOpacity);
+    const unsubscribeY = shineY.on("change", updateShineOpacity);
     
     return () => {
       unsubscribeX();
@@ -78,24 +76,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
     };
   }, [shineX, shineY, shineOpacity]);
   
-  // Progressive loading animation
-  useEffect(() => {
-    if (imageLoaded) {
-      const timer = setInterval(() => {
-        setBlurAmount((prev) => {
-          if (prev <= 0) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 4;
-        });
-      }, 50);
-      
-      return () => clearInterval(timer);
-    }
-  }, [imageLoaded]);
-  
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+  function handleMouseMove(e: React.MouseEvent) {
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -235,14 +216,14 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* Network Badge - Positioned absolutely top-right */}
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
-            <div className="relative h-3 w-3">
+            <div className="relative h-3 w-3 bg-white overflow-hidden">
               <LazyImage 
                 src={networkBadge.icon} 
                 alt={networkBadge.name} 
                 width={12} 
                 height={12} 
                 className="object-contain"
-                priority={true} // Small icon, always prioritize
+                priority={true}
               />
             </div>
             <span className="text-xs font-medium" style={{ color: networkBadge.textColor }}>
@@ -251,60 +232,48 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
           </div>
         </div>
 
-        {/* Card Content with Shine Effect */}
-        <div className="relative">
-          <motion.div 
-            className="absolute inset-0 w-full h-full bg-gradient-to-tr from-transparent via-white/10 to-white/20 z-10 pointer-events-none"
-            style={{ 
-              opacity: shineOpacity,
-              backgroundPosition: shinePosition
-            }}
+        {/* NFT Image with progressive loading */}
+        <div className="aspect-square relative overflow-hidden bg-gray-800">
+          <LazyImage
+            src={nft.imageUrl}
+            alt={nft.name || `NFT #${nft.tokenId}`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            objectFit="cover"
+            priority={index < 4}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => {/* Error handled inside LazyImage */}}
           />
+          
+          {/* Chain indicator corner decoration */}
+          <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
+        </div>
 
-          {/* NFT Image with progressive loading */}
-          <div className="aspect-square relative overflow-hidden bg-gray-800">
-            {/* Use our optimized LazyImage component */}
-            <LazyImage
-              src={nft.imageUrl}
-              alt={nft.name || `NFT #${nft.tokenId}`}
-              fill
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              objectFit="cover"
-              priority={index < 4} // Only prioritize the first 4 images
-              onLoad={() => setImageLoaded(true)}
-              onError={() => {/* Error handled inside LazyImage */}}
-            />
-            
-            {/* Chain indicator corner decoration */}
-            <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
+        {/* Info Section */}
+        <div className="p-4 bg-gradient-to-b from-black/40 to-black/70 backdrop-blur-sm">
+          <h3 className="font-bold text-white truncate">
+            {nft.name || `NFT #${nft.tokenId}`}
+          </h3>
+          
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-sm text-gray-300">
+              ID: {parseInt(nft.tokenId, 16) ? parseInt(nft.tokenId, 16).toString() : nft.tokenId}
+            </p>
+            <ExternalLink className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
           </div>
-
-          {/* Info Section */}
-          <div className="p-4 bg-gradient-to-b from-black/40 to-black/70 backdrop-blur-sm">
-            <h3 className="font-bold text-white truncate">
-              {nft.name || `NFT #${nft.tokenId}`}
-            </h3>
-            
-            <div className="flex justify-between items-center mt-1">
-              <p className="text-sm text-gray-300">
-                ID: {parseInt(nft.tokenId, 16) ? parseInt(nft.tokenId, 16).toString() : nft.tokenId}
-              </p>
-              <ExternalLink className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
-            </div>
-            
-            {/* Attributes */}
-            <div className="flex flex-wrap gap-1 mt-3">
-              {nft.attributes?.slice(0, 3).map((attr, i) => (
-                <Badge 
-                  key={i} 
-                  variant="outline" 
-                  className={`text-xs ${chainTheme.borderClass}`}
-                  style={{ color: chainTheme.primary }}
-                >
-                  {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
-                </Badge>
-              ))}
-            </div>
+          
+          {/* Attributes */}
+          <div className="flex flex-wrap gap-1 mt-3">
+            {nft.attributes?.slice(0, 3).map((attr, i) => (
+              <Badge 
+                key={i} 
+                variant="outline" 
+                className={`text-xs ${chainTheme.borderClass}`}
+                style={{ color: chainTheme.primary }}
+              >
+                {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
+              </Badge>
+            ))}
           </div>
         </div>
       </motion.div>

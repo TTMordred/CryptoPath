@@ -1,179 +1,198 @@
-import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
-import { useInView } from 'react-intersection-observer';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Search, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2 } from 'lucide-react';
 import AnimatedNFTCard from './AnimatedNFTCard';
-import { 
-  fetchNFTsWithOptimizedCursor, 
+import {
+  fetchNFTsWithOptimizedCursor,
   fetchNFTsWithProgressiveLoading,
-  estimateCollectionMemoryUsage
+  estimateCollectionMemoryUsage,
+  clearSpecificCollectionCache
 } from '@/lib/api/nftService';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+
+interface NFT {
+  id: string;
+  tokenId: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  chain: string;
+  attributes?: Array<{
+    trait_type: string;
+    value: string;
+  }>;
+  isPlaceholder?: boolean;
+}
 
 interface VirtualizedNFTGridProps {
   contractAddress: string;
   chainId: string;
+  searchQuery?: string;
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
-  searchQuery?: string;
   attributes?: Record<string, string[]>;
   viewMode?: 'grid' | 'list';
-  onNFTClick?: (nft: any) => void;
-  itemsPerPage?: number;
-  maxItems?: number; // Optional limit to total items
+  onNFTClick?: (nft: NFT) => void;
+  progressiveLoading?: boolean;
+  batchSize?: number;
+  estimatedRowHeight?: number;
+  onLoadingComplete?: () => void;
 }
 
 export default function VirtualizedNFTGrid({
   contractAddress,
   chainId,
+  searchQuery = '',
   sortBy = 'tokenId',
   sortDirection = 'asc',
-  searchQuery = '',
   attributes = {},
   viewMode = 'grid',
   onNFTClick,
-  itemsPerPage = 24,
-  maxItems
+  progressiveLoading = true,
+  batchSize = 50,
+  estimatedRowHeight = 300,
+  onLoadingComplete
 }: VirtualizedNFTGridProps) {
-  // State for different loading approaches
-  const [nfts, setNfts] = useState<any[]>([]);
+  // State for grid
+  const [nfts, setNfts] = useState<NFT[]>([]);
   const [totalCount, setTotalCount] = useState(0);
-  const [loadedCount, setLoadedCount] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [nextCursor, setNextCursor] = useState<string | undefined>(undefined);
-  const [hasMore, setHasMore] = useState(true);
-  const [useProgressiveLoading, setUseProgressiveLoading] = useState(false);
-  const [progressiveLoadingStarted, setProgressiveLoadingStarted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
+  const [hasNextPage, setHasNextPage] = useState(true);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [windowWidth, setWindowWidth] = useState(0);
   
-  // Refs for optimization
-  const loadingMoreRef = useRef(false);
-  const gridRef = useRef<HTMLDivElement>(null);
+  // Refs
   const parentRef = useRef<HTMLDivElement>(null);
-  const containerSize = useRef({ width: 0, height: 0 });
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const gridContentRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
   
-  // Get chain theme for styling
+  // Chain theme for styling
   const chainTheme = getChainColorTheme(chainId);
   
-  // Intersection observer for infinite loading
-  const { ref: loadMoreRef, inView } = useInView({
-    threshold: 0,
-    rootMargin: '400px 0px', // Load more before user reaches bottom
-  });
-  
-  // Calculate grid dimensions
-  const calculateGridDimensions = useCallback(() => {
-    if (!parentRef.current) return;
+  // Calculate columns based on view mode and window width
+  const getColumnCount = useCallback(() => {
+    if (!windowWidth) return viewMode === 'grid' ? 4 : 2;
     
-    const container = parentRef.current;
-    const containerWidth = container.clientWidth;
-    
-    let columns: number;
-    if (viewMode === 'list') {
-      columns = 1;
-    } else {
-      // Responsive column count
-      if (containerWidth >= 1280) columns = 4;
-      else if (containerWidth >= 768) columns = 3;
-      else if (containerWidth >= 640) columns = 2;
-      else columns = 1;
-    }
-    
-    // Estimate item width and height
-    const itemWidth = Math.floor(containerWidth / columns);
-    const itemHeight = viewMode === 'list' ? 120 : itemWidth; // List items are shorter
-    
-    return { columns, itemWidth, itemHeight };
-  }, [viewMode]);
-  
-  // Virtualization setup for grid layout
-  const dimensions = useMemo(() => calculateGridDimensions(), [calculateGridDimensions]);
-  
-  // Grid virtualizer
-  const rowVirtualizer = useVirtualizer({
-    count: Math.ceil(nfts.length / (dimensions?.columns || 1)),
-    getScrollElement: () => parentRef.current,
-    estimateSize: useCallback(() => dimensions?.itemHeight || 300, [dimensions]),
-    overscan: 5,
-  });
+    if (viewMode === 'list') return 1;
+    if (windowWidth < 640) return 1;
+    if (windowWidth < 768) return 2;
+    if (windowWidth < 1024) return 3;
+    return 4;
+  }, [viewMode, windowWidth]);
 
-  // Decide whether to use progressive loading based on collection size
-  useEffect(() => {
-    if (totalCount > 500 && !progressiveLoadingStarted && !useProgressiveLoading) {
-      // For large collections, suggest progressive loading
-      const shouldUseProgressive = totalCount > 2000;
-      setUseProgressiveLoading(shouldUseProgressive);
-    }
-  }, [totalCount, progressiveLoadingStarted, useProgressiveLoading]);
-  
-  // Handle window resize
+  // Calculate window width on mount and resize
   useEffect(() => {
     const handleResize = () => {
-      if (parentRef.current) {
-        containerSize.current = {
-          width: parentRef.current.clientWidth,
-          height: parentRef.current.clientHeight
-        };
-      }
+      setWindowWidth(window.innerWidth);
     };
     
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Calculate rows for virtualizer based on items and columns
+  const columnCount = getColumnCount();
+  const rowCount = Math.ceil(nfts.length / columnCount);
   
-  // Load initial data with optimized cursor approach
-  const loadInitialData = useCallback(async () => {
-    setInitialLoading(true);
-    setLoading(true);
-    setError(null);
+  // Set up virtualizer
+  const rowVirtualizer = useVirtualizer({
+    count: hasNextPage ? rowCount + 1 : rowCount, // +1 for loading more row
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => estimatedRowHeight,
+    overscan: 5,
+  });
+
+  // Load NFTs using the appropriate loading strategy
+  useEffect(() => {
+    setIsLoading(true);
+    setLoadingError(null);
+    setLoadingProgress(0);
+    
+    // Either use progressive loading or cursor-based loading
+    const loadNFTs = async () => {
+      try {
+        if (progressiveLoading) {
+          // Progressive loading loads all NFTs in batches
+          const result = await fetchNFTsWithProgressiveLoading(
+            contractAddress,
+            chainId,
+            {
+              batchSize,
+              initialPageSize: batchSize,
+              sortBy,
+              sortDirection,
+              searchQuery,
+              attributes,
+              onProgress: (loaded: number, total: number) => {
+                setLoadingProgress(Math.round((loaded / total) * 100));
+              }
+            }
+          );
+          
+          setNfts(result.nfts);
+          setTotalCount(result.totalCount);
+          setHasNextPage(!!result.hasMoreBatches);
+          setLoadingProgress(result.progress);
+        } else {
+          // First load with cursor-based pagination
+          const result = await fetchNFTsWithOptimizedCursor(
+            contractAddress,
+            chainId,
+            '1', // Start with first page
+            batchSize,
+            sortBy,
+            sortDirection,
+            searchQuery,
+            attributes
+          );
+          
+          setNfts(result.nfts);
+          setTotalCount(result.totalCount);
+          setCursor(result.nextCursor);
+          setHasNextPage(!!result.nextCursor);
+          setLoadingProgress(result.progress);
+        }
+        
+        setIsLoading(false);
+        if (onLoadingComplete) onLoadingComplete();
+      } catch (error) {
+        console.error('Error loading NFTs:', error);
+        setLoadingError('Failed to load NFTs. Please try again.');
+        setIsLoading(false);
+        toast({
+          title: 'Error',
+          description: 'Failed to load NFTs. Please try again.',
+          variant: 'destructive',
+        });
+      }
+    };
+    
+    loadNFTs();
+    
+    // Cleanup function to abort any in-progress loads when filters change
+    return () => {
+      // Could implement an abort controller here if needed
+    };
+  }, [contractAddress, chainId, searchQuery, sortBy, sortDirection, JSON.stringify(attributes)]);
+  
+  // Load more NFTs when scrolling to the end (for cursor-based pagination)
+  const loadMoreNFTs = useCallback(async () => {
+    if (!hasNextPage || isLoading || progressiveLoading) return;
     
     try {
-      const result = await fetchNFTsWithOptimizedCursor(
-        contractAddress,
-        chainId,
-        undefined, // No cursor for initial load
-        itemsPerPage,
-        sortBy,
-        sortDirection,
-        searchQuery,
-        attributes
-      );
+      setIsLoading(true);
       
-      setNfts(result.nfts);
-      setTotalCount(result.totalCount);
-      setLoadedCount(result.loadedCount);
-      setProgress(result.progress);
-      setNextCursor(result.nextCursor);
-      setHasMore(!!result.nextCursor);
-    } catch (err) {
-      setError('Failed to load NFTs. Please try again.');
-      console.error('Error loading NFTs:', err);
-    } finally {
-      setInitialLoading(false);
-      setLoading(false);
-    }
-  }, [contractAddress, chainId, itemsPerPage, sortBy, sortDirection, searchQuery, attributes]);
-  
-  // Load more data using the cursor-based approach
-  const loadMoreData = useCallback(async () => {
-    if (!nextCursor || loadingMoreRef.current || !hasMore) return;
-    
-    loadingMoreRef.current = true;
-    setLoading(true);
-    
-    try {
       const result = await fetchNFTsWithOptimizedCursor(
         contractAddress,
         chainId,
-        nextCursor,
-        itemsPerPage,
+        cursor,
+        batchSize,
         sortBy,
         sortDirection,
         searchQuery,
@@ -181,262 +200,218 @@ export default function VirtualizedNFTGrid({
       );
       
       setNfts(prev => [...prev, ...result.nfts]);
-      setNextCursor(result.nextCursor);
-      setHasMore(!!result.nextCursor);
-      setLoadedCount(result.loadedCount);
-      setProgress(result.progress);
-    } catch (err) {
-      console.error('Error loading more NFTs:', err);
-    } finally {
-      loadingMoreRef.current = false;
-      setLoading(false);
+      setCursor(result.nextCursor);
+      setHasNextPage(!!result.nextCursor);
+      setLoadingProgress(result.progress);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error loading more NFTs:', error);
+      setIsLoading(false);
+      toast({
+        title: 'Error',
+        description: 'Failed to load more NFTs. Please try again.',
+        variant: 'destructive',
+      });
     }
-  }, [nextCursor, hasMore, contractAddress, chainId, itemsPerPage, sortBy, sortDirection, searchQuery, attributes]);
+  }, [
+    hasNextPage, 
+    isLoading, 
+    cursor, 
+    contractAddress, 
+    chainId, 
+    batchSize, 
+    sortBy, 
+    sortDirection, 
+    searchQuery, 
+    attributes
+  ]);
   
-  // Start progressive loading to load entire collection
-  const startProgressiveLoading = useCallback(async () => {
-    setProgressiveLoadingStarted(true);
+  // Load more when the virtualized rows include the loading row
+  useEffect(() => {
+    const range = rowVirtualizer.range;
+    if (!range) return;
     
-    try {
-      // Start the progressive loading process
-      const onProgressUpdate = (loaded: number, total: number) => {
-        setLoadedCount(loaded);
-        setProgress(Math.min(100, (loaded / total) * 100));
-      };
-      
-      const result = await fetchNFTsWithProgressiveLoading(
-        contractAddress,
-        chainId,
-        {
-          batchSize: 100,
-          maxBatches: maxItems ? Math.ceil(maxItems / 100) : 100,
-          initialPage: 1,
-          initialPageSize: nfts.length > 0 ? nfts.length : itemsPerPage,
-          sortBy,
-          sortDirection,
-          searchQuery,
-          attributes,
-          onProgress: onProgressUpdate
-        }
-      );
-      
-      setNfts(result.nfts);
-      setTotalCount(result.totalCount);
-      setHasMore(result.hasMoreBatches);
-      setProgress(result.progress);
-    } catch (err) {
-      console.error('Error in progressive loading:', err);
-    }
-  }, [contractAddress, chainId, itemsPerPage, maxItems, nfts.length, sortBy, sortDirection, searchQuery, attributes]);
-  
-  // Load initial data on mount and when dependencies change
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
-  
-  // Trigger load more when in view
-  useEffect(() => {
-    if (inView && !initialLoading && hasMore && !loading && !progressiveLoadingStarted) {
-      loadMoreData();
-    }
-  }, [inView, initialLoading, hasMore, loadMoreData, loading, progressiveLoadingStarted]);
-  
-  // Apply maximum items limit if specified
-  useEffect(() => {
-    if (maxItems && nfts.length > maxItems) {
-      setNfts(prev => prev.slice(0, maxItems));
-      setHasMore(false);
-    }
-  }, [nfts, maxItems]);
-  
-  // Render virtualized grid items
-  const renderVirtualizedItems = () => {
-    const { columns = 1 } = dimensions || {};
+    const lastRow = range.endIndex;
+    const totalRows = rowCount;
     
-    return (
+    // If we're within 3 rows of the end and there are more items to load, load more
+    if (!progressiveLoading && !isLoading && hasNextPage && lastRow >= totalRows - 3) {
+      loadMoreNFTs();
+    }
+  }, [
+    rowVirtualizer.range?.endIndex, 
+    rowCount, 
+    isLoading, 
+    hasNextPage, 
+    loadMoreNFTs, 
+    progressiveLoading
+  ]);
+  
+  // Clear cache for this collection (useful for admin or debug)
+  const handleClearCache = useCallback(() => {
+    clearSpecificCollectionCache(contractAddress, chainId);
+    toast({
+      title: 'Cache Cleared',
+      description: 'The cache for this collection has been cleared.',
+    });
+  }, [contractAddress, chainId, toast]);
+  
+  // Choose the right item height based on view mode
+  const getItemHeight = () => {
+    if (viewMode === 'list') return 120;
+    return windowWidth < 640 ? 280 : 320;
+  };
+  
+  // Check if NFTs are being filtered
+  const isFiltered = !!searchQuery || Object.keys(attributes).length > 0;
+  
+  // Handle NFT click
+  const handleNFTClick = (nft: NFT) => {
+    if (onNFTClick) onNFTClick(nft);
+  };
+  
+  // Get memory usage estimate for debugging
+  const memoryEstimate = estimateCollectionMemoryUsage(totalCount);
+
+  return (
+    <div className="relative">
+      {/* Progress indicator for progressive loading */}
+      {progressiveLoading && loadingProgress < 100 && (
+        <div className="sticky top-0 z-30 mb-4 bg-black/70 py-2 px-4 rounded-md backdrop-blur-md border border-gray-800">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-sm text-gray-400">
+              Loading NFTs: {loadingProgress}% ({nfts.length} of {totalCount})
+            </div>
+            <div className="text-xs text-gray-500">
+              Est. memory: {memoryEstimate}
+            </div>
+          </div>
+          <div className="w-full bg-gray-800 rounded-full h-2">
+            <div
+              className="h-2 rounded-full"
+              style={{
+                width: `${loadingProgress}%`,
+                backgroundColor: chainTheme.primary
+              }}
+            />
+          </div>
+        </div>
+      )}
+      
+      {/* Main virtualized grid container */}
       <div
         ref={parentRef}
-        className="h-[800px] overflow-auto scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-900"
-        style={{ 
-          height: 'calc(100vh - 200px)', 
-          minHeight: '500px',
-          maxHeight: '1000px'
-        }}
+        className="relative h-[calc(100vh-280px)] w-full overflow-auto"
+        style={{ contain: 'strict' }}
       >
+        {/* Virtualizer inner container */}
         <div
-          style={{
-            height: `${rowVirtualizer.getTotalSize()}px`,
-            width: '100%',
-            position: 'relative',
-          }}
+          ref={gridContentRef}
+          className="relative w-full"
+          style={{ height: `${rowVirtualizer.getTotalSize()}px` }}
         >
           {rowVirtualizer.getVirtualItems().map(virtualRow => {
-            const rowStartIndex = virtualRow.index * columns;
+            const rowIsLoaderRow = hasNextPage && virtualRow.index === rowCount;
+            
+            // If this is the loading indicator row
+            if (rowIsLoaderRow) {
+              return (
+                <div
+                  key="loader"
+                  ref={loadMoreRef}
+                  className="absolute left-0 w-full flex justify-center py-6"
+                  style={{
+                    height: virtualRow.size,
+                    transform: `translateY(${virtualRow.start}px)`,
+                  }}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                      <span className="text-gray-400">Loading more NFTs...</span>
+                    </div>
+                  ) : (
+                    <div className="text-gray-500 text-sm">
+                      {hasNextPage ? 'Scroll to load more' : 'No more NFTs to load'}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            
+            // Regular row of NFTs
+            const rowStartIndex = virtualRow.index * columnCount;
+            const rowEndIndex = Math.min(rowStartIndex + columnCount, nfts.length);
+            const rowNFTs = nfts.slice(rowStartIndex, rowEndIndex);
             
             return (
               <div
-                key={virtualRow.index}
+                key={virtualRow.key}
+                className={`absolute left-0 w-full grid ${
+                  viewMode === 'grid'
+                    ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6'
+                    : 'grid-cols-1 gap-3'
+                }`}
                 style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '100%',
-                  height: dimensions?.itemHeight,
+                  height: virtualRow.size,
                   transform: `translateY(${virtualRow.start}px)`,
-                  display: 'grid',
-                  gridTemplateColumns: `repeat(${columns}, 1fr)`,
-                  gap: '1rem'
                 }}
-                className="grid gap-4"
               >
-                {Array.from({ length: columns }).map((_, colIndex) => {
-                  const nftIndex = rowStartIndex + colIndex;
-                  const nft = nfts[nftIndex];
-                  
-                  if (!nft) return <div key={colIndex} />;
-                  
-                  return (
-                    <div key={`${virtualRow.index}-${colIndex}`}>
-                      <AnimatedNFTCard
-                        nft={nft}
-                        index={nftIndex}
-                        onClick={() => onNFTClick && onNFTClick(nft)}
-                        isVirtualized={true}
-                      />
-                    </div>
-                  );
-                })}
+                {rowNFTs.map((nft, idx) => (
+                  <div key={nft.id || `nft-${rowStartIndex + idx}`}>
+                    <AnimatedNFTCard 
+                      nft={nft} 
+                      onClick={() => handleNFTClick(nft)} 
+                      index={rowStartIndex + idx}
+                      isVirtualized={true}
+                    />
+                  </div>
+                ))}
+                
+                {/* Fill empty cells in last row */}
+                {rowNFTs.length < columnCount && !isFiltered && (
+                  Array.from({ length: columnCount - rowNFTs.length }).map((_, idx) => (
+                    <div key={`empty-${idx}`} className="invisible"></div>
+                  ))
+                )}
               </div>
             );
           })}
         </div>
       </div>
-    );
-  };
-  
-  // Empty state
-  if (!initialLoading && nfts.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-gray-700 rounded-xl bg-gray-900/50">
-        <Search className="h-10 w-10 text-gray-500 mb-4" />
-        <p className="text-gray-400 mb-2">No NFTs found for this collection.</p>
-        <p className="text-sm text-gray-500">Try adjusting your search or filters</p>
-      </div>
-    );
-  }
-  
-  // Loading state for initial load
-  if (initialLoading) {
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {Array.from({ length: itemsPerPage }).map((_, index) => (
-          <div key={index} className="aspect-square bg-gray-800/40 rounded-xl animate-pulse" />
-        ))}
-      </div>
-    );
-  }
-  
-  // Error state
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 px-4 border border-dashed border-red-700 rounded-xl bg-red-900/20">
-        <AlertCircle className="h-10 w-10 text-red-500 mb-4" />
-        <p className="text-red-400 mb-2">{error}</p>
-        <Button onClick={loadInitialData} variant="outline" className="mt-4">
-          Try Again
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={gridRef} className="space-y-4">
-      {/* Progress indicator */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-400">
-            Showing {nfts.length} of {totalCount.toLocaleString()} items
-          </span>
-          
-          {/* Memory usage estimate */}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="text-xs px-2 py-1 rounded-full bg-gray-800 text-gray-400 cursor-help">
-                  {estimateCollectionMemoryUsage(totalCount)}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Estimated memory usage for full collection</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        
-        {/* Progressive loading button for large collections */}
-        {totalCount > 500 && !progressiveLoadingStarted && (
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={startProgressiveLoading}
-            className={`text-xs border ${chainTheme.borderClass}`}
-            style={{ color: chainTheme.primary }}
+      
+      {/* Error message */}
+      {loadingError && (
+        <div className="mt-6 p-4 bg-red-900/30 border border-red-800 rounded-md">
+          <p className="text-red-300">{loadingError}</p>
+          <button
+            className="mt-2 text-red-300 underline"
+            onClick={() => window.location.reload()}
           >
-            <Loader2 className="mr-1 h-3 w-3" />
-            Load Entire Collection
-          </Button>
-        )}
-      </div>
-      
-      {/* Loading progress bar */}
-      {(loading || progress > 0 && progress < 100) && (
-        <div className="mb-4">
-          <Progress value={progress} className="h-1" />
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
-            <span>{loadedCount.toLocaleString()} loaded</span>
-            <span>{Math.round(progress)}%</span>
-          </div>
+            Reload page
+          </button>
         </div>
       )}
-
-      {/* NFT Grid with virtualization for large collections */}
-      {nfts.length > 100 ? (
-        renderVirtualizedItems()
-      ) : (
-        <div className={
-          viewMode === 'grid'
-            ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4'
-            : 'grid grid-cols-1 gap-4'
-        }>
-          <AnimatePresence mode="popLayout">
-            {nfts.map((nft, index) => (
-              <motion.div
-                key={nft.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3, delay: Math.min(0.05 * (index % 12), 0.5) }}
+      
+      {/* Empty state */}
+      {!isLoading && nfts.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 px-4 border border-dashed border-gray-700 rounded-lg mt-6">
+          <div className="text-gray-400 text-center">
+            <h3 className="text-xl mb-2">No NFTs Found</h3>
+            <p className="mb-4">
+              {isFiltered 
+                ? 'No NFTs match your current filters. Try adjusting your search or filters.'
+                : 'This collection appears to be empty or still loading.'}
+            </p>
+            {isFiltered && (
+              <button
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
               >
-                <AnimatedNFTCard
-                  nft={nft}
-                  index={index}
-                  onClick={() => onNFTClick && onNFTClick(nft)}
-                />
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-      
-      {/* Load more trigger */}
-      {hasMore && !progressiveLoadingStarted && (
-        <div 
-          ref={loadMoreRef}
-          className="flex justify-center items-center py-8"
-        >
-          <div className={`h-10 w-10 rounded-full border-2 border-t-transparent animate-spin`} 
-            style={{ borderColor: `${chainTheme.primary} transparent transparent transparent` }} />
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
