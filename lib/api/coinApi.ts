@@ -8,7 +8,10 @@ const CACHE_EXPIRY = 5 * 60 * 1000; // 5 phút
 const FETCH_TIMEOUT = 15000; // 15 giây timeout
 const MAX_RETRIES = 3;
 const MEMORY_CACHE = new Map<string, { data: any; timestamp: number }>();
-const limit = pLimit(5); // Giới hạn 5 request đồng thời
+const limit = pLimit(2); // Giới hạn 2 request đồng thời
+
+// Proxy URL - Sửa đường dẫn đúng theo cấu trúc Next.js API routes
+const PROXY_URL = "/api/coingecko-proxy"; // Xóa ký tự \ và sửa thành đường dẫn tương đối đúng
 
 // Helper functions
 const getFromMemoryCache = <T>(key: string): T | null => {
@@ -28,7 +31,7 @@ const getLocalFallback = <T>(key: string): T | null => {
   const item = localStorage.getItem(key);
   if (item) {
     const { data, timestamp } = JSON.parse(item);
-    if (Date.now() - timestamp < CACHE_EXPIRY * 2) return data; // Cache lâu hơn offline
+    if (Date.now() - timestamp < CACHE_EXPIRY * 2) return data;
   }
   return null;
 };
@@ -38,9 +41,10 @@ const setLocalFallback = (key: string, data: any) => {
 };
 
 // Fetch với timeout, retry và rate limiting
-const fetchWithRetry = async (url: string, options: RequestInit = {}): Promise<any> => {
+const fetchWithRetry = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  const url = `${PROXY_URL}?endpoint=${encodeURIComponent(endpoint)}`;
 
   for (let i = 0; i < MAX_RETRIES; i++) {
     try {
@@ -55,12 +59,34 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}): Promise<a
           },
         })
       );
+
       clearTimeout(timeoutId);
-      if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
-      return await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          const result = await response.json();
+          const retryAfter = result.retryAfter || 60; // Lấy từ proxy response
+          console.log(`Rate limit hit. Waiting ${retryAfter}s before retry. Attempt ${i + 1}/${MAX_RETRIES}`);
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          continue; // Thử lại sau khi đợi
+        }
+        throw new Error(`API request failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      if (result.error) throw new Error(result.error);
+      return result.data || result;
     } catch (error) {
-      if (i === MAX_RETRIES - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, i))); // Exponential backoff
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request timed out");
+      }
+      if (i === MAX_RETRIES - 1) {
+        console.error('Max retries reached:', error);
+        throw error;
+      }
+      const delay = 1000 * Math.pow(2, i) + Math.random() * 1000;
+      console.log(`Retrying after ${delay}ms due to error: ${error}`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     } finally {
       clearTimeout(timeoutId);
     }
@@ -70,7 +96,6 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}): Promise<a
 export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
   const cacheKey = `coins_${page}_${perPage}`;
   
-  // Check memory cache
   const memoryCached = getFromMemoryCache<Coin[]>(cacheKey);
   if (memoryCached) {
     console.log('Returning memory cached coin data');
@@ -78,7 +103,6 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
   }
 
   try {
-    // Check Supabase cache
     const { data: cachedData, error } = await supabase
       .from('cached_coins')
       .select('data, last_updated')
@@ -90,17 +114,15 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
       if (timeSinceUpdate < CACHE_EXPIRY) {
         console.log('Returning Supabase cached coin data');
         setToMemoryCache(cacheKey, cachedData.data);
-        setLocalFallback(cacheKey, cachedData.data); // Lưu fallback
+        setLocalFallback(cacheKey, cachedData.data);
         return cachedData.data as Coin[];
       }
     }
 
-    // Fetch fresh data
     console.log(`Fetching fresh coin data for page ${page}`);
-    const url = `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d&locale=en`;
-    const data = await fetchWithRetry(url);
+    const endpoint = `coins/markets?vs_currency=usd&order=market_cap_desc&per_page=${perPage}&page=${page}&sparkline=true&price_change_percentage=1h,24h,7d&locale=en`;
+    const data = await fetchWithRetry(endpoint);
 
-    // Update caches
     setToMemoryCache(cacheKey, data);
     setLocalFallback(cacheKey, data);
     await supabase.from('cached_coins').upsert({
@@ -112,9 +134,8 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
     return data;
   } catch (error) {
     console.error("Error fetching coins:", error);
-    toast.error("Failed to load cryptocurrency data");
-    
-    // Return local fallback nếu có
+    toast.error("Failed to load cryptocurrency data. Using cached data if available.");
+
     const fallback = getLocalFallback<Coin[]>(cacheKey);
     if (fallback) {
       console.log('Returning local fallback coin data');
@@ -124,12 +145,12 @@ export const getCoins = async (page = 1, perPage = 20): Promise<Coin[]> => {
   }
 };
 
+// Các hàm getCoinDetail và getCoinHistory giữ nguyên logic nhưng đảm bảo dùng PROXY_URL đã sửa
 export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
   if (!id) throw new Error("Coin ID is required");
   
   const cacheKey = `coin_detail_${id}`;
   
-  // Check memory cache
   const memoryCached = getFromMemoryCache<CoinDetail>(cacheKey);
   if (memoryCached) {
     console.log('Returning memory cached coin detail');
@@ -137,7 +158,6 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
   }
 
   try {
-    // Check Supabase cache
     const { data: cachedData, error } = await supabase
       .from('cached_coin_details')
       .select('data, last_updated')
@@ -154,12 +174,10 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
       }
     }
 
-    // Fetch fresh data
     console.log(`Fetching fresh data for coin: ${id}`);
-    const url = `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`;
-    const data = await fetchWithRetry(url, { cache: "no-store" });
+    const endpoint = `coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=true`;
+    const data = await fetchWithRetry(endpoint);
 
-    // Update caches
     setToMemoryCache(cacheKey, data);
     setLocalFallback(cacheKey, data);
     await supabase.from('cached_coin_details').upsert({
@@ -172,7 +190,6 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
   } catch (error) {
     console.error(`Error fetching coin detail for ${id}:`, error);
     
-    // Return local fallback nếu có
     const fallback = getLocalFallback<CoinDetail>(cacheKey);
     if (fallback) {
       console.log('Returning local fallback coin detail');
@@ -185,7 +202,6 @@ export const getCoinDetail = async (id: string): Promise<CoinDetail> => {
 export const getCoinHistory = async (id: string, days = 7): Promise<CoinHistory> => {
   const cacheKey = `coin_history_${id}_${days}`;
   
-  // Check memory cache
   const memoryCached = getFromMemoryCache<CoinHistory>(cacheKey);
   if (memoryCached) {
     console.log('Returning memory cached coin history');
@@ -193,9 +209,8 @@ export const getCoinHistory = async (id: string, days = 7): Promise<CoinHistory>
   }
 
   try {
-    // Fetch fresh data
-    const url = `https://api.coingecko.com/api/v3/coins/${id}/market_chart?vs_currency=usd&days=${days}`;
-    const data = await fetchWithRetry(url);
+    const endpoint = `coins/${id}/market_chart?vs_currency=usd&days=${days}`;
+    const data = await fetchWithRetry(endpoint);
 
     setToMemoryCache(cacheKey, data);
     setLocalFallback(cacheKey, data);
@@ -203,8 +218,7 @@ export const getCoinHistory = async (id: string, days = 7): Promise<CoinHistory>
   } catch (error) {
     console.error(`Error fetching history for ${id}:`, error);
     toast.error("Failed to load price history");
-    
-    // Return local fallback hoặc dummy data
+
     const fallback = getLocalFallback<CoinHistory>(cacheKey);
     if (fallback) {
       console.log('Returning local fallback coin history');
@@ -218,7 +232,6 @@ export const getCoinHistory = async (id: string, days = 7): Promise<CoinHistory>
   }
 };
 
-// Hàm xóa cache nếu cần
 export const clearCache = (key?: string) => {
   if (key) {
     MEMORY_CACHE.delete(key);
