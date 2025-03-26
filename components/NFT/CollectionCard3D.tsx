@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import Image from 'next/image';
+import Image from 'next/legacy/image';
 import Link from 'next/link';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { Sparkles, Verified, Users, ExternalLink, ChevronRight } from 'lucide-react';
@@ -23,7 +23,7 @@ interface CollectionCardProps {
   onClick?: () => void;
 }
 
-export default function CollectionCard3D({ collection, index, onClick }: CollectionCardProps) {
+export default function CollectionCard3D({ collection, index = 0, onClick }: CollectionCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -114,16 +114,48 @@ export default function CollectionCard3D({ collection, index, onClick }: Collect
     },
   };
   
-  // Get network name
-  const getNetworkName = () => {
-    const networks: Record<string, string> = {
-      '0x1': 'Ethereum',
-      '0xaa36a7': 'Sepolia',
-      '0x38': 'BNB Chain',
-      '0x61': 'BNB Testnet'
-    };
-    return networks[collection.chain] || 'Unknown Network';
+  // Get network badge details
+  const getNetworkBadge = () => {
+    switch (collection.chain) {
+      case '0x1':
+        return { 
+          icon: '/icons/eth.svg', 
+          name: 'ETH', 
+          bgClass: 'bg-blue-500/20',
+          textColor: '#6b8df7' 
+        };
+      case '0xaa36a7':
+        return { 
+          icon: '/icons/eth.svg', 
+          name: 'Sepolia', 
+          bgClass: 'bg-blue-400/20',
+          textColor: '#8aa2f2' 
+        };
+      case '0x38':
+        return { 
+          icon: '/icons/bnb.svg', 
+          name: 'BNB', 
+          bgClass: 'bg-yellow-500/20',
+          textColor: '#F0B90B' 
+        };
+      case '0x61':
+        return { 
+          icon: '/icons/bnb.svg', 
+          name: 'BNB Testnet', 
+          bgClass: 'bg-yellow-400/20',
+          textColor: '#F5CA3B' 
+        };
+      default:
+        return { 
+          icon: '/icons/eth.svg', 
+          name: 'ETH', 
+          bgClass: 'bg-blue-500/20',
+          textColor: '#6b8df7' 
+        };
+    }
   };
+
+  const networkBadge = getNetworkBadge();
 
   return (
     <motion.div
@@ -178,7 +210,7 @@ export default function CollectionCard3D({ collection, index, onClick }: Collect
             <Image 
               src={collection.bannerImageUrl} 
               alt={`${collection.name} banner`}
-              fill
+              layout="fill"
               className="object-cover transition-transform duration-1000"
               style={{ 
                 transform: isHovered ? 'scale(1.05)' : 'scale(1)',
@@ -191,23 +223,23 @@ export default function CollectionCard3D({ collection, index, onClick }: Collect
           )}
           
           {/* Network Badge - Top right */}
-          <div className="absolute top-2 right-2 z-20">
-            <Badge 
-              className={`py-1 px-2 ${chainTheme.backgroundClass} border ${chainTheme.borderClass}`} 
-              style={{ color: chainTheme.primary }}
-            >
-              <div className="flex items-center gap-1 text-xs">
+          <div className="absolute top-2 right-2 z-10">
+            <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border-white/10 backdrop-blur-sm shadow-sm border`}>
+              {/* Fix: Update the icon container to ensure proper display */}
+              <div className="relative w-3.5 h-3.5 flex-shrink-0 overflow-hidden rounded-full bg-white flex items-center justify-center">
                 <Image 
-                  src={collection.chain.includes('0x38') || collection.chain.includes('0x61') 
-                    ? '/icons/bnb.svg' 
-                    : '/icons/eth.svg'} 
-                  alt="Chain"
-                  width={10}
-                  height={10}
+                  src={networkBadge.icon} 
+                  alt={networkBadge.name} 
+                  layout="fill"
+                  objectFit="contain"
+                  className="p-0.5"
+                  priority={true}
                 />
-                {getNetworkName()}
               </div>
-            </Badge>
+              <span className="text-xs font-medium" style={{ color: networkBadge.textColor }}>
+                {networkBadge.name}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -221,7 +253,7 @@ export default function CollectionCard3D({ collection, index, onClick }: Collect
             <Image
               src={collection.imageUrl}
               alt={collection.name}
-              fill
+              layout="fill"
               className="object-cover"
               priority
             />

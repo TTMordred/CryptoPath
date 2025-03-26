@@ -1,160 +1,73 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import Image, { ImageProps } from 'next/legacy/image';
 import { Info } from 'lucide-react';
 
-interface LazyImageProps {
+interface LazyImageProps extends Omit<ImageProps, 'src'> {
   src: string;
-  alt: string;
-  className?: string;
-  width?: number;
-  height?: number;
-  priority?: boolean;
-  fill?: boolean;
-  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
-  placeholder?: 'blur' | 'empty';
-  blurDataURL?: string;
-  sizes?: string;
-  quality?: number;
-  onLoad?: () => void;
-  onError?: () => void;
+  showLoadingIndicator?: boolean;
+  objectFit?: "fill" | "contain" | "cover" | "none" | "scale-down";
 }
 
-export default function LazyImage({
-  src,
-  alt,
-  className = '',
-  width,
-  height,
-  priority = false,
-  fill = false,
-  objectFit = 'cover',
-  placeholder = 'empty',
-  blurDataURL,
-  sizes = '(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw',
-  quality = 75,
-  onLoad,
+export default function LazyImage({ 
+  src, 
+  alt, 
+  showLoadingIndicator = false,
   onError,
+  onLoad,
+  objectFit = "cover",
+  ...props 
 }: LazyImageProps) {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(false);
-  const [imgSrc, setImgSrc] = useState<string | null>(null);
+  const [imgSrc, setImgSrc] = useState<string>(src);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-  const placeholderColors = useRef<string[]>([
-    'rgb(30, 30, 30)', 'rgb(40, 40, 40)', 'rgb(50, 50, 50)', 'rgb(35, 35, 35)'
-  ]);
-  
-  // Function to transform IPFS URLs
-  const transformUrl = (url: string): string => {
-    if (!url) return '';
-    if (url.startsWith('ipfs://')) {
-      return `https://ipfs.io/ipfs/${url.slice(7)}`;
-    }
-    return url;
-  };
-  
-  // Set up intersection observer to detect when image is in viewport
+
   useEffect(() => {
-    if (!imgRef.current || priority) {
-      setIsInView(true);
-      return;
-    }
-    
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(entry.isIntersecting);
-      },
-      {
-        root: null,
-        rootMargin: '200px', // Load images 200px before they appear in viewport
-        threshold: 0.01,
-      }
-    );
-    
-    observer.observe(imgRef.current);
-    
-    return () => {
-      if (imgRef.current) {
-        observer.unobserve(imgRef.current);
-      }
-    };
-  }, [priority]);
-  
-  // Set image source when in view
-  useEffect(() => {
-    if (isInView && src) {
-      setImgSrc(transformUrl(src));
-    }
-  }, [isInView, src]);
-  
-  // Handle image load
-  const handleImageLoad = () => {
-    setIsLoaded(true);
-    if (onLoad) onLoad();
-  };
-  
-  // Handle image error
-  const handleImageError = () => {
+    setImgSrc(src);
+    setLoading(true);
+    setError(false);
+  }, [src]);
+
+  const handleError = () => {
+    setImgSrc('/images/placeholder-nft.png'); // Fallback image
     setError(true);
-    setIsLoaded(true);
-    if (onError) onError();
+    setLoading(false);
+    // Fix: Don't pass Error object directly to onError
+    if (onError) onError({} as React.SyntheticEvent<HTMLImageElement>);
   };
-  
-  // Generate random placeholder background
-  const placeholderBackground = `linear-gradient(45deg, ${placeholderColors.current[0]}, ${placeholderColors.current[1]}, ${placeholderColors.current[2]}, ${placeholderColors.current[3]})`;
+
+  const handleLoad = (event: any) => {
+    setLoading(false);
+    if (onLoad) onLoad(event);
+  };
+
+  // Handle IPFS and data URLs properly
+  // Fix: Changed from let to const
+  const finalSrc = imgSrc;
+
+  if (!imgSrc || error) {
+    return (
+      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+        <Info className="h-10 w-10 text-gray-600" />
+      </div>
+    );
+  }
 
   return (
-    <div 
-      ref={imgRef}
-      className={`relative ${className}`}
-      style={{
-        width: fill ? '100%' : width ? `${width}px` : '100%',
-        height: fill ? '100%' : height ? `${height}px` : 'auto',
-        backgroundColor: 'rgb(30, 30, 30)',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Placeholder with shimmer effect */}
-      {!isLoaded && (
-        <motion.div
-          className="absolute inset-0 z-0"
-          style={{ background: placeholderBackground }}
-          animate={{
-            backgroundPosition: ['0% 0%', '100% 100%'],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatType: 'reverse',
-            ease: 'linear',
-          }}
-        />
-      )}
-      
-      {/* Main image */}
-      {imgSrc && isInView && (
-        <Image
-          src={imgSrc}
-          alt={alt}
-          fill={fill}
-          width={!fill ? width : undefined}
-          height={!fill ? height : undefined}
-          className={`object-${objectFit} transition-opacity duration-500 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
-          sizes={sizes}
-          quality={quality}
-          priority={priority}
-          onLoad={handleImageLoad}
-          onError={handleImageError}
-        />
-      )}
-      
-      {/* Error fallback */}
-      {error && (
+    <>
+      {loading && showLoadingIndicator && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-800">
-          <Info className="h-8 w-8 text-gray-500" />
+          <div className="w-8 h-8 border-2 border-gray-600 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
-    </div>
+      
+      <Image
+        src={finalSrc}
+        alt={alt || "NFT Image"}
+        onError={handleError}
+        onLoad={handleLoad}
+        objectFit={objectFit}
+        {...props}
+      />
+    </>
   );
 }

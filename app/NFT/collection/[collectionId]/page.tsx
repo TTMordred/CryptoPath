@@ -225,7 +225,6 @@ export default function CollectionDetailsPage() {
       // Add network as a filter attribute
       attributeMap['Network'] = [
         networkId === '0x1' ? 'Ethereum' : 
-        networkId === '0xaa36a7' ? 'Sepolia' : 
         networkId === '0x38' ? 'BNB Chain' : 
         'BNB Testnet'
       ];
@@ -339,7 +338,6 @@ export default function CollectionDetailsPage() {
   const getExplorerLink = (address: string) => {
     const chainConfig = {
       '0x1': 'https://etherscan.io',
-      '0xaa36a7': 'https://sepolia.etherscan.io',
       '0x38': 'https://bscscan.com',
       '0x61': 'https://testnet.bscscan.com',
     };
@@ -352,7 +350,6 @@ export default function CollectionDetailsPage() {
   const getNetworkName = () => {
     const networks = {
       '0x1': 'Ethereum',
-      '0xaa36a7': 'Sepolia',
       '0x38': 'BNB Chain',
       '0x61': 'BNB Testnet',
     };
