@@ -4,6 +4,8 @@ import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
+import { ipfsUriToGatewayUrl } from '@/lib/utils/ipfsUtils';
+import Image from "next/legacy/image";
 
 interface NFT {
   id: string;
@@ -29,6 +31,9 @@ interface AnimatedNFTCardProps {
 export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Process image URL for IPFS compatibility
+  const imageUrl = nft.imageUrl ? ipfsUriToGatewayUrl(nft.imageUrl) : '';
   
   // Chain-specific styling
   const chainTheme = getChainColorTheme(nft.chain);
@@ -216,13 +221,14 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* Network Badge - Positioned absolutely top-right */}
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
-            <div className="relative h-3 w-3 bg-white overflow-hidden">
-              <LazyImage 
+            {/* Fix: Update the icon container to ensure proper display */}
+            <div className="relative w-3.5 h-3.5 flex-shrink-0 overflow-hidden rounded-full bg-white flex items-center justify-center">
+              <Image 
                 src={networkBadge.icon} 
                 alt={networkBadge.name} 
-                width={12} 
-                height={12} 
-                className="object-contain"
+                layout="fill"
+                objectFit="contain"
+                className="p-0.5"
                 priority={true}
               />
             </div>
@@ -235,11 +241,11 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* NFT Image with progressive loading */}
         <div className="aspect-square relative overflow-hidden bg-gray-800">
           <LazyImage
-            src={nft.imageUrl}
+            src={imageUrl}
             alt={nft.name || `NFT #${nft.tokenId}`}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            objectFit="cover"
+            width={500}
+            height={500}
+            className="w-full h-full object-cover"
             priority={index < 4}
             onLoad={() => setImageLoaded(true)}
             onError={() => {/* Error handled inside LazyImage */}}
@@ -264,16 +270,36 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
           
           {/* Attributes */}
           <div className="flex flex-wrap gap-1 mt-3">
-            {nft.attributes?.slice(0, 3).map((attr, i) => (
-              <Badge 
-                key={i} 
-                variant="outline" 
-                className={`text-xs ${chainTheme.borderClass}`}
-                style={{ color: chainTheme.primary }}
-              >
-                {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
-              </Badge>
-            ))}
+            {(() => {
+              const processAttributes = () => {
+                let attrs = nft.attributes;
+                if (attrs && !Array.isArray(attrs) && typeof attrs === 'object') {
+                  attrs = Object.entries(attrs).map(([trait_type, value]) => ({
+                    trait_type,
+                    value: String(value)
+                  }));
+                }
+                return (Array.isArray(attrs) ? attrs : [])
+                  .filter(attr =>
+                    attr &&
+                    typeof attr === 'object' &&
+                    'trait_type' in attr &&
+                    'value' in attr
+                  )
+                  .slice(0, 3);
+              };
+              
+              return processAttributes().map((attr, i) => (
+                <Badge
+                  key={i}
+                  variant="outline"
+                  className={`text-xs ${chainTheme.borderClass}`}
+                  style={{ color: chainTheme.primary }}
+                >
+                  {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
+                </Badge>
+              ));
+            })()}
           </div>
         </div>
       </motion.div>

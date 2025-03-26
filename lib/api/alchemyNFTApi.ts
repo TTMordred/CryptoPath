@@ -177,6 +177,18 @@ const mockCollections = [
     category: 'Art & Collectibles'
   },
   {
+    id: '0x93c1687e27fecb994fb091712eb245f41cb51af3',
+    name: 'BIT LIFE CLUB',
+    description: 'BIT LIFE is a collection of 1,000 NFTs rewriting history on Ethereum.',
+    imageUrl: 'https://i.seadn.io/gcs/files/673d998fc5165b025bf66e20032c9e8b.gif?auto=format&dpr=1&w=512',
+    bannerImageUrl: 'https://i.seadn.io/gcs/files/3af75cf7c10abb59ddc671ed44e88cc1.gif?auto=format&dpr=1&w=512',
+    floorPrice: '0.01',
+    totalSupply: '1000',
+    chain: '0x1',
+    verified: true,
+    category: 'Meme'
+  },
+  {
     id: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb',
     name: 'CryptoPunks',
     description: 'CryptoPunks launched as a fixed set of 10,000 items in mid-2017 and became one of the inspirations for the ERC-721 standard. They have been featured in places like The New York Times, Christie\'s of London, Art|Basel Miami, and The PBS NewsHour.',
@@ -445,52 +457,100 @@ const mockBNBCollections = [
     category: 'Gaming'
   },
   {
-    id: '0xcec33930ba196cdf9f38e1a5e2a1e0708450d20f',
-    name: 'Era7: Game of Truth',
-    description: 'Era7: Game of Truth is a play-to-earn trading card game inspired by Magic: The Gathering, Hearthstone, and Runeterra. Build your deck and battle against players around the world!',
-    imageUrl: 'https://images.pocketgamer.biz/T/52539/2022/52539_Era7_Game_of_Truth_screenshot_1.png',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1428004235405357057/1648021562/1500x500',
-    floorPrice: '0.4',
-    totalSupply: '33000',
-    chain: '0x38',
-    verified: true,
-    category: 'Gaming'
-  },
-  {
-    id: '0x04a5e3ed4907b781f702adbddf1b7e771c31b0f2',
-    name: 'BSC Punks',
-    description: 'CryptoPunks on BSC - 10,000 uniquely generated characters on the BNB Chain.',
-    imageUrl: 'https://lh3.googleusercontent.com/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE=s130',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1364731917736632321/1649351522/1500x500',
-    floorPrice: '0.25',
+    id: '0x25dc4d9e2598c21dc020aa7b741377ecde971c2f',
+    name: 'RhnoX',
+    description: 'RhnoX, dinooo',
+    imageUrl: 'https://i.seadn.io/s/raw/files/731b1b374d2ad2d6f66e4793ccb8244e.png?auto=format&dpr=1&w=3840',
+    bannerImageUrl: 'https://i.seadn.io/s/raw/files/df96ef204acb4b78f6e7ff9e3bdf625f.png?auto=format&dpr=1&w=512',
+    floorPrice: '0',
     totalSupply: '10000',
     chain: '0x38',
-    verified: false,
-    category: 'Art & Collectibles'
+    verified: true,
+    category: 'Animals'
   },
   {
-    id: '0x85f0e02cb992aa1f9f47112f815f519ef1a59e2d',
-    name: 'BNB Bulls Club',
-    description: 'The BNB Bulls Club is a collection of 10,000 unique NFTs living on the BNB Chain, each representing membership to the club with unique utilities.',
-    imageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    bannerImageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    floorPrice: '1.2',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: false,
-    category: 'Membership'
-  },
-  {
-    id: '0xc274a97f1691ef390f662067e95a6eff1f99b504',
-    name: 'Tin Fun NFT',
-    description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
-    imageUrl: 'https://i.seadn.io/s/raw/files/a531bedf317b5ffe5a35d559b5c94cd9.jpg?auto=format&dpr=1&w=256',
-    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0xc274a97f1691ef390f662067e95a6eff1f99b504/31341974:about:media:98e2f8a2-a8aa-46d9-9267-87108353c759.jpeg?auto=format&dpr=1&w=1920',
-    floorPrice: '0.0929',
-    totalSupply: '9999',
+    id: '0x6dfbb01ecb7991366cd8acc4d18dcc67bbe345ba',
+    name: 'Reefer by CoralApp',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2FM%252FK47YBCAs6ieLgkYDuIwv46DpQnevL2hmBULPkK3BuBY8BG4GGzXB22H3E0Phb8M9RMHorMwBwK9g1GNRSmHqKVgKxZwKqawUsxLVBU98czgEyHu8JPigR%252B0hTOIEKPQ2fByOR1AiDomIAfUK%252BOjwn70fv7FQbGrZSFpOxFo3IM2D6K7unSJoB%252BIKRyIT38%252Fnx%252F0gpUvVgL3ehrSXBVchEdeTxrzHqQXzaxM9WErHlgdPAGFDVnnuDu62qDy0dJ',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2Fi9YO%252F4yHXUdJsWcTqhqvfzU%252F3WKezZwCXanKqYOzVPg%252BaktrSCM23x2y61NuH7tbBMKNqglfI%252B%252Ba3fQp0Y8y2rfX9lGSU5olT3da4GRyRONg6tDeCs5Q29nd1XKfAxFv.png',
+    floorPrice: '0.2',
+    totalSupply: 'xxx',
     chain: '0x38',
     verified: true,
-    category: 'China'
+    category: 'Animals'
+  },
+  {
+    id: '0xabd1780208a62b9cbf9d3b7a1617918d42493933',
+    name: 'BitLife',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.cellula.life%2Froleimagefactory%2Fb108_B_5.gif',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/autoquality:size:1024000:20:80/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.cellula.life%2Froleimagefactory%2Fa90_A_4.gif',
+    floorPrice: '0.0015',
+    totalSupply: 'xxx',
+    chain: '0x38',
+    verified: true,
+    category: 'Robots'
+  },
+  {
+    id: '0xbd19b4c3c1e745e982f4d7f8bdf983d407e68a46',
+    name: 'AneeMate Genesis Zero',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2FCkMT33f1Sv9wfP6vXxX9omNeQgD5%252Bce5kPfKyaki6jmvvnHsubJ%252BWJr2NEaHrLZae3jIQM8an2M07TnJEan8HlV14iWeesdefnM%252BxMdKsgs%253D',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:64:0:0/plain/https%3A%2F%2Fmetadata.qorpo.world%2Faneemate-genesis%2Fmedia%2FGENESIS_PYROS.jpg',
+    floorPrice: '1.5',
+    totalSupply: '3000',
+    chain: '0x38',
+    verified: true,
+    category: 'Game'
+  },
+  {
+    id: '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07',
+    name: 'Pancake Bunnies',
+    description: 'Pancake Bunnies are collectible NFTs on BNB Chain created by PancakeSwap. These adorable bunny NFTs feature various themes and styles, serving as digital collectibles in the PancakeSwap ecosystem.',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://dashboard-assets.dappradar.com/document/4600/pancakeswap-dapp-defi-bsc-logo-166x166_783df04863220a6371e78725e2fa3320.png',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e080a2aaf821da426f31d3dc58a870ae477bd8f1f4c95f97fd75ff78fd17418836ad28289b8e3dde0f2b5d46a418ce93978d27239f31c23aa09b9b4ab80cb1481539fdb6c65858854966251d5dd8ec613705cb9fd4b06ade913edc20a5eb5b0bdf54eb148e3df70d5bf9eb9732ed301921',
+    floorPrice: '0.2',
+    totalSupply: '14000',
+    chain: '0x38',
+    verified: true,
+    category: 'Collectibles'
+  },
+  {
+    id: '0xF250bf5953B601E42E93226F7A9e4e8B9E7435Af',
+    name: 'Legendary Pandra King',
+    description: 'Legendary Pandra King',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://metadata.dappradar.com/api/media/collection/legendary-pandra-king-3?isThumbnail=0',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e010c8f5ab67e87091eb47c157f82c1054ed6056b2afd9d302705b406e5f48bfdd964ad5b88e9cc7fd9ec5aa8e626ef389eac6467952d11912c205003f262fe0550ccd94fa49444f38881ddfe418464db8129356323e33097fcccb9ccc0bf50793bbb4ba1ed84d7da3620008ad3527226d',
+    floorPrice: '0.2',
+    totalSupply: '135',
+    chain: '0x38',
+    verified: false,
+    category: 'Collectibles'
+  },
+  {
+    id: '0xa9E9A78fF1027dc0dd1Ee54D7f134f191541Fe07',
+    name: 'Frontera',
+    description: 'Frontera',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://metadata.dappradar.com/api/media/sales/any/nft-metadata/bsc/0xa9e9a78ff1027dc0dd1ee54d7f134f191541fe07/0xa9e9a78ff1027dc0dd1ee54d7f134f191541fe07_64_64.jpg',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e010c8f5ab67e87091eb47c157f82c1054ed6056b2afd9d302705b406e5f48bfdd964ad5b88e9cc7fd9ec5aa8e626ef389eac6467952d11912c205003f262fe0550ccd94fa49444f38881ddfe418464db8129356323e33097fcccb9ccc0bf50793bbb4ba1ed84d7da3620008ad3527226d',
+    floorPrice: '0.2',
+    totalSupply: '3200',
+    chain: '0x38',
+    verified: false,
+    category: 'Collectibles'
+  },
+  {
+    id: '0x9F471abCddc810E561873b35b8aad7d78e21a48e',
+    name: 'Galxe OAT',
+    description: 'Galxe OAT (On-chain Achievement Token) is a collection of NFTs that represent achievements and credentials earned on Galxe, a Web3 credential data network. Each OAT signifies participation in ecosystem campaigns and community events.',
+    imageUrl: 'https://i.seadn.io/gcs/files/c083274101cf84f66c7490b14d7dc480.png?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gcs/files/c083274101cf84f66c7490b14d7dc480.png?auto=format&dpr=1&w=256',
+    floorPrice: '0.05',
+    totalSupply: '250000',
+    chain: '0x38',
+    verified: true,
+    category: 'Credentials'
   }
 ];
 

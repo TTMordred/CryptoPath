@@ -5,9 +5,24 @@ const nextConfig = {
     // why so many? all for nft...
     remotePatterns: [
       {
-        protocol: "https",
-        hostname: "api.opensea.io",
-        pathname: "/api/v1/asset/**",
+      protocol: "https",
+      hostname: "api.opensea.io",
+      pathname: "/api/v1/asset/**",
+      },
+      {
+      protocol: "https",
+      hostname: "dappradar.com",
+      pathname: "/**",
+      },
+      {
+      protocol: "https",
+      hostname: "dashboard-assets.dappradar.com",
+      pathname: "/**",
+      },
+      {
+      protocol: "https",
+      hostname: "img-cdn.magiceden.dev",
+      pathname: "/**",
       },
       // Add these to your existing remotePatterns array
       {
