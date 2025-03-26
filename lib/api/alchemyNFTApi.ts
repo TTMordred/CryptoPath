@@ -445,6 +445,54 @@ const mockBNBCollections = [
     category: 'Gaming'
   },
   {
+    id: '0x25dc4d9e2598c21dc020aa7b741377ecde971c2f',
+    name: 'RhnoX',
+    description: 'RhnoX, dinooo',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fbafybeihxzn2o4daow6cbth7pzlwwsdhb3ryzzvhok4ukz3uiodyygexcmu.ipfs.w3s.link%2F7cbfe2c138dd4140bd5c6739dae1a346_400x400.webp',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2Fi9YO%252F4yHXUdJsWcTqhqvf32nwo61iwc9Eyq2MC1NyBZeThvD0pm%252F1LLHrhwGoSCwdW5QSWIe85nAF4iiibr1aGhRpa5Hg0%252BO5wPuwlsxeqo%253D.png',
+    floorPrice: '0',
+    totalSupply: '10000',
+    chain: '0x38',
+    verified: true,
+    category: 'Animals'
+  },
+  {
+    id: '0x6dfbb01ecb7991366cd8acc4d18dcc67bbe345ba',
+    name: 'Reefer by CoralApp',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2FM%252FK47YBCAs6ieLgkYDuIwv46DpQnevL2hmBULPkK3BuBY8BG4GGzXB22H3E0Phb8M9RMHorMwBwK9g1GNRSmHqKVgKxZwKqawUsxLVBU98czgEyHu8JPigR%252B0hTOIEKPQ2fByOR1AiDomIAfUK%252BOjwn70fv7FQbGrZSFpOxFo3IM2D6K7unSJoB%252BIKRyIT38%252Fnx%252F0gpUvVgL3ehrSXBVchEdeTxrzHqQXzaxM9WErHlgdPAGFDVnnuDu62qDy0dJ',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2Fi9YO%252F4yHXUdJsWcTqhqvfzU%252F3WKezZwCXanKqYOzVPg%252BaktrSCM23x2y61NuH7tbBMKNqglfI%252B%252Ba3fQp0Y8y2rfX9lGSU5olT3da4GRyRONg6tDeCs5Q29nd1XKfAxFv.png',
+    floorPrice: '0.2',
+    totalSupply: 'xxx',
+    chain: '0x38',
+    verified: true,
+    category: 'Animals'
+  },
+  {
+    id: '0xabd1780208a62b9cbf9d3b7a1617918d42493933',
+    name: 'BitLife',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.cellula.life%2Froleimagefactory%2Fb108_B_5.gif',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/autoquality:size:1024000:20:80/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.cellula.life%2Froleimagefactory%2Fa90_A_4.gif',
+    floorPrice: '0.0015',
+    totalSupply: 'xxx',
+    chain: '0x38',
+    verified: true,
+    category: 'Robots'
+  },
+  {
+    id: '0xbd19b4c3c1e745e982f4d7f8bdf983d407e68a46',
+    name: 'AneeMate Genesis Zero',
+    description: 'Reefer by CoralApp, horse fishh',
+    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2FCkMT33f1Sv9wfP6vXxX9omNeQgD5%252Bce5kPfKyaki6jmvvnHsubJ%252BWJr2NEaHrLZae3jIQM8an2M07TnJEan8HlV14iWeesdefnM%252BxMdKsgs%253D',
+    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:64:0:0/plain/https%3A%2F%2Fmetadata.qorpo.world%2Faneemate-genesis%2Fmedia%2FGENESIS_PYROS.jpg',
+    floorPrice: '1.5',
+    totalSupply: '3000',
+    chain: '0x38',
+    verified: true,
+    category: 'Game'
+  },
+  {
     id: '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07',
     name: 'Pancake Bunnies',
     description: 'Pancake Bunnies are collectible NFTs on BNB Chain created by PancakeSwap. These adorable bunny NFTs feature various themes and styles, serving as digital collectibles in the PancakeSwap ecosystem.',
@@ -454,6 +502,30 @@ const mockBNBCollections = [
     totalSupply: '14000',
     chain: '0x38',
     verified: true,
+    category: 'Collectibles'
+  },
+  {
+    id: '0xF250bf5953B601E42E93226F7A9e4e8B9E7435Af',
+    name: 'Legendary Pandra King',
+    description: 'Legendary Pandra King',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://metadata.dappradar.com/api/media/collection/legendary-pandra-king-3?isThumbnail=0',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e010c8f5ab67e87091eb47c157f82c1054ed6056b2afd9d302705b406e5f48bfdd964ad5b88e9cc7fd9ec5aa8e626ef389eac6467952d11912c205003f262fe0550ccd94fa49444f38881ddfe418464db8129356323e33097fcccb9ccc0bf50793bbb4ba1ed84d7da3620008ad3527226d',
+    floorPrice: '0.2',
+    totalSupply: '135',
+    chain: '0x38',
+    verified: false,
+    category: 'Collectibles'
+  },
+  {
+    id: '0xa9E9A78fF1027dc0dd1Ee54D7f134f191541Fe07',
+    name: 'Frontera',
+    description: 'Frontera',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://metadata.dappradar.com/api/media/sales/any/nft-metadata/bsc/0xa9e9a78ff1027dc0dd1ee54d7f134f191541fe07/0xa9e9a78ff1027dc0dd1ee54d7f134f191541fe07_64_64.jpg',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e010c8f5ab67e87091eb47c157f82c1054ed6056b2afd9d302705b406e5f48bfdd964ad5b88e9cc7fd9ec5aa8e626ef389eac6467952d11912c205003f262fe0550ccd94fa49444f38881ddfe418464db8129356323e33097fcccb9ccc0bf50793bbb4ba1ed84d7da3620008ad3527226d',
+    floorPrice: '0.2',
+    totalSupply: '3200',
+    chain: '0x38',
+    verified: false,
     category: 'Collectibles'
   },
   {
