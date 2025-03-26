@@ -55,6 +55,8 @@ export default function StakingCard() {
     wrongNetwork: false,
     initialized: false
   });
+  const [rawStaked, setRawStaked] = useState(ethers.BigNumber.from(0));
+
 
   const getStakingContract = (signer?: ethers.Signer) => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -84,6 +86,7 @@ export default function StakingCard() {
       const isCorrectNetwork = await checkNetwork();
       
       if (!account || !isCorrectNetwork) {
+        setRawStaked(ethers.BigNumber.from(0));
         setStakingData({
           staked: '0.0000',
           rewards: '0.0000',
@@ -93,7 +96,7 @@ export default function StakingCard() {
         setStatus(prev => ({ ...prev, initialized: true }));
         return;
       }
-
+      
       const contract = getStakingContract();
       const [paused, staked, rewards, total, apr] = await Promise.all([
         contract.paused().catch(() => false),
@@ -102,6 +105,8 @@ export default function StakingCard() {
         contract.totalStaked().catch(() => ethers.BigNumber.from(0)),
         contract.calculateAPR().catch(() => ethers.BigNumber.from(0))
       ]);
+
+      setRawStaked(staked);
 
       setStatus(prev => ({ ...prev, isPaused: paused, initialized: true }));
       
@@ -332,7 +337,7 @@ export default function StakingCard() {
 
             <button
               onClick={handleUnstake}
-              disabled={loading || !amount || parseFloat(amount) <= 0 || parseFloat(stakingData.staked) < parseFloat(amount) || status.isPaused}
+              disabled={loading || !amount || parseFloat(amount) <= 0 || rawStaked.lt(ethers.utils.parseUnits(amount, 18)) || status.isPaused}
               className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
               aria-label="Unstake PATH token"
             >
