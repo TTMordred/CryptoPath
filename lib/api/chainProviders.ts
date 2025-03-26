@@ -39,20 +39,6 @@ export const chainConfigs: Record<string, ChainConfig> = {
     },
     testnet: false,
   },
-  // Sepolia Testnet
-  '0xaa36a7': {
-    id: '0xaa36a7',
-    name: 'Sepolia',
-    rpcUrl: 'https://eth-sepolia.g.alchemy.com/v2/demo',
-    symbol: 'ETH',
-    blockExplorerUrl: 'https://sepolia.etherscan.io',
-    nativeCurrency: {
-      name: 'Sepolia Ether',
-      symbol: 'ETH',
-      decimals: 18
-    },
-    testnet: true,
-  },
   // BNB Chain Mainnet
   '0x38': {
     id: '0x38',
@@ -104,13 +90,12 @@ export const getChainProvider = (chainId: string) => {
  * @returns The full explorer URL
  */
 export function getExplorerUrl(chainId: string, path: string = '', type: 'address' | 'tx' | 'token' | 'block' = 'address'): string {
-  const config = chainConfigs[chainId];
-  if (!config) {
-    // Default to Ethereum mainnet if chain not found
-    return `https://etherscan.io/${type}/${path}`;
-  }
-  
-  return `${config.blockExplorerUrl}/${type}/${path}`;
+  const explorers: Record<string, string> = {
+    '0x1': 'https://etherscan.io',
+    '0x38': 'https://bscscan.com',
+    '0x61': 'https://testnet.bscscan.com'
+  };
+  return `${explorers[chainId] || 'https://etherscan.io'}/${type}/${path}`;
 }
 
 /**
@@ -129,40 +114,33 @@ export const formatAddress = (address: string) => {
  * @returns Object with color values and utility classes
  */
 export const getChainColorTheme = (chainId: string): ChainTheme => {
-  switch (chainId) {
-    case '0x1':
-    case '0xaa36a7':
-      return {
-        primary: '#6b8df7',
-        secondary: '#3b5ff7',
-        accent: 'blue',
-        light: '#d0d8ff',
-        backgroundClass: 'bg-blue-500/20',
-        borderClass: 'border-blue-500/50',
-        textClass: 'text-blue-400'
-      };
-    case '0x38':
-    case '0x61':
-      return {
-        primary: '#F0B90B',
-        secondary: '#E6A50A',
-        accent: 'yellow',
-        light: '#FFF4D0',
-        backgroundClass: 'bg-yellow-500/20',
-        borderClass: 'border-yellow-500/50',
-        textClass: 'text-yellow-500'
-      };
-    default:
-      return {
-        primary: '#6b8df7',
-        secondary: '#3b5ff7',
-        accent: 'blue',
-        light: '#d0d8ff',
-        backgroundClass: 'bg-blue-500/20',
-        borderClass: 'border-blue-500/50',
-        textClass: 'text-blue-400'
-      };
+  // Default theme (Ethereum)
+  let theme = {
+    primary: '#6b8df7',
+    secondary: '#3b5cf5',
+    accent: '#4b6ef5',    // Added missing property
+    light: '#d4ddff',     // Added missing property
+    backgroundClass: 'bg-blue-900/20',
+    borderClass: 'border-blue-500/30',
+    textClass: 'text-blue-400',
+    buttonClass: 'bg-blue-600 hover:bg-blue-700'
+  };
+  
+  // BNB Chain theme
+  if (chainId === '0x38' || chainId === '0x61') {
+    theme = {
+      primary: '#F0B90B',
+      secondary: '#F8D12F',
+      accent: '#EDAA00',    // Added missing property
+      light: '#FFF3D3',     // Added missing property
+      backgroundClass: 'bg-yellow-900/20',
+      borderClass: 'border-yellow-500/30',
+      textClass: 'text-yellow-400',
+      buttonClass: 'bg-yellow-600 hover:bg-yellow-700'
+    };
   }
+  
+  return theme;
 };
 
 /**
@@ -171,8 +149,12 @@ export const getChainColorTheme = (chainId: string): ChainTheme => {
  * @returns Human-readable network name
  */
 export const getNetworkName = (chainId: string): string => {
-  const config = chainConfigs[chainId];
-  return config?.name || 'Unknown Network';
+  const networks: Record<string, string> = {
+    '0x1': 'Ethereum',
+    '0x38': 'BNB Chain',
+    '0x61': 'BNB Testnet'
+  };
+  return networks[chainId] || 'Unknown Network';
 };
 
 /**

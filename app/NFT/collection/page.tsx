@@ -202,17 +202,24 @@ export default function NFTCollectionPage() {
             method: 'eth_chainId',
           });
           setChainId(chainId);
+          // Load collections immediately after setting chainId
+          loadCollections(chainId);
+          // Initial trending data - load for default period
+          loadTrendingCollections('24h');
         } catch (error) {
           console.error('Error checking network:', error);
+          // If there's an error, still load with default chainId
+          loadCollections(chainId);
+          loadTrendingCollections('24h');
         }
+      } else {
+        // If no window.ethereum, load with default chainId
+        loadCollections(chainId);
+        loadTrendingCollections('24h');
       }
     };
     
     checkNetwork();
-    loadCollections(chainId);
-    
-    // Initial trending data
-    loadTrendingCollections('24h');
   }, []);
   
   // Load user NFTs when account or chain changes

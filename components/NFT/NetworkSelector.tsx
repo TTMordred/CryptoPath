@@ -34,14 +34,6 @@ const networks: Network[] = [
     hexColor: '#6b8df7' 
   },
   { 
-    id: '0xaa36a7', 
-    name: 'Sepolia', 
-    icon: '/icons/eth.svg', 
-    color: 'bg-blue-400/20 border-blue-400/50', 
-    hexColor: '#8aa2f2',
-    testnet: true 
-  },
-  { 
     id: '0x38', 
     name: 'BNB Chain', 
     icon: '/icons/bnb.svg', 
