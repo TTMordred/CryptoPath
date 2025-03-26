@@ -19,7 +19,7 @@ const SearchOnTop = () => {
     searchQuery,
     setSearchQuery,
     searchType,
-    setSearchType: setGlobalSearchType,
+    setSearchType,
     isLoading,
     handleSearch
   } = useSearch();
@@ -221,15 +221,19 @@ const SearchOnTop = () => {
 
                 <div className="h-full px-2 flex items-center border-l border-amber-500/20">
                   <Select
-                    value={mapSearchTypeToSelector(searchType)}
-                    onValueChange={(value) => setGlobalSearchType(mapSelectorToSearchType(value as "onchain" | "offchain"))}
+                    value={searchType}
+                    onValueChange={(value) => setSearchType(value as SearchType)}
                   >
                     <SelectTrigger className="w-[110px] border-0 bg-transparent focus:ring-0 text-white h-8">
                       <SelectValue placeholder="Search Type" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-900/95 border border-amber-500/30 text-white">
-                      <SelectItem value="onchain" className="hover:bg-amber-500/20">On-Chain</SelectItem>
-                      <SelectItem value="offchain" className="hover:bg-amber-500/20">Off-Chain</SelectItem>
+                      <SelectItem value="All Filters" className="hover:bg-amber-500/20">All Filters</SelectItem>
+                      <SelectItem value="On-Chain" className="hover:bg-amber-500/20">On-Chain</SelectItem>
+                      <SelectItem value="Off-Chain" className="hover:bg-amber-500/20">Off-Chain</SelectItem>
+                      <SelectItem value="Tokens" className="hover:bg-amber-500/20">Tokens</SelectItem>
+                      <SelectItem value="Txn Hash" className="hover:bg-amber-500/20">Txn Hash</SelectItem>
+                      <SelectItem value="Blocks" className="hover:bg-amber-500/20">Blocks</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
