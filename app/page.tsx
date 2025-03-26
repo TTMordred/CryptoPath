@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from "next/legacy/image";
@@ -21,11 +22,22 @@ import toast from 'react-hot-toast';
 import { useSpring, animated } from 'react-spring';
 import CountUp from 'react-countup';
 import { Swiper, SwiperSlide } from 'swiper/react';
+
+// Import Swiper modules
+import SwiperCore from 'swiper';
 import { Autoplay, Pagination, Navigation, EffectCoverflow } from 'swiper/modules';
+
+// Install Swiper modules
+SwiperCore.use([Autoplay, Pagination, Navigation, EffectCoverflow]);
+
+// Import Swiper styles
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 import 'swiper/css/effect-coverflow';
+
+// Remove this line - no longer needed
+// SwiperCore.use([Autoplay, Pagination, Navigation, EffectCoverflow]);
 
 // FeatureCardProps interface should include language
 interface FeatureCardProps {
@@ -626,28 +638,29 @@ const LandingPage = () => {
           </motion.div>
           
           <Swiper
-            effect={'coverflow'}
-            grabCursor={true}
-            centeredSlides={true}
-            slidesPerView={'auto'}
-            coverflowEffect={{
-              rotate: 50,
-              stretch: 0,
-              depth: 100,
-              modifier: 1,
-              slideShadows: true,
-            }}
-            autoplay={{
-              delay: 3500,
-              disableOnInteraction: false,
-            }}
-            pagination={{
-              clickable: true,
-            }}
-            navigation={true}
-            modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
-            className="whats-new-swiper"
-          >
+  effect={'coverflow'}
+  grabCursor={true}
+  centeredSlides={true}
+  slidesPerView={'auto'}
+  coverflowEffect={{
+    rotate: 50,
+    stretch: 0,
+    depth: 100,
+    modifier: 1,
+    slideShadows: true,
+  }}
+  autoplay={{
+    delay: 3500,
+    disableOnInteraction: false,
+  }}
+  pagination={{
+    clickable: true,
+  }}
+  navigation={true}
+  // Remove the modules prop when using SwiperCore.use()
+  // modules={[EffectCoverflow, Autoplay, Pagination, Navigation]}
+  className="whats-new-swiper"
+>
             {whatsNewItems.map((item, index) => (
               <SwiperSlide key={index} className="max-w-md">
                 <motion.div 
