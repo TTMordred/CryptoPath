@@ -93,6 +93,18 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
         const isPartialPage = result.nfts.length < itemsPerPage;
         const calculatedLastPage = isEmptyPage || isPartialPage;
         
+        if (result.nfts.length === 0 && currentPage > 1) {
+          // If we got an empty page but it's not page 1,
+          // show a warning but keep the previous page's data
+          toast({
+            title: 'Notice',
+            description: 'No additional NFTs found for this collection.',
+            variant: 'default'
+          });
+          setCurrentPage(currentPage - 1); // Go back to previous page
+          return;
+        }
+        
         setNfts(result.nfts);
         setTotalPages(result.totalPages || Math.ceil(result.totalCount / itemsPerPage));
         setTotalItems(result.totalCount);
@@ -107,9 +119,28 @@ const PaginatedNFTGrid: React.FC<PaginatedNFTGridProps> = ({
       } catch (err) {
         console.error('Error loading NFTs:', err);
         setError('Failed to load NFTs. Please try again.');
+        
+        // Generate mock data as fallback
+        const mockNfts = Array(itemsPerPage).fill(0).map((_, i) => ({
+          id: `mock-${i}`,
+          tokenId: `${(currentPage - 1) * itemsPerPage + i + 1}`,
+          name: `NFT #${(currentPage - 1) * itemsPerPage + i + 1}`,
+          description: 'Mock NFT description when API is unavailable',
+          imageUrl: `/Img/nft/sample-${(i % 5) + 1}.jpg`,
+          chain: chainId,
+          attributes: [
+            { trait_type: 'Status', value: 'Mock' },
+            { trait_type: 'Chain', value: chainId === '0x1' ? 'Ethereum' : 'BNB Chain' }
+          ]
+        }));
+        
+        setNfts(mockNfts);
+        setTotalItems(100); // Assume a reasonable total
+        setTotalPages(5);
+        
         toast({
           title: 'Error',
-          description: 'Failed to load NFTs. Please try again.',
+          description: 'Failed to load NFTs. Showing sample data instead.',
           variant: 'destructive',
         });
       } finally {

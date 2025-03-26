@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
-import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ExternalLink } from 'lucide-react';
+import { useState, useRef, useEffect, memo } from 'react';
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
+import { ExternalLink, ShieldCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
@@ -19,6 +19,7 @@ interface NFT {
     value: string;
   }>;
   isPlaceholder?: boolean;
+  verified?: boolean;
 }
 
 interface AnimatedNFTCardProps {
@@ -26,10 +27,19 @@ interface AnimatedNFTCardProps {
   onClick?: () => void;
   index?: number;
   isVirtualized?: boolean;
+  highlight?: boolean;
 }
 
-export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
+// Component implementation with animations and optimizations
+const AnimatedNFTCardComponent = ({ 
+  nft, 
+  onClick, 
+  index = 0, 
+  isVirtualized = false,
+  highlight = false
+}: AnimatedNFTCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
   
   // Process image URL for IPFS compatibility
@@ -82,6 +92,8 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
   }, [shineX, shineY, shineOpacity]);
   
   function handleMouseMove(e: React.MouseEvent) {
+    if (nft.isPlaceholder) return;
+    
     if (cardRef.current) {
       const rect = cardRef.current.getBoundingClientRect();
       const centerX = rect.left + rect.width / 2;
@@ -94,10 +106,12 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
   function handleMouseLeave() {
     x.set(0);
     y.set(0);
+    setHovered(false);
   }
   
   function handleMouseEnter() {
     scale.set(1.02);
+    setHovered(true);
   }
   
   function handleMouseExit() {
@@ -126,6 +140,19 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
       transition: {
         duration: 0.3,
         ease: [0.4, 0, 0.2, 1],
+      }
+    },
+    highlight: { 
+      scale: [1, 1.03, 1],
+      boxShadow: [
+        "0 0 0px rgba(255,255,255,0)",
+        "0 0 15px rgba(255,255,255,0.5)",
+        "0 0 0px rgba(255,255,255,0)"
+      ],
+      transition: {
+        duration: 1.5,
+        repeat: 2,
+        repeatType: "reverse" as const, // Fix type error by explicitly typing as const
       }
     }
   };
@@ -186,10 +213,19 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
     return 'hover:shadow-[0_0_15px_rgba(107,141,247,0.3)]';
   };
 
-  // If this is a placeholder card (for virtualization), show a simpler version
+  // If this is a placeholder card (for virtualization), show a loading skeleton
   if (nft.isPlaceholder) {
     return (
-      <div className="w-full h-full aspect-square bg-gray-800/40 rounded-xl animate-pulse" />
+      <div 
+        className="w-full h-full bg-gray-900/40 backdrop-blur-sm rounded-xl border border-gray-800 overflow-hidden"
+        aria-hidden="true"
+      >
+        <div className="aspect-square w-full bg-gray-800/60 animate-pulse" />
+        <div className="p-3 space-y-2">
+          <div className="h-5 bg-gray-800/60 rounded animate-pulse" />
+          <div className="h-4 bg-gray-800/60 rounded w-2/3 animate-pulse" />
+        </div>
+      </div>
     );
   }
 
@@ -197,7 +233,10 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
     <motion.div
       ref={cardRef}
       className="relative cursor-pointer"
-      style={{ perspective: 1000, scale }}
+      style={{ 
+        perspective: 1000, 
+        scale 
+      }}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onMouseEnter={handleMouseEnter}
@@ -205,10 +244,11 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
       onClick={onClick}
       variants={cardVariants}
       initial="hidden"
-      animate="visible"
+      animate={highlight ? "highlight" : "visible"}
       exit="exit"
       whileTap={{ scale: 0.98 }}
       layout
+      aria-label={`NFT: ${nft.name || `NFT #${nft.tokenId}`}`}
     >
       <motion.div
         className={`overflow-hidden rounded-xl border ${chainTheme.borderClass} ${getBorderGlow()} bg-black/60 backdrop-blur-sm shadow-lg transition-shadow duration-300`}
@@ -221,7 +261,6 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* Network Badge - Positioned absolutely top-right */}
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
-            {/* Fix: Update the icon container to ensure proper display */}
             <div className="relative w-3.5 h-3.5 flex-shrink-0 overflow-hidden rounded-full bg-white flex items-center justify-center">
               <Image 
                 src={networkBadge.icon} 
@@ -238,6 +277,18 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
           </div>
         </div>
 
+        {/* Verified Badge */}
+        {nft.verified && (
+          <div className="absolute top-2 left-2 z-10">
+            <div className={`flex items-center gap-1 py-1 px-2 rounded-full bg-green-500/20 border border-green-500/50 backdrop-blur-sm`}>
+              <ShieldCheck className="w-3 h-3 text-green-400" />
+              <span className="text-xs font-medium text-green-400">
+                Verified
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* NFT Image with progressive loading */}
         <div className="aspect-square relative overflow-hidden bg-gray-800">
           <LazyImage
@@ -246,13 +297,21 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
             width={500}
             height={500}
             className="w-full h-full object-cover"
-            priority={index < 4}
+            priority={index < 8}
             onLoad={() => setImageLoaded(true)}
-            onError={() => {/* Error handled inside LazyImage */}}
+            showLoadingIndicator={true}
           />
           
           {/* Chain indicator corner decoration */}
           <div className={`absolute bottom-0 right-0 w-16 h-16 transform rotate-45 translate-x-8 translate-y-8 ${nft.chain.startsWith('0x38') || nft.chain.startsWith('0x61') ? 'bg-yellow-500/10' : 'bg-blue-500/10'}`}></div>
+          
+          {/* Hover overlay effect */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-b from-transparent to-black/80 opacity-0 hover:opacity-100 transition-opacity duration-300"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: hovered ? 0.6 : 0 }}
+            transition={{ duration: 0.3 }}
+          />
         </div>
 
         {/* Info Section */}
@@ -284,7 +343,8 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
                     attr &&
                     typeof attr === 'object' &&
                     'trait_type' in attr &&
-                    'value' in attr
+                    'value' in attr &&
+                    attr.trait_type !== 'Network' // Filter out Network attribute
                   )
                   .slice(0, 3);
               };
@@ -296,7 +356,7 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
                   className={`text-xs ${chainTheme.borderClass}`}
                   style={{ color: chainTheme.primary }}
                 >
-                  {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
+                  {`${attr.trait_type}: ${attr.value}`}
                 </Badge>
               ));
             })()}
@@ -305,4 +365,13 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
       </motion.div>
     </motion.div>
   );
-}
+};
+
+// Add displayName to fix ESLint warning
+AnimatedNFTCardComponent.displayName = 'AnimatedNFTCard';
+
+// Memoize the component to prevent unnecessary re-renders
+const AnimatedNFTCard = memo(AnimatedNFTCardComponent);
+AnimatedNFTCard.displayName = 'AnimatedNFTCard'; // Also needed here for the memo wrapper
+
+export default AnimatedNFTCard;
