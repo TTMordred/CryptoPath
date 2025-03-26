@@ -19,7 +19,6 @@ import FAQ from './FAQ';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import toast from 'react-hot-toast';
-import { useSpring, animated } from 'react-spring';
 import CountUp from 'react-countup';
 import { Swiper, SwiperSlide } from 'swiper/react';
 
@@ -264,10 +263,19 @@ const LandingPage = () => {
   
   // Animated cursor effect - follows mouse with delay
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
-  const cursorSpring = useSpring({
-    to: { x: cursorPos.x - 32, y: cursorPos.y - 32 },
-    config: { mass: 1, tension: 120, friction: 14 }
-  });
+  const cursorVariants = {
+    default: {
+      x: cursorPos.x - 32,
+      y: cursorPos.y - 32,
+      transition: {
+        type: "spring",
+        mass: 1,
+        damping: 14,
+        stiffness: 120,
+        restDelta: 0.001
+      }
+    }
+  };
 
   // Parallax scroll effect
   const { scrollYProgress } = useScroll();
