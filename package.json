@@ -79,6 +79,7 @@
     "pino-pretty": "^13.0.0",
     "qrcode.react": "^4.2.0",
     "react": "^19.0.0",
+    "react-circular-progressbar": "^2.2.0",
     "react-day-picker": "^9.5.1",
     "react-dom": "^19.0.0",
     "react-force-graph-2d": "^1.27.0",
