@@ -680,7 +680,6 @@ const LandingPage = () => {
         </div>
       </div>
       
-      {/* Trending Projects & Partner Bar */}
       <PartnerBar />
       <TrendingProjects />
 
