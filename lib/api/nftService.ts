@@ -15,6 +15,7 @@ import {
   fetchCollectionNFTs as alchemyFetchCollectionNFTs
 } from './alchemyNFTApi';
 import { getChainProvider, getExplorerUrl, chainConfigs } from './chainProviders';
+import { fetchIpfsJson, ipfsUriToGatewayUrl } from '@/lib/utils/ipfsUtils';
 
 // Environment variables for API keys
 const ALCHEMY_API_KEY = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY || 'demo';
@@ -37,6 +38,14 @@ const collectionNFTsCache = new Map<string, {timestamp: number, nfts: Collection
 
 // Cache TTL in milliseconds (10 minutes)
 const COLLECTION_CACHE_TTL = 10 * 60 * 1000;
+
+// Add a cache for metadata
+const metadataCache: Record<string, any> = {};
+const collectionCache: Record<string, any> = {};
+
+// Add pagination cache for optimizing collection browsing
+type PaginationCacheKey = `${string}:${string}:${number}:${number}:${string}:${string}:${string}`;
+const paginationCache: Record<PaginationCacheKey, any> = {};
 
 /**
  * Chain ID to network mapping for API endpoints
@@ -2712,3 +2721,147 @@ export function applyFilters(
   
   return filtered;
 }
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+// 
+
+// fixxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+/**
+ * Fetch metadata for a token URI with caching and IPFS gateway fallbacks
+ * @param tokenUri URI of the token metadata
+ * @returns Processed metadata
+ */
+export async function fetchTokenMetadata(tokenUri: string) {
+  // Check cache first
+  if (metadataCache[tokenUri]) {
+    return metadataCache[tokenUri];
+  }
+  
+  try {
+    let metadata;
+    
+    if (tokenUri.includes('ipfs') || tokenUri.startsWith('Qm')) {
+      // Use IPFS utility for IPFS URIs to handle CORS issues
+      metadata = await fetchIpfsJson(tokenUri);
+    } else {
+      // Regular HTTP fetch for non-IPFS URIs
+      const response = await fetch(tokenUri);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      metadata = await response.json();
+    }
+    
+    // Process image URL if it's an IPFS URL
+    if (metadata.image && (metadata.image.includes('ipfs') || metadata.image.startsWith('Qm'))) {
+      metadata.image = ipfsUriToGatewayUrl(metadata.image);
+    }
+    
+    // Cache the result
+    metadataCache[tokenUri] = metadata;
+    return metadata;
+  } catch (error) {
+    console.error(`Error fetching metadata from ${tokenUri}:`, error);
+    
+    // Return basic metadata on error
+    return {
+      name: 'Unknown NFT',
+      description: 'Metadata could not be loaded',
+      image: '/images/placeholder-nft.png' // Make sure you have a placeholder image
+    };
+  }
+}
+
+/**
+ * Fetch paginated NFTs with caching (alternative implementation)
+ */
+export async function fetchPaginatedNFTsWithCache(
+  contractAddress: string,
+  chainId: string,
+  page: number = 1,
+  pageSize: number = 20,
+  sortBy: string = 'tokenId',
+  sortDirection: 'asc' | 'desc' = 'asc',
+  searchQuery: string = '',
+  attributes: Record<string, string[]> = {}
+) {
+  // Generate cache key based on params
+  const cacheKey: PaginationCacheKey = `${contractAddress}:${chainId}:${page}:${pageSize}:${sortBy}:${sortDirection}:${searchQuery}`;
+  
+  // Check cache
+  if (paginationCache[cacheKey]) {
+    console.log("Using cached NFT data");
+    return paginationCache[cacheKey];
+  }
+  
+  // Implement the actual fetch logic here
+  // This is a placeholder - replace with your actual implementation
+  const nftData = {
+    nfts: [],
+    totalPages: 1,
+    totalCount: 0
+  };
+  
+  // Cache the result
+  paginationCache[cacheKey] = nftData;
+  return nftData;
+}
+
+/**
+ * Clear collection info cache for a specific collection and chain
+ */
+export function clearCollectionInfoCache(contractAddress: string, chainId: string) {
+  const cacheKey = `${contractAddress}:${chainId}`;
+  if (collectionCache[cacheKey]) {
+    delete collectionCache[cacheKey];
+  }
+}
+
+/**
+ * Clear pagination key-value cache for a specific collection and chain
+ */
+export function clearPaginationKeyCache(contractAddress: string, chainId: string) {
+  // Clear all cache entries that match the contract and chain
+  Object.keys(paginationCache).forEach(key => {
+    if (key.startsWith(`${contractAddress}:${chainId}:`)) {
+      delete paginationCache[key as PaginationCacheKey];
+    }
+  });
+}
+
+// Other NFT service functions

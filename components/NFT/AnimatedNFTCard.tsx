@@ -4,6 +4,7 @@ import { ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
+import { ipfsUriToGatewayUrl } from '@/lib/utils/ipfsUtils';
 
 interface NFT {
   id: string;
@@ -29,6 +30,9 @@ interface AnimatedNFTCardProps {
 export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized = false }: AnimatedNFTCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  
+  // Process image URL for IPFS compatibility
+  const imageUrl = nft.imageUrl ? ipfsUriToGatewayUrl(nft.imageUrl) : '';
   
   // Chain-specific styling
   const chainTheme = getChainColorTheme(nft.chain);
@@ -235,11 +239,11 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* NFT Image with progressive loading */}
         <div className="aspect-square relative overflow-hidden bg-gray-800">
           <LazyImage
-            src={nft.imageUrl}
+            src={imageUrl}
             alt={nft.name || `NFT #${nft.tokenId}`}
-            fill
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            objectFit="cover"
+            width={500}
+            height={500}
+            className="w-full h-full object-cover"
             priority={index < 4}
             onLoad={() => setImageLoaded(true)}
             onError={() => {/* Error handled inside LazyImage */}}
