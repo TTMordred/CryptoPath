@@ -68,31 +68,6 @@ const ErrorState = memo(({ error, onRetry }: { error: string; onRetry: () => voi
 ));
 ErrorState.displayName = "ErrorState";
 
-// Lightweight time range selector
-const TimeRangeSelector = memo(({ value, onChange }: { 
-  value: string, 
-  onChange: (value: string) => void 
-}) => {
-  const ranges = [ '1d', '1w', '1m', '3m', '1y' ];
-  
-  return (
-    <div className="flex bg-gray-800/40 rounded-lg p-1 border border-gray-700/50">
-      {ranges.map(range => (
-        <button
-          key={range}
-          onClick={() => onChange(range)}
-          className={`px-2 py-1 text-xs rounded-md ${
-            value === range ? 'bg-[#F5B056] text-gray-900' : 'text-gray-400'
-          }`}
-        >
-          {range.toUpperCase()}
-        </button>
-      ))}
-    </div>
-  );
-});
-TimeRangeSelector.displayName = "TimeRangeSelector";
-
 interface RevenueGraphProps {
   onCoinChange: (coin: CoinOption | null) => void;
 }
@@ -110,7 +85,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     { id: 'chainlink', symbol: 'LINK', name: 'Chainlink' },
   ]);
   const [loadingCoins, setLoadingCoins] = useState(false);
-  const [timeRange, setTimeRange] = useState('1m');
+  const [timeRange, setTimeRange] = useState('1d'); // Default to 1d only
   const [initialLoad, setInitialLoad] = useState(true);
   
   // Cooldown state management
@@ -118,7 +93,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
   const [refreshCountdown, setRefreshCountdown] = useState<number>(0);
   const [isRefreshCoolingDown, setIsRefreshCoolingDown] = useState<boolean>(false);
   const lastFetchTimeRef = useRef<Record<string, number>>({});
-  
+
   // Manual refresh handler with cooldown
   const handleManualRefresh = useCallback(() => {
     const now = Date.now();
@@ -224,17 +199,40 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     };
   }, [onCoinChange, selectedCoin]);
 
-  // Get time range in days - optimized to avoid re-calculation
+  // Get time range in days - simplified to only have 1d
   const getTimeRangeDays = useMemo(() => {
-    const rangeDays: Record<string, number> = {
-      '1d': 1,
-      '1w': 7,
-      '1m': 30,
-      '3m': 90,
-      '1y': 365
-    };
-    return rangeDays[timeRange] || 30;
-  }, [timeRange]);
+    return 1; // Always return 1 day
+  }, []);
+
+  // Format date based on time range - simplified for 1d only
+  const formatDate = useCallback((timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }, []);
+  
+  // Modify x-axis rendering to show more context
+  <XAxis 
+  dataKey="date"
+  stroke="#666666"
+  tickLine={false}
+  axisLine={false}
+  tick={{ fill: '#9ca3af', fontSize: 12 }}
+  dy={10}
+  interval={timeRange === '1d' ? 'preserveStart' : 'preserveStartEnd'} // Adjust interval for daily vs. longer ranges
+  minTickGap={timeRange === '1d' ? 20 : 50} // Increase space between ticks for longer time ranges
+/>
+
+  // Add a new function to filter unique dates
+  const getUniqueChartData = useCallback((data: ChartData[]) => {
+    const uniqueDates = new Set<string>();
+    return data.filter(item => {
+      if (!uniqueDates.has(item.date)) {
+        uniqueDates.add(item.date);
+        return true;
+      }
+      return false;
+    });
+  }, []);
 
   // Optimized data fetching with caching and cooldown
   const fetchData = useCallback(async () => {
@@ -279,12 +277,11 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     }
 
     try {
-      // Calculate interval based on time range - optimized calculation
-      const days = getTimeRangeDays;
-      const interval = days <= 7 ? '1h' : days <= 30 ? '4h' : '1d';
+      // Calculate interval based on time range - simplified for 1d only
+      const interval = '1h';
       
       // Request only what's needed
-      const limit = Math.min(days <= 7 ? 24 : days <= 30 ? 30 : 90, 100);
+      const limit = 24; // 24 hours for 1d
 
       // Use Binance API with optimized parameters
       const response = await fetch(
@@ -306,9 +303,8 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
 
       // Optimize data processing
       const chartData = rawData.map((item: any) => {
-        const date = new Date(item[0]);
         return {
-          date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          date: formatDate(item[0]),
           price: Number(item[4]), // Closing price
           volume: Number(item[5]) // Volume
         };
@@ -339,15 +335,16 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     return () => {
       mounted = false;
     };
-  }, [selectedCoin, timeRange, loading, initialLoad, getTimeRangeDays]);
+  }, [selectedCoin, timeRange, loading, initialLoad, formatDate]);
 
-  // Fetch data with debounce and respect cooldown
+  // Fetch data when timeRange changes (added retryCount to dependencies)
   useEffect(() => {
     if (selectedCoin) {
+      setLoading(true);
       const timeoutId = setTimeout(fetchData, 50);
       return () => clearTimeout(timeoutId);
     }
-  }, [fetchData, selectedCoin, retryCount]);
+  }, [fetchData, selectedCoin, retryCount, timeRange]);
 
   // Calculate price stats - simplified
   const priceStats = useMemo(() => {
@@ -390,10 +387,12 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
       return <ErrorState error={error} onRetry={handleRetry} />;
     }
 
+    const uniqueData = getUniqueChartData(data);
+
     return (
       <div className="h-[400px]">
         <Chart width="100%" height="100%">
-          <ComposedChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+          <ComposedChart data={uniqueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -494,45 +493,40 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
               </div>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-3">
-              <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
-              
-              <div className="flex items-center gap-2">
-                {/* Removed the refresh button */}
-                <Select
-                  value={selectedCoin?.id}
-                  onValueChange={handleCoinChange}
-                  disabled={loadingCoins}
-                >
-                  <SelectTrigger className="w-[180px] bg-gray-800/70 border-gray-700/50 text-gray-300">
-                    {loadingCoins ? (
-                      <div className="flex items-center">
-                        <Loader2 className="h-3 w-3 animate-spin mr-2" />
-                        Loading...
-                      </div>
-                    ) : (
-                      <div className="flex items-center w-full">
-                        <span className="truncate">{selectedCoin?.name || "Select coin"}</span>
-                        {/* Removed the duplicate ChevronDown icon here */}
-                      </div>
-                    )}
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800/95 border-gray-700/50 backdrop-blur-md">
-                    <div className="max-h-[300px] overflow-y-auto">
-                      {availableCoins.map((coin) => (
-                        <SelectItem
-                          key={coin.id}
-                          value={coin.id}
-                          className="text-gray-300"
-                        >
-                          <span className="text-[#F5B056] mr-1">{coin.symbol}</span>
-                          {coin.name}
-                        </SelectItem>
-                      ))}
+            <div className="flex items-center gap-2">
+              {/* Removed TimeRangeSelector since we only have 1d option now */}
+              <Select
+                value={selectedCoin?.id}
+                onValueChange={handleCoinChange}
+                disabled={loadingCoins}
+              >
+                <SelectTrigger className="w-[180px] bg-gray-800/70 border-gray-700/50 text-gray-300">
+                  {loadingCoins ? (
+                    <div className="flex items-center">
+                      <Loader2 className="h-3 w-3 animate-spin mr-2" />
+                      Loading...
                     </div>
-                  </SelectContent>
-                </Select>
-              </div>
+                  ) : (
+                    <div className="flex items-center w-full">
+                      <span className="truncate">{selectedCoin?.name || "Select coin"}</span>
+                    </div>
+                  )}
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800/95 border-gray-700/50 backdrop-blur-md">
+                  <div className="max-h-[300px] overflow-y-auto">
+                    {availableCoins.map((coin) => (
+                      <SelectItem
+                        key={coin.id}
+                        value={coin.id}
+                        className="text-gray-300"
+                      >
+                        <span className="text-[#F5B056] mr-1">{coin.symbol}</span>
+                        {coin.name}
+                      </SelectItem>
+                    ))}
+                  </div>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </CardHeader>
@@ -543,7 +537,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-gray-400" />
               <span className="text-gray-400">Range:</span>
-              <span className="text-white font-medium">{getTimeRangeDays} days</span>
+              <span className="text-white font-medium">24 hours</span>
             </div>
             <div className="flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-gray-400" />
