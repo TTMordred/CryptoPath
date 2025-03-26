@@ -178,21 +178,28 @@ const [brushIndex, setBrushIndex] = useState<[number, number] | null>(null);
             
             // Only add if it's a newer candle
             if (prev.length === 0 || k.t > prev[prev.length - 1].time) {
-              newData.push({
+              // Validate incoming data
+              const candle = {
                 time: k.t,
-                open: parseFloat(k.o),
-                high: parseFloat(k.h),
-                low: parseFloat(k.l),
-                close: parseFloat(k.c),
-                volume: parseFloat(k.v),
+                open: Number.isFinite(parseFloat(k.o)) ? parseFloat(k.o) : prev[prev.length - 1]?.open || 0,
+                high: Number.isFinite(parseFloat(k.h)) ? parseFloat(k.h) : prev[prev.length - 1]?.high || 0,
+                low: Number.isFinite(parseFloat(k.l)) ? parseFloat(k.l) : prev[prev.length - 1]?.low || 0,
+                close: Number.isFinite(parseFloat(k.c)) ? parseFloat(k.c) : prev[prev.length - 1]?.close || 0,
+                volume: Number.isFinite(parseFloat(k.v)) ? parseFloat(k.v) : 0,
                 closeTime: k.T,
-                quoteVolume: parseFloat(k.q),
-                trades: k.n
-              });
+                quoteVolume: Number.isFinite(parseFloat(k.q)) ? parseFloat(k.q) : 0,
+                trades: Number.isFinite(k.n) ? k.n : 0
+              };
+
+              // Validate high/low consistency
+              candle.high = Math.max(candle.high, candle.open, candle.close);
+              candle.low = Math.min(candle.low, candle.open, candle.close);
+
+              newData.push(candle);
               
-              // Keep array at 500 items max
+              // Maintain fixed array size with better memory management
               if (newData.length > 500) {
-                newData.shift();
+                newData.splice(0, newData.length - 500);
               }
             }
             

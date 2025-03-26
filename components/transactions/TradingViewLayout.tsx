@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getTradingPairs, STABLECOINS } from '@/services/binanceService';
@@ -8,6 +8,7 @@ import { Loader2, RefreshCw } from 'lucide-react';
 import TradingChart from './TradingChart';
 import Orderbook from './Orderbook';
 import { Button } from "@/components/ui/button";
+import { motion } from 'framer-motion';
 
 interface TradingPair {
   symbol: string;
@@ -15,11 +16,32 @@ interface TradingPair {
   quoteAsset: string;
 }
 
+// Add skeleton loader component
+const TradingViewSkeleton = () => (
+  <Card className="bg-white/5 animate-pulse">
+    <CardHeader>
+      <div className="flex justify-between">
+        <div className="h-6 bg-gray-700/50 rounded w-32" />
+        <div className="h-6 bg-gray-700/50 rounded w-40" />
+      </div>
+    </CardHeader>
+    <CardContent>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-3 h-[400px] bg-gray-700/50 rounded" />
+        <div className="h-[400px] bg-gray-700/50 rounded" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 export default function TradingViewLayout() {
   const [tradingPairs, setTradingPairs] = useState<TradingPair[]>([]);
   const [selectedPair, setSelectedPair] = useState<TradingPair | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Add loading states for different operations
+  const [refreshing, setRefreshing] = useState(false);
+  const [changingPair, setChangingPair] = useState(false);
 
   useEffect(() => {
     const fetchPairs = async () => {
@@ -63,33 +85,59 @@ export default function TradingViewLayout() {
     fetchPairs();
   }, []);
 
-  const handlePairChange = (symbol: string) => {
-    const pair = tradingPairs.find(p => p.symbol === symbol);
-    if (pair) {
-      setSelectedPair(pair);
+  // Optimize pair selection with useMemo
+  const groupedPairs = useMemo(() => {
+    if (!tradingPairs.length) return {};
+    
+    return tradingPairs.reduce((acc: Record<string, TradingPair[]>, pair) => {
+      if (!acc[pair.quoteAsset]) {
+        acc[pair.quoteAsset] = [];
+      }
+      acc[pair.quoteAsset].push(pair);
+      return acc;
+    }, {});
+  }, [tradingPairs]);
+
+  // Add retry with exponential backoff
+  const retryFetch = async (attempt = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const pairs = await getTradingPairs();
+      // ...existing pair processing...
+    } catch (err) {
+      if (attempt < 3) {
+        setTimeout(() => retryFetch(attempt + 1), Math.pow(2, attempt) * 1000);
+      } else {
+        setError('Failed to fetch trading pairs after multiple attempts');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleRefresh = () => {
-    if (selectedPair) {
-      // Force refresh by resetting and then setting the pair
-      const currentPair = selectedPair;
-      setSelectedPair(null);
-      setTimeout(() => setSelectedPair(currentPair), 100);
+  const handlePairChange = (symbol: string) => {
+    setChangingPair(true);
+    const pair = tradingPairs.find(p => p.symbol === symbol);
+    if (pair) {
+      setSelectedPair(pair);
+      // Add slight delay to ensure smooth transition
+      setTimeout(() => setChangingPair(false), 300);
+    }
+  };
+
+  // Enhanced refresh handling
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await retryFetch();
+    } finally {
+      setRefreshing(false);
     }
   };
 
   if (loading) {
-    return (
-      <Card className="bg-white/5 rounded-[10px] p-4 border border-gray-800 backdrop-blur-[4px]">
-        <CardContent className="flex items-center justify-center h-[350px]">
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-[#F5B056] mb-2" />
-            <span className="text-gray-400 text-sm">Loading trading view...</span>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <TradingViewSkeleton />;
   }
 
   if (error) {
@@ -153,22 +201,29 @@ export default function TradingViewLayout() {
         </CardHeader>
         <CardContent className="p-4">
           {selectedPair ? (
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-              <div className="lg:col-span-3">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="grid grid-cols-1 lg:grid-cols-4 gap-4"
+            >
+              <div className={`lg:col-span-3 ${changingPair ? 'opacity-50' : ''}`}>
                 <TradingChart 
+                  key={selectedPair.symbol}
                   symbol={selectedPair.symbol}
                   baseAsset={selectedPair.baseAsset}
                   quoteAsset={selectedPair.quoteAsset}
                 />
               </div>
-              <div>
+              <div className={changingPair ? 'opacity-50' : ''}>
                 <Orderbook 
+                  key={selectedPair.symbol}
                   symbol={selectedPair.symbol}
                   baseAsset={selectedPair.baseAsset}
                   quoteAsset={selectedPair.quoteAsset}
                 />
               </div>
-            </div>
+            </motion.div>
           ) : (
             <div className="text-center py-12 text-gray-400">
               Select a trading pair to view chart

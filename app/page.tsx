@@ -650,42 +650,122 @@ const LandingPage = () => {
             </div>
 
             {/* Click-to-Earn Game - NEW FEATURE */}
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 transform transition-all hover:scale-105 relative overflow-hidden" data-aos="fade-up" data-aos-delay="500">
-              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 border border-gray-800 shadow-lg transform transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(245,176,86,0.15)] relative overflow-hidden group" data-aos="fade-up" data-aos-delay="500">
+              <div className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
                 NEW
               </div>
-              <div className="text-[#F5B056] text-4xl mb-4">
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#F5B056]/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
                 <FaGamepad />
               </div>
-              <h3 className="text-white text-xl font-bold mb-3">Clicker Game</h3>
-              <p className="text-gray-400">
+              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Clicker Game</h3>
+              <p className="text-gray-300">
                 Earn PATH tokens by playing our addictive click-to-earn game with upgrades and boosts.
               </p>
-              <Link href="/clickgame" className="text-[#F5B056] mt-4 inline-block hover:underline">
-                Play Now →
+              <Link href="/clickgame" className="flex items-center text-[#F5B056] mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
+                Play Now <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
               </Link>
+              <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-[#F5B056]/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            </div>
+
+            {/* Add Trophy Game Feature - NEW */}
+            <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 border border-gray-800 shadow-lg transform transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(245,176,86,0.15)] relative overflow-hidden group" data-aos="fade-up" data-aos-delay="600">
+              <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
+                BETA
+              </div>
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="text-blue-400 text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+              </div>
+              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors duration-300">Achievements</h3>
+              <p className="text-gray-300">
+                Complete challenges, earn rewards, and showcase your trophies in your personalized digital showcase.
+              </p>
+              <Link href="/achievements" className="flex items-center text-blue-400 mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
+                View Achievements <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
+              </Link>
+              <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
           </div>
         </div>
       </div>
       
       {/* Call to Action */}
-      <div className="relative bg-gradient-to-b from-gray-900 to-black py-20 px-4 text-center">
-        <div className="container mx-auto max-w-3xl" data-aos="fade-up">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Start Your <span className="text-[#F5B056]">Crypto Journey</span>?
-          </h2>
-          <p className="text-gray-400 text-lg mb-10">
-            Join thousands of users exploring the crypto universe with CryptoPath
-          </p>
-          
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/login" className="bg-[#F5B056] text-black font-bold px-8 py-3 rounded-full hover:bg-[#F5B056]/90 transition">
-              Get Started Now
-            </Link>
-            <Link href="/clickgame" className="bg-transparent border-2 border-[#F5B056] text-white font-bold px-8 py-3 rounded-full hover:bg-[#F5B056]/10 transition flex items-center">
-              <FaGamepad className="mr-2" /> Try the Game
-            </Link>
+      <div className="relative py-28 px-4 text-center overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 to-black z-0"></div>
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10 z-0"></div>
+        
+        {/* Animated Glow Effects */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-[#F5B056]/20 rounded-full blur-[100px] animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-500/20 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+        
+        <div className="container mx-auto max-w-4xl relative z-10" data-aos="fade-up">
+          <div className="relative">
+            <span className="absolute -top-10 left-1/2 transform -translate-x-1/2 text-5xl opacity-20">✨</span>
+            
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-[#F5B056] to-white">
+              Ready to Start Your <span className="text-[#F5B056]">Crypto Journey</span>?
+            </h2>
+            
+            <div className="w-24 h-1 bg-gradient-to-r from-[#F5B056] to-purple-500 mx-auto my-8 rounded-full"></div>
+            
+            <p className="text-gray-300 text-lg md:text-xl mb-10 max-w-2xl mx-auto leading-relaxed">
+              Join thousands of users exploring the crypto universe with CryptoPath's intuitive tools and comprehensive analytics
+            </p>
+            
+            <div className="flex flex-wrap justify-center gap-6 mt-10">
+              <Link href="/login">
+                <button className="relative group overflow-hidden rounded-full">
+                  <span className="absolute inset-0 bg-gradient-to-r from-[#F5B056] to-orange-500 group-hover:from-orange-500 group-hover:to-[#F5B056] transition-all duration-500"></span>
+                  <span className="relative block px-8 py-4 font-bold text-black">
+                    Get Started Now
+                  </span>
+                  <span className="absolute bottom-0 left-0 h-1 w-0 bg-white group-hover:w-full transition-all duration-500"></span>
+                </button>
+              </Link>
+              
+              <Link href="/clickgame">
+                <button className="relative group overflow-hidden rounded-full px-8 py-4 bg-transparent border-2 border-[#F5B056] text-white hover:text-[#F5B056] transition-colors duration-300">
+                  <span className="absolute inset-0 bg-[#F5B056]/0 group-hover:bg-[#F5B056]/10 transition-colors duration-300"></span>
+                  <span className="relative flex items-center">
+                    <FaGamepad className="mr-2 group-hover:scale-110 transition-transform duration-300" /> 
+                    <span className="font-bold">Try the Game</span>
+                  </span>
+                </button>
+              </Link>
+            </div>
+            
+            {/* Trust indicators */}
+            <div className="mt-16 flex flex-col items-center">
+              <p className="text-gray-400 mb-4 text-sm uppercase tracking-widest">Trusted by crypto enthusiasts</p>
+              <div className="flex items-center gap-1 text-yellow-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                <span className="ml-2 text-white font-bold">4.9/5</span>
+              </div>
+              <p className="text-sm text-gray-400 mt-2">Based on 2,500+ user reviews</p>
+            </div>
           </div>
         </div>
       </div>
