@@ -668,7 +668,7 @@ const LandingPage = () => {
               <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-[#F5B056]/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
 
-            {/* Add Trophy Game Feature - NEW */}
+            {/* Add Search Function Feature - NEW */}
             <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl p-6 border border-gray-800 shadow-lg transform transition-all hover:scale-105 hover:shadow-[0_0_25px_rgba(245,176,86,0.15)] relative overflow-hidden group" data-aos="fade-up" data-aos-delay="600">
               <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
                 BETA
@@ -676,20 +676,16 @@ const LandingPage = () => {
               <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
               <div className="text-blue-400 text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
-                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
-                  <path d="M4 22h16"></path>
-                  <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
-                  <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
-                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
               </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors duration-300">Achievements</h3>
+              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors duration-300">Blockchain Search</h3>
               <p className="text-gray-300">
-                Complete challenges, earn rewards, and showcase your trophies in your personalized digital showcase.
+                Explore blockchain transactions, addresses, and tokens with our powerful search engine. Get detailed insights into any blockchain activity.
               </p>
-              <Link href="/achievements" className="flex items-center text-blue-400 mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
-                View Achievements <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
+              <Link href="/search" className="flex items-center text-blue-400 mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
+                Search Blockchain <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
               </Link>
               <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             </div>
