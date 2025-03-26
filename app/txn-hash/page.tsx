@@ -123,7 +123,7 @@ export default function TransactionDetails() {
       transition={{ duration: 0.5 }}
       className="container mx-auto p-4"
     >
-      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px]">
+      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px] backdrop-blur-sm">
         <CardHeader className="bg-black/40 border-b border-amber-500">
           <motion.div 
             initial={{ x: -20 }}
