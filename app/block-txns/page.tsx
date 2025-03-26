@@ -166,7 +166,7 @@ export default function BlockTransactions() {
           </div>
         </div>
 
-        <Card className="bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px]">
+        <Card className="bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px] backdrop-blur-sm">
           <CardContent className="p-6">
             {totalTransactions > 0 ? (
               <>

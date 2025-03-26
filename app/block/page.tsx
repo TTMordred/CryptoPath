@@ -120,7 +120,7 @@ export default function BlockDetails() {
       transition={{ duration: 0.5 }}
       className="container mx-auto p-4"
     >
-      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500">
+      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 backdrop-blur-sm rounded-[10px]">
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <InfoCard title="Block Number" icon={Layers}>
