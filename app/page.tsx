@@ -885,166 +885,169 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* New Features Section - Enhanced grid with hover effects */}
-      <div className="py-20 px-4 bg-gradient-to-b from-gray-900/50 to-black/50">
-        <div className="container mx-auto">
-          <motion.h2 
-            className="text-3xl md:text-4xl font-bold text-center text-white mb-16"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            data-aos="fade-up"
-          >
-            Platform <span className="text-[#F5B056]">Features</span>
-          </motion.h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-            {/* Market Analysis */}
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="100"
-            >
-              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaChartLine />
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Market Analysis</h3>
-              <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-                Real-time market data and analysis tools to help you make informed decisions.
-              </p>
-              <Link href="/market-overview" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
-                Explore Markets <span className="group-hover:ml-1 transition-all duration-300">→</span>
-              </Link>
-            </motion.div>
-            
-            {/* Rest of the feature cards with similar enhancements */}
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="200"
-            >
-              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaExchangeAlt />
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Token Swapping</h3>
-              <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-                Easily exchange different cryptocurrencies with our simple swap interface.
-              </p>
-              <Link href="/Swap" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
-                Swap Tokens <span className="group-hover:ml-1 transition-all duration-300">→</span>
-              </Link>
-            </motion.div>
-            
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="300"
-            >
-              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaPalette />
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">NFT Marketplace</h3>
-              <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-                Buy, sell, and trade unique digital collectibles on our NFT marketplace.
-              </p>
-              <Link href="/NFT" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
-                Discover NFTs <span className="group-hover:ml-1 transition-all duration-300">→</span>
-              </Link>
-            </motion.div>
-            
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="400"
-            >
-              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaCoins />
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Token Faucet</h3>
-              <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
-                Get free tokens to start your journey and explore the CryptoPath ecosystem.
-              </p>
-              <Link href="/Faucet" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
-                Claim Tokens <span className="group-hover:ml-1 transition-all duration-300">→</span>
-              </Link>
-            </motion.div>
+     {/* New Features Section - Enhanced grid with hover effects */}
+<div className="py-20 px-4 bg-gradient-to-b from-gray-900/50 to-black/50">
+  <div className="container mx-auto">
+    <motion.h2 
+      className="text-3xl md:text-4xl font-bold text-center text-white mb-16"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      data-aos="fade-up"
+    >
+      Platform <span className="text-[#F5B056]">Features</span>
+    </motion.h2>
 
-            {/* Click-to-Earn Game - NEW FEATURE */}
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="500"
-            >
-              <div className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
-                NEW
-              </div>
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#F5B056]/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <FaGamepad />
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Clicker Game</h3>
-              <p className="text-gray-300">
-                Earn PATH tokens by playing our addictive click-to-earn game with upgrades and boosts.
-              </p>
-              <Link href="/clickgame" className="flex items-center text-[#F5B056] mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
-                Play Now <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
-              </Link>
-              <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-[#F5B056]/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </motion.div>
-
-            {/* Add Search Function Feature - NEW with enhanced styling */}
-            <motion.div 
-              className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-blue-500/30 relative overflow-hidden group"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              whileHover={{ y: -10 }}
-              data-aos="fade-up" 
-              data-aos-delay="600"
-            >
-              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-600 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-              <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
-                BETA
-              </div>
-              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="text-blue-400 text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="11" cy="11" r="8"></circle>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-              </div>
-              <h3 className="text-white text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors duration-300">Blockchain Search</h3>
-              <p className="text-gray-300">
-                Explore blockchain transactions, addresses, and tokens with our powerful search engine. Get detailed insights into any blockchain activity.
-              </p>
-              <Link href="/search" className="flex items-center text-blue-400 mt-6 group-hover:translate-x-2 transition-all duration-300 font-medium">
-                Search Blockchain <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
-              </Link>
-              <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </motion.div>
-          </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+      {/* Market Analysis */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="100"
+      >
+        <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <FaChartLine />
         </div>
-      </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Market Analysis</h3>
+        <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+          Real-time market data and analysis tools to help you make informed decisions.
+        </p>
+        <Link href="/market-overview" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
+          Explore Markets <span className="group-hover:ml-1 transition-all duration-300">→</span>
+        </Link>
+      </motion.div>
+
+      {/* Token Swapping */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="200"
+      >
+        <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <FaExchangeAlt />
+        </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Token Swapping</h3>
+        <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+          Easily exchange different cryptocurrencies with our simple swap interface.
+        </p>
+        <Link href="/Swap" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
+          Swap Tokens <span className="group-hover:ml-1 transition-all duration-300">→</span>
+        </Link>
+      </motion.div>
+
+      {/* NFT Marketplace */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.3 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="300"
+      >
+        <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <FaPalette />
+        </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">NFT Marketplace</h3>
+        <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+          Buy, sell, and trade unique digital collectibles on our NFT marketplace.
+        </p>
+        <Link href="/NFT" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
+          Discover NFTs <span className="group-hover:ml-1 transition-all duration-300">→</span>
+        </Link>
+      </motion.div>
+
+      {/* Token Faucet */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="400"
+      >
+        <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <FaCoins />
+        </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Token Faucet</h3>
+        <p className="text-gray-400 group-hover:text-gray-300 transition-colors duration-300">
+          Get free tokens to start your journey and explore the CryptoPath ecosystem.
+        </p>
+        <Link href="/Faucet" className="text-[#F5B056] mt-4 inline-block group-hover:translate-x-2 transition-transform duration-300">
+          Claim Tokens <span className="group-hover:ml-1 transition-all duration-300">→</span>
+        </Link>
+      </motion.div>
+
+      {/* Clicker Game (NEW FEATURE) */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-[#F5B056]/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="500"
+      >
+        <div className="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
+          NEW
+        </div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#F5B056]/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="text-[#F5B056] text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <FaGamepad />
+        </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-[#F5B056] transition-colors duration-300">Clicker Game</h3>
+        <p className="text-gray-300">
+          Earn PATH tokens by playing our addictive click-to-earn game with upgrades and boosts.
+        </p>
+        <Link href="/clickgame" className="flex items-center text-[#F5B056] mt-6 group-hover:translate-x-2 transition-transform duration-300 font-medium">
+          Play Now <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
+        </Link>
+        <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-[#F5B056]/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      </motion.div>
+
+      {/* Add Search Function Feature (BETA) */}
+      <motion.div 
+        className="glass-card bg-gradient-to-br from-gray-900/80 to-gray-800/80 backdrop-blur-md rounded-xl p-6 border border-gray-800/50 transform transition-all hover:scale-105 hover:border-blue-500/30 relative overflow-hidden group"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.6 }}
+        whileHover={{ y: -10 }}
+        data-aos="fade-up" 
+        data-aos-delay="600"
+      >
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-400 to-indigo-600 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+        <div className="absolute top-2 right-2 bg-gradient-to-r from-blue-500 to-indigo-400 text-white text-xs px-3 py-1 rounded-full font-semibold shadow-md">
+          HOT
+        </div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+        <div className="text-blue-400 text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <h3 className="text-white text-xl font-bold mb-3 group-hover:text-blue-400 transition-colors duration-300">Blockchain Search</h3>
+        <p className="text-gray-300">
+          Explore blockchain transactions, addresses, and tokens with our powerful search engine. Get detailed insights into any blockchain activity.
+        </p>
+        <Link href="/search" className="flex items-center text-blue-400 mt-6 group-hover:translate-x-2 transition-all duration-300 font-medium">
+          Search Blockchain <ArrowRight className="ml-2 h-4 w-4 group-hover:ml-3 transition-all duration-300" />
+        </Link>
+        <div className="absolute -bottom-2 -right-2 w-16 h-16 bg-blue-500/10 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      </motion.div>
+    </div>
+  </div>
+</div>
+
       
       {/* Call to Action with enhanced visual effects */}
       <div className="relative py-28 px-4 text-center overflow-hidden">
