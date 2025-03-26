@@ -177,6 +177,18 @@ const mockCollections = [
     category: 'Art & Collectibles'
   },
   {
+    id: '0x93c1687e27fecb994fb091712eb245f41cb51af3',
+    name: 'BIT LIFE CLUB',
+    description: 'BIT LIFE is a collection of 1,000 NFTs rewriting history on Ethereum.',
+    imageUrl: 'https://i.seadn.io/gcs/files/673d998fc5165b025bf66e20032c9e8b.gif?auto=format&dpr=1&w=512',
+    bannerImageUrl: 'https://i.seadn.io/gcs/files/3af75cf7c10abb59ddc671ed44e88cc1.gif?auto=format&dpr=1&w=512',
+    floorPrice: '0.01',
+    totalSupply: '1000',
+    chain: '0x1',
+    verified: true,
+    category: 'Meme'
+  },
+  {
     id: '0xb47e3cd837ddf8e4c57f05d70ab865de6e193bbb',
     name: 'CryptoPunks',
     description: 'CryptoPunks launched as a fixed set of 10,000 items in mid-2017 and became one of the inspirations for the ERC-721 standard. They have been featured in places like The New York Times, Christie\'s of London, Art|Basel Miami, and The PBS NewsHour.',
@@ -448,8 +460,8 @@ const mockBNBCollections = [
     id: '0x25dc4d9e2598c21dc020aa7b741377ecde971c2f',
     name: 'RhnoX',
     description: 'RhnoX, dinooo',
-    imageUrl: 'https://img-cdn.magiceden.dev/rs:fill:400:0:0/plain/https%3A%2F%2Fbafybeihxzn2o4daow6cbth7pzlwwsdhb3ryzzvhok4ukz3uiodyygexcmu.ipfs.w3s.link%2F7cbfe2c138dd4140bd5c6739dae1a346_400x400.webp',
-    bannerImageUrl: 'https://img-cdn.magiceden.dev/da:t/rs:fill:400:0:0/plain/https%3A%2F%2Fimg.reservoir.tools%2Fimages%2Fv2%2Fbsc%2Fi9YO%252F4yHXUdJsWcTqhqvf32nwo61iwc9Eyq2MC1NyBZeThvD0pm%252F1LLHrhwGoSCwdW5QSWIe85nAF4iiibr1aGhRpa5Hg0%252BO5wPuwlsxeqo%253D.png',
+    imageUrl: 'https://i.seadn.io/s/raw/files/731b1b374d2ad2d6f66e4793ccb8244e.png?auto=format&dpr=1&w=3840',
+    bannerImageUrl: 'https://i.seadn.io/s/raw/files/df96ef204acb4b78f6e7ff9e3bdf625f.png?auto=format&dpr=1&w=512',
     floorPrice: '0',
     totalSupply: '10000',
     chain: '0x38',

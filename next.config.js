@@ -19,6 +19,11 @@ const nextConfig = {
       hostname: "dashboard-assets.dappradar.com",
       pathname: "/**",
       },
+      {
+      protocol: "https",
+      hostname: "img-cdn.magiceden.dev",
+      pathname: "/**",
+      },
       // Add these to your existing remotePatterns array
       {
         protocol: "https", 
