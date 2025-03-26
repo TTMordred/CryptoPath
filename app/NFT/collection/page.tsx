@@ -311,6 +311,29 @@ export default function NFTCollectionPage() {
   // Load trending collections
   const loadTrendingCollections = useCallback(async (period: string) => {
     try {
+      // Create placeholder data with empty array if collections not loaded yet
+      if (collections.length === 0) {
+        // Set mock empty data with period to display the section even when data is loading
+        setTrendingData({
+          period,
+          data: [
+            {
+              id: 'loading-1',
+              name: 'Loading...',
+              imageUrl: '/images/placeholder-nft.png',
+              chain: chainId,
+              floorPrice: '0.00',
+              priceChange: 0,
+              volume: '0.00',
+              volumeChange: 0,
+            },
+            // Add more placeholder items as needed
+          ]
+        });
+        // Return early - real data will be loaded once collections are available
+        return;
+      }
+      
       // In real app this would fetch real data
       const mockTrendingData = {
         period,
@@ -330,7 +353,14 @@ export default function NFTCollectionPage() {
     } catch (error) {
       console.error('Error loading trending data:', error);
     }
-  }, [collections]);
+  }, [collections, chainId]);
+  
+  useEffect(() => {
+    // When collections are loaded, update the trending data
+    if (collections.length > 0) {
+      loadTrendingCollections(trendingPeriod);
+    }
+  }, [collections, loadTrendingCollections, trendingPeriod]);
   
   const handleNetworkChange = (networkId: string) => {
     setChainId(networkId);
@@ -523,52 +553,63 @@ export default function NFTCollectionPage() {
             </tr>
           </thead>
           <tbody>
-            {trendingData.data.map((item, i) => (
-              <motion.tr 
-                key={item.id}
-                whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
-                className="cursor-pointer border-b border-gray-800/50"
-                onClick={() => handleCardClick(item.id)}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 + i * 0.05 }}
-              >
-                <td className="p-2 text-gray-400">{i + 1}</td>
-                <td className="p-2">
-                  <div className="flex items-center gap-3">
-                    <div className="relative h-10 w-10 rounded-lg overflow-hidden">
-                      <Image
-                        src={item.imageUrl}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div>
-                      <div className="font-medium flex items-center gap-1">
-                        {item.name}
-                        {(i === 0 || i === 2) && <Verified className="h-3.5 w-3.5 text-blue-400" />}
+            {trendingData.data.length > 0 ? (
+              trendingData.data.map((item, i) => (
+                <motion.tr 
+                  key={item.id}
+                  whileHover={{ backgroundColor: "rgba(255,255,255,0.03)" }}
+                  className="cursor-pointer border-b border-gray-800/50"
+                  onClick={() => handleCardClick(item.id)}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + i * 0.05 }}
+                >
+                  <td className="p-2 text-gray-400">{i + 1}</td>
+                  <td className="p-2">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-10 rounded-lg overflow-hidden">
+                        <Image
+                          src={item.imageUrl}
+                          alt={item.name}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-                      <div className="text-xs text-gray-400">
-                        {getNetworkName(item.chain)}
+                      <div>
+                        <div className="font-medium flex items-center gap-1">
+                          {item.name}
+                          {(i === 0 || i === 2) && <Verified className="h-3.5 w-3.5 text-blue-400" />}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {getNetworkName(item.chain)}
+                        </div>
                       </div>
                     </div>
+                  </td>
+                  <td className="p-2 text-right font-medium">
+                    {item.floorPrice} {item.chain === '0x1' || item.chain === '0xaa36a7' ? 'ETH' : 'BNB'}
+                  </td>
+                  <td className={`p-2 text-right ${item.priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {item.priceChange >= 0 ? '+' : ''}{item.priceChange.toFixed(2)}%
+                  </td>
+                  <td className="p-2 text-right font-medium">
+                    {item.volume} {item.chain === '0x1' || item.chain === '0xaa36a7' ? 'ETH' : 'BNB'}
+                  </td>
+                  <td className={`p-2 text-right ${item.volumeChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {item.volumeChange >= 0 ? '+' : ''}{item.volumeChange.toFixed(2)}%
+                  </td>
+                </motion.tr>
+              ))
+            ) : (
+              <tr className="border-b border-gray-800/50">
+                <td colSpan={6} className="p-4 text-center text-gray-400">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-5 w-5 border-2 border-t-transparent animate-spin rounded-full" />
+                    <span>Loading trending collections...</span>
                   </div>
                 </td>
-                <td className="p-2 text-right font-medium">
-                  {item.floorPrice} {item.chain === '0x1' || item.chain === '0xaa36a7' ? 'ETH' : 'BNB'}
-                </td>
-                <td className={`p-2 text-right ${item.priceChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {item.priceChange >= 0 ? '+' : ''}{item.priceChange.toFixed(2)}%
-                </td>
-                <td className="p-2 text-right font-medium">
-                  {item.volume} {item.chain === '0x1' || item.chain === '0xaa36a7' ? 'ETH' : 'BNB'}
-                </td>
-                <td className={`p-2 text-right ${item.volumeChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                  {item.volumeChange >= 0 ? '+' : ''}{item.volumeChange.toFixed(2)}%
-                </td>
-              </motion.tr>
-            ))}
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
