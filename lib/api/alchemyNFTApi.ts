@@ -445,52 +445,28 @@ const mockBNBCollections = [
     category: 'Gaming'
   },
   {
-    id: '0xcec33930ba196cdf9f38e1a5e2a1e0708450d20f',
-    name: 'Era7: Game of Truth',
-    description: 'Era7: Game of Truth is a play-to-earn trading card game inspired by Magic: The Gathering, Hearthstone, and Runeterra. Build your deck and battle against players around the world!',
-    imageUrl: 'https://images.pocketgamer.biz/T/52539/2022/52539_Era7_Game_of_Truth_screenshot_1.png',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1428004235405357057/1648021562/1500x500',
-    floorPrice: '0.4',
-    totalSupply: '33000',
+    id: '0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07',
+    name: 'Pancake Bunnies',
+    description: 'Pancake Bunnies are collectible NFTs on BNB Chain created by PancakeSwap. These adorable bunny NFTs feature various themes and styles, serving as digital collectibles in the PancakeSwap ecosystem.',
+    imageUrl: 'https://dappradar.com/image-resizer/width=64,quality=100/https://dashboard-assets.dappradar.com/document/4600/pancakeswap-dapp-defi-bsc-logo-166x166_783df04863220a6371e78725e2fa3320.png',
+    bannerImageUrl: 'https://dappradar.com/nft-metadata-image?encrypted=true&format=big-preview&filePath=c6fb236ebe75b44224d832afe92b7bf4d9c3bbd3083f2f7e8e3165b4585f90e080a2aaf821da426f31d3dc58a870ae477bd8f1f4c95f97fd75ff78fd17418836ad28289b8e3dde0f2b5d46a418ce93978d27239f31c23aa09b9b4ab80cb1481539fdb6c65858854966251d5dd8ec613705cb9fd4b06ade913edc20a5eb5b0bdf54eb148e3df70d5bf9eb9732ed301921',
+    floorPrice: '0.2',
+    totalSupply: '14000',
     chain: '0x38',
     verified: true,
-    category: 'Gaming'
+    category: 'Collectibles'
   },
   {
-    id: '0x04a5e3ed4907b781f702adbddf1b7e771c31b0f2',
-    name: 'BSC Punks',
-    description: 'CryptoPunks on BSC - 10,000 uniquely generated characters on the BNB Chain.',
-    imageUrl: 'https://lh3.googleusercontent.com/BdxvLseXcfl57BiuQcQYdJ64v-aI8din7WPk0Pgo3qQFhAUH-B6i-dCqqc_mCkRIzULmwzwecnohLhrcH8A9mpWIZqA7ygc52Sr81hE=s130',
-    bannerImageUrl: 'https://pbs.twimg.com/profile_banners/1364731917736632321/1649351522/1500x500',
-    floorPrice: '0.25',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: false,
-    category: 'Art & Collectibles'
-  },
-  {
-    id: '0x85f0e02cb992aa1f9f47112f815f519ef1a59e2d',
-    name: 'BNB Bulls Club',
-    description: 'The BNB Bulls Club is a collection of 10,000 unique NFTs living on the BNB Chain, each representing membership to the club with unique utilities.',
-    imageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    bannerImageUrl: 'https://static-nft.pancakeswap.com/mainnet/0x85F0e02cb992aa1F9F47112F815F519EF1A59E2D/banner-lg.png',
-    floorPrice: '1.2',
-    totalSupply: '10000',
-    chain: '0x38',
-    verified: false,
-    category: 'Membership'
-  },
-  {
-    id: '0xc274a97f1691ef390f662067e95a6eff1f99b504',
-    name: 'Tin Fun NFT',
-    description: 'Buildspace: Build your own DAO with Javascript | Cohort Alkes | #360 - DAOs are taking over. Build one yourself for fun. Maybe it\'s a meme DAO for your friends. Maybe it\'s a DAO that aims to fix climate change. Up to you. We\'ll be going over things like minting a membership NFT, creating/airdropping a token, public treasuries, and governance using a token!',
-    imageUrl: 'https://i.seadn.io/s/raw/files/a531bedf317b5ffe5a35d559b5c94cd9.jpg?auto=format&dpr=1&w=256',
-    bannerImageUrl: 'https://i.seadn.io/s/primary-drops/0xc274a97f1691ef390f662067e95a6eff1f99b504/31341974:about:media:98e2f8a2-a8aa-46d9-9267-87108353c759.jpeg?auto=format&dpr=1&w=1920',
-    floorPrice: '0.0929',
-    totalSupply: '9999',
+    id: '0x9F471abCddc810E561873b35b8aad7d78e21a48e',
+    name: 'Galxe OAT',
+    description: 'Galxe OAT (On-chain Achievement Token) is a collection of NFTs that represent achievements and credentials earned on Galxe, a Web3 credential data network. Each OAT signifies participation in ecosystem campaigns and community events.',
+    imageUrl: 'https://i.seadn.io/gcs/files/c083274101cf84f66c7490b14d7dc480.png?auto=format&dpr=1&w=256',
+    bannerImageUrl: 'https://i.seadn.io/gcs/files/c083274101cf84f66c7490b14d7dc480.png?auto=format&dpr=1&w=256',
+    floorPrice: '0.05',
+    totalSupply: '250000',
     chain: '0x38',
     verified: true,
-    category: 'China'
+    category: 'Credentials'
   }
 ];
 
