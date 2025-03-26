@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import LazyImage from './LazyImage';
 import { ipfsUriToGatewayUrl } from '@/lib/utils/ipfsUtils';
+import Image from "next/legacy/image";
 
 interface NFT {
   id: string;
@@ -220,13 +221,14 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
         {/* Network Badge - Positioned absolutely top-right */}
         <div className="absolute top-2 right-2 z-10">
           <div className={`flex items-center gap-1 py-1 px-2 rounded-full ${networkBadge.bgClass} border ${networkBadge.borderColor} backdrop-blur-sm shadow-sm`}>
-            <div className="relative h-3 w-3 bg-white overflow-hidden">
-              <LazyImage 
+            {/* Fix: Update the icon container to ensure proper display */}
+            <div className="relative w-3.5 h-3.5 flex-shrink-0 overflow-hidden rounded-full bg-white flex items-center justify-center">
+              <Image 
                 src={networkBadge.icon} 
                 alt={networkBadge.name} 
-                width={12} 
-                height={12} 
-                className="object-contain"
+                layout="fill"
+                objectFit="contain"
+                className="p-0.5"
                 priority={true}
               />
             </div>
