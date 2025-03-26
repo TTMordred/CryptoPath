@@ -264,16 +264,36 @@ export default function AnimatedNFTCard({ nft, onClick, index = 0, isVirtualized
           
           {/* Attributes */}
           <div className="flex flex-wrap gap-1 mt-3">
-            {nft.attributes?.slice(0, 3).map((attr, i) => (
-              <Badge 
-                key={i} 
-                variant="outline" 
-                className={`text-xs ${chainTheme.borderClass}`}
-                style={{ color: chainTheme.primary }}
-              >
-                {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
-              </Badge>
-            ))}
+            {(() => {
+              const processAttributes = () => {
+                let attrs = nft.attributes;
+                if (attrs && !Array.isArray(attrs) && typeof attrs === 'object') {
+                  attrs = Object.entries(attrs).map(([trait_type, value]) => ({
+                    trait_type,
+                    value: String(value)
+                  }));
+                }
+                return (Array.isArray(attrs) ? attrs : [])
+                  .filter(attr =>
+                    attr &&
+                    typeof attr === 'object' &&
+                    'trait_type' in attr &&
+                    'value' in attr
+                  )
+                  .slice(0, 3);
+              };
+              
+              return processAttributes().map((attr, i) => (
+                <Badge
+                  key={i}
+                  variant="outline"
+                  className={`text-xs ${chainTheme.borderClass}`}
+                  style={{ color: chainTheme.primary }}
+                >
+                  {attr.trait_type === 'Network' ? null : `${attr.trait_type}: ${attr.value}`}
+                </Badge>
+              ));
+            })()}
           </div>
         </div>
       </motion.div>
