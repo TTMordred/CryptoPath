@@ -77,7 +77,6 @@ export default function NFTMarketplace() {
   });
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   
-  // Market statistics
   const [marketStats, setMarketStats] = useState({
     totalVolume: '12,450.35',
     dailyVolume: '1,245.62',
@@ -99,7 +98,6 @@ export default function NFTMarketplace() {
     throw new Error('Ethereum provider not found');
   };
 
-  // Fetch contract owner
   useEffect(() => {
     const fetchOwner = async () => {
       try {
@@ -114,7 +112,6 @@ export default function NFTMarketplace() {
     fetchOwner();
   }, []);
 
-  // Check whitelist status
   const checkWhitelistStatus = useCallback(async (address: string) => {
     try {
       const provider = getProvider();
@@ -136,7 +133,6 @@ export default function NFTMarketplace() {
     checkUserWhitelist();
   }, [account, checkWhitelistStatus]);
 
-  // Fetch PATH balance
   const fetchPathBalance = useCallback(async (address: string) => {
     try {
       const provider = getProvider();
@@ -148,7 +144,6 @@ export default function NFTMarketplace() {
     }
   }, []);
 
-  // Fetch metadata with timeout and retry
   const fetchMetadata = async (uri: string, retries = 3): Promise<NFTMetadata> => {
     const timeout = new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Metadata fetch timeout')), 5000)
@@ -179,17 +174,14 @@ export default function NFTMarketplace() {
     throw new Error('Failed to fetch metadata after retries');
   };
 
-  // Fetch NFT data with improved error handling
   const fetchNFTs = useCallback(async () => {
-    if (!account) return;
-
     try {
       const provider = getProvider();
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, provider);
 
+      // Always fetch market data
       const listedIds = await contract.getAllListings().catch(() => []);
       
-      // Market NFTs with improved error handling
       const marketNFTs = await Promise.allSettled(
         listedIds.map(async (id: ethers.BigNumber) => {
           try {
@@ -216,45 +208,47 @@ export default function NFTMarketplace() {
         })
       );
 
-      // Owned NFTs with improved pagination
-      const totalSupply = await contract.totalSupply().catch(() => ethers.BigNumber.from(0));
-      const pageSize = 20; // Process in smaller chunks
-      const allIds = Array.from({ length: totalSupply.toNumber() }, (_, i) => i);
+      // Only fetch owned NFTs if logged in
       const ownedNFTs = [];
+      if (account) {
+        const totalSupply = await contract.totalSupply().catch(() => ethers.BigNumber.from(0));
+        const pageSize = 20;
+        const allIds = Array.from({ length: totalSupply.toNumber() }, (_, i) => i);
+        
+        for (let i = 0; i < allIds.length; i += pageSize) {
+          const pageIds = allIds.slice(i, i + pageSize);
+          const pageResults = await Promise.allSettled(
+            pageIds.map(async (id) => {
+              try {
+                const [owner, listing] = await Promise.all([
+                  contract.ownerOf(id).catch(() => '0x0'),
+                  contract.listings(id)
+                ]);
+                
+                if (owner.toLowerCase() === account.toLowerCase() && !listing.isListed) {
+                  const uri = await contract.tokenURI(id);
+                  const metadata = await fetchMetadata(uri);
 
-      for (let i = 0; i < allIds.length; i += pageSize) {
-        const pageIds = allIds.slice(i, i + pageSize);
-        const pageResults = await Promise.allSettled(
-          pageIds.map(async (id) => {
-            try {
-              const [owner, listing] = await Promise.all([
-                contract.ownerOf(id).catch(() => '0x0'),
-                contract.listings(id)
-              ]);
-              
-              if (owner.toLowerCase() === account.toLowerCase() && !listing.isListed) {
-                const uri = await contract.tokenURI(id);
-                const metadata = await fetchMetadata(uri);
-
-                return {
-                  id: id.toString(),
-                  ...metadata,
-                  owner: owner,
-                  isListed: false
-                };
+                  return {
+                    id: id.toString(),
+                    ...metadata,
+                    owner: owner,
+                    isListed: false
+                  };
+                }
+                return null;
+              } catch (error) {
+                console.error(`Error processing owned NFT ${id}:`, error);
+                return null;
               }
-              return null;
-            } catch (error) {
-              console.error(`Error processing owned NFT ${id}:`, error);
-              return null;
-            }
-          })
-        );
+            })
+          );
 
-        ownedNFTs.push(...pageResults
-          .filter(result => result.status === 'fulfilled' && result.value !== null)
-          .map(result => (result as PromiseFulfilledResult<any>).value)
-        );
+          ownedNFTs.push(...pageResults
+            .filter(result => result.status === 'fulfilled' && result.value !== null)
+            .map(result => (result as PromiseFulfilledResult<any>).value)
+          );
+        }
       }
 
       const validMarketNFTs = marketNFTs
@@ -266,7 +260,7 @@ export default function NFTMarketplace() {
         owned: ownedNFTs,
         listings: validMarketNFTs.filter(nft => 
           nft.isListed && 
-          nft.seller?.toLowerCase() === account.toLowerCase()
+          nft.seller?.toLowerCase() === account?.toLowerCase()
         )
       });
       setIsInitialLoad(false);
@@ -281,12 +275,10 @@ export default function NFTMarketplace() {
   }, [account]);
 
   useEffect(() => {
-    if (account) {
-      fetchNFTs();
-      const interval = setInterval(fetchNFTs, 15000);
-      return () => clearInterval(interval);
-    }
-  }, [account, fetchNFTs]);
+    fetchNFTs();
+    const interval = setInterval(fetchNFTs, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNFTs]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -298,7 +290,6 @@ export default function NFTMarketplace() {
     }
   }, [account, fetchPathBalance]);
 
-  // Pagination
   const paginatedData = useMemo(() => {
     if (activeTab === 'mint' || activeTab === 'whitelist') return [];
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -315,16 +306,14 @@ export default function NFTMarketplace() {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
-  // Refresh data
   const refreshData = async () => {
     await fetchNFTs();
     if (account) await fetchPathBalance(account);
   };
 
-  // Handle mint NFT
   const handleMintNFT = async (recipient: string, tokenURI: string) => {
-    if (!account) return; // Nếu không có tài khoản, thoát
-    if (!isOwner && !isWhitelisted) { // Nếu không phải owner và không whitelist, báo lỗi
+    if (!account) return;
+    if (!isOwner && !isWhitelisted) {
         toast({
             title: "Error",
             description: "You are not authorized to mint NFTs",
@@ -338,7 +327,7 @@ export default function NFTMarketplace() {
         const signer = provider.getSigner();
         const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
         
-        await fetchMetadata(tokenURI); // Xác thực URI trước khi mint
+        await fetchMetadata(tokenURI);
         const tx = await contract.mintNFT(recipient, tokenURI);
         await tx.wait();
         await refreshData();
@@ -359,10 +348,14 @@ export default function NFTMarketplace() {
     }
   };
 
-  // Handle buy NFT
   const handleBuyNFT = async (tokenId: string, price: string) => {
     if (!account) {
-      alert("Please connect wallet!");
+      toast({
+        title: "Connect Wallet",
+        description: "Please connect wallet to proceed!",
+        variant: "destructive"
+      });
+      await connectWallet();
       return;
     }
 
@@ -371,7 +364,6 @@ export default function NFTMarketplace() {
       const provider = getProvider();
       const signer = provider.getSigner();
       
-      // Approve token
       const tokenContract = new ethers.Contract(PATH_TOKEN_ADDRESS, TOKEN_ABI, signer);
       const requiredAllowance = ethers.utils.parseUnits(price, 18);
       const currentAllowance = await tokenContract.allowance(account, NFT_CONTRACT_ADDRESS);
@@ -381,7 +373,6 @@ export default function NFTMarketplace() {
         await tx.wait();
       }
 
-      // Execute buy
       const nftContract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
       const tx = await nftContract.buyNFT(tokenId, { gasLimit: 500000 });
       await tx.wait();
@@ -389,20 +380,24 @@ export default function NFTMarketplace() {
       await refreshData();
     } catch (error) {
       console.error("Purchase failed:", error);
-      alert("Transaction failed! Check console for details.");
+      toast({
+        title: "Error",
+        description: "Transaction failed! Check console for details.",
+        variant: "destructive"
+      });
     } finally {
       setProcessing(false);
     }
   };
 
-  // Handle list NFT
   const handleListNFT = async (tokenId: string, price: string) => {
     if (!account) {
       toast({
-        title: "Error",
+        title: "Connect Wallet",
         description: "Please connect wallet first!",
         variant: "destructive"
       });
+      await connectWallet();
       return;
     }
   
@@ -412,7 +407,6 @@ export default function NFTMarketplace() {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
     
-      // Validate ownership
       const owner = await contract.ownerOf(tokenId);
       if (owner.toLowerCase() !== account.toLowerCase()) {
         throw new Error("You are not the owner");
@@ -441,7 +435,6 @@ export default function NFTMarketplace() {
     }
   };
   
-  // Handle unlist NFT
   const handleUnlistNFT = async (tokenId: string) => {
     if (!account) {
       toast({
@@ -458,13 +451,11 @@ export default function NFTMarketplace() {
       const signer = provider.getSigner();
       const contract = new ethers.Contract(NFT_CONTRACT_ADDRESS, NFT_ABI, signer);
     
-      // Validate seller
       const listing = await contract.listings(tokenId);
       if (listing.seller.toLowerCase() !== account.toLowerCase()) {
         throw new Error("You are not the seller");
       }
     
-      // Execute unlist
       const tx = await contract.unlistNFT(tokenId);
       await tx.wait();
       await refreshData();
@@ -485,7 +476,6 @@ export default function NFTMarketplace() {
     }
   };
 
-  // Handle update whitelist
   const handleUpdateWhitelist = async (address: string, status: boolean) => {
     if (!account || !isOwner) return;
 
@@ -520,104 +510,96 @@ export default function NFTMarketplace() {
         <p className="text-gray-400">Trade exclusive NFTs in the PATH ecosystem using PATH tokens</p>
       </div>
       
-      {/* Market Statistics */}
       <NFTMarketStats {...marketStats} />
       
-      {/* Price Chart */}
       <div className="mb-8">
         <PriceChart data={[]} />
       </div>
       
-      {/* Tabs Navigation */}
       <NFTTabs
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         balances={{
           market: nftData.market.length,
-          owned: nftData.owned.length,
-          listings: nftData.listings.length
+          owned: account ? nftData.owned.length : 0,
+          listings: account ? nftData.listings.length : 0
         }}
-        showMintTab={isWhitelisted || isOwner}
-        showWhitelistTab={isOwner}
+        showMintTab={(isWhitelisted || isOwner) && !!account}
+        showWhitelistTab={isOwner && !!account}
+        account={account}
       />
 
-      {!account ? (
-        <div className="text-center py-20 text-gray-400">
-          Please connect your wallet to view NFTs
+      {isInitialLoad ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {[...Array(8)].map((_, i) => (
+            <div 
+              key={i}
+              className="animate-pulse bg-black rounded-xl h-[500px] shadow-lg"
+            />
+          ))}
         </div>
       ) : (
         <>
-          {isInitialLoad ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {[...Array(8)].map((_, i) => (
-                <div 
-                  key={i}
-                  className="animate-pulse bg-black rounded-xl h-[500px] shadow-lg"
+          {activeTab === 'mint' ? (
+            <Card className="bg-black/50 border border-orange-400/20 mt-6">
+              <CardHeader>
+                <CardTitle className="text-orange-400">Mint</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <MintForm 
+                  onSubmit={handleMintNFT}
+                  processing={processing}
+                  checkWhitelist={checkWhitelistStatus}
                 />
-              ))}
-            </div>
+              </CardContent>
+            </Card>
+          ) : activeTab === 'whitelist' ? (
+            <Card className="bg-black/50 border border-orange-400/20 mt-6">
+              <CardHeader>
+                <CardTitle className="text-orange-400">Whitelist Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <WhitelistForm 
+                  onSubmit={handleUpdateWhitelist} 
+                  isOwner={isOwner}
+                />
+              </CardContent>
+            </Card>
           ) : (
             <>
-              {activeTab === 'mint' ? (
-                <Card className="bg-black/50 border border-orange-400/20 mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-orange-400">Mint</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <MintForm 
-                      onSubmit={handleMintNFT}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                {paginatedData.map((nft, index) => (
+                  <div 
+                    key={nft.id}
+                    className="animate-fade-in-right"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
+                    <NFTCard
+                      nft={nft}
+                      mode={activeTab === 'listings' ? 'listing' : activeTab}
+                      onAction={ 
+                        !account
+                          ? () => connectWallet()
+                          : activeTab === 'market' 
+                          ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') 
+                          : activeTab === 'owned' 
+                          ? (tokenId, price) => handleListNFT(tokenId, price || '0') 
+                          : handleUnlistNFT
+                      }
                       processing={processing}
-                      checkWhitelist={checkWhitelistStatus}
                     />
-                  </CardContent>
-                </Card>
-              ) : activeTab === 'whitelist' ? (
-                <Card className="bg-black/50 border border-orange-400/20 mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-orange-400">Whitelist Management</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <WhitelistForm 
-                      onSubmit={handleUpdateWhitelist} 
-                      isOwner={isOwner}
-                    />
-                  </CardContent>
-                </Card>
-              ) : (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                    {paginatedData.map((nft, index) => (
-                      <div 
-                        key={nft.id}
-                        className="animate-fade-in-right"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
-                        <NFTCard
-                          nft={nft}
-                          mode={activeTab === 'listings' ? 'listing' : activeTab}
-                          onAction={ 
-                            activeTab === 'market' 
-                              ? (tokenId, price) => handleBuyNFT(tokenId, price || '0') 
-                              : activeTab === 'owned' 
-                              ? (tokenId, price) => handleListNFT(tokenId, price || '0') 
-                              : handleUnlistNFT
-                          }
-                          processing={processing}
-                        />
-                      </div>
-                    ))}
                   </div>
+                ))}
+              </div>
 
-                  {totalPages > 1 && (
-                    <div className="mt-8">
-                      <Pagination
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={handlePageChange}
-                      />
-                    </div>
-                  )}
-                </>
+              {totalPages > 1 && (
+                <div className="mt-8">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                  />
+                </div>
               )}
             </>
           )}
