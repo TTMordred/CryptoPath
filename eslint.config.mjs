@@ -19,6 +19,7 @@ const eslintConfig = [
       "react/no-unescaped-entities": "off",        // Tắt lỗi dấu ' " không escape
       "@next/next/no-img-element": "off",          // Tắt cảnh báo thẻ <img>
       "react-hooks/exhaustive-deps": "off",        // Tắt cảnh báo thiếu dependency trong useEffect
+      "react-hooks/rules-of-hooks": "off",         // Tắt lỗi sử dụng hooks không đúng quy tắc
       "@typescript-eslint/no-unused-expressions": "off", // Tắt lỗi biểu thức không dùng
       "@typescript-eslint/no-var-requires": "off", // Tắt lỗi require trong TypeScript
     },

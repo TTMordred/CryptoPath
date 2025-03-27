@@ -17,7 +17,7 @@ const CryptoPathExplorer = ({ language = 'en' as 'en' | 'vi' }) => {
   const [opPrice, setOpPrice] = useState('');
   const [opChange, setOpChange] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const filters = ['All Filters', 'On-Chain', 'Off-Chain', 'Tokens', 'NFTs', 'Addresses'] as const;
+  const filters = ['All Filters', 'On-Chain', 'Off-Chain', 'Tokens', 'Txn Hash', 'Blocks'] as const;
 
   const translations = {
     en: {

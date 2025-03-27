@@ -9,7 +9,7 @@ import { Loader2, ExternalLink, Copy, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
-import { ArrowRight, ArrowDownRight } from "lucide-react";
+import { ArrowRight, ArrowDownRight, ArrowLeft } from "lucide-react";
 import ParticlesBackground from "@/components/ParticlesBackground";
 
 interface TransactionDetails {
@@ -46,6 +46,11 @@ export default function TransactionDetails() {
 
   useEffect(() => {
     const fetchTransaction = async () => {
+      // Reset states when starting a new fetch
+      setLoading(true);
+      setError(null);
+      setTransaction(null);
+
       if (!hash) {
         setError("Transaction hash is required");
         setLoading(false);
@@ -61,9 +66,11 @@ export default function TransactionDetails() {
         }
 
         setTransaction(data);
+        setError(null);
       } catch (err) {
         console.error("Error fetching transaction:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch transaction details");
+        setTransaction(null);
       } finally {
         setLoading(false);
       }
@@ -98,17 +105,34 @@ export default function TransactionDetails() {
     );
   }
 
-  if (error) {
+  if (error || !transaction) {
     return (
-      <Card className="mt-8 border-red-500/50">
-        <CardContent className="p-6">
-          <div className="text-center text-red-500">
-            <XCircle className="h-12 w-12 mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Transaction Error</h3>
-            <p>{error}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <>
+        <ParticlesBackground />
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }}
+          className="container mx-auto p-4"
+        >
+          <Card className="mt-8 border-red-500/50">
+            <CardContent className="p-6">
+              <div className="text-center text-red-500">
+                <XCircle className="h-12 w-12 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Transaction Error</h3>
+                <p>{error || "Transaction not found"}</p>
+                <Button
+                  variant="ghost"
+                  className="mt-4 text-amber-500 hover:text-amber-400"
+                  onClick={() => router.back()}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Go Back
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </>
     );
   }
 
@@ -123,7 +147,7 @@ export default function TransactionDetails() {
       transition={{ duration: 0.5 }}
       className="container mx-auto p-4"
     >
-      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px]">
+      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px] backdrop-blur-sm">
         <CardHeader className="bg-black/40 border-b border-amber-500">
           <motion.div 
             initial={{ x: -20 }}

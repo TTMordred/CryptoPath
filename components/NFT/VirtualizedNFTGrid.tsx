@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowUpToLine, Info, AlertTriangle } from 'lucide-react';
 import AnimatedNFTCard from './AnimatedNFTCard';
 import {
   fetchNFTsWithOptimizedCursor,
@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/nftService';
 import { getChainColorTheme } from '@/lib/api/chainProviders';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 interface NFT {
   id: string;
@@ -64,11 +65,17 @@ export default function VirtualizedNFTGrid({
   const [loadingError, setLoadingError] = useState<string | null>(null);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [windowWidth, setWindowWidth] = useState(0);
+  const [isScrolling, setIsScrolling] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [placeholderCount, setPlaceholderCount] = useState(20);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // Refs
   const parentRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const gridContentRef = useRef<HTMLDivElement>(null);
+  const scrollUpTimer = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   
   // Chain theme for styling
@@ -106,13 +113,58 @@ export default function VirtualizedNFTGrid({
     getScrollElement: () => parentRef.current,
     estimateSize: () => estimatedRowHeight,
     overscan: 5,
+    scrollMargin: 200, // Add margin for smoother scrolling
   });
+
+  // Handle scroll events for showing "scroll to top" button
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!parentRef.current) return;
+      
+      const { scrollTop } = parentRef.current;
+      
+      // Show scroll-to-top when scrolled down 500px
+      setShowScrollTop(scrollTop > 500);
+      
+      // Set scrolling state with debounce
+      setIsScrolling(true);
+      
+      if (scrollUpTimer.current) {
+        clearTimeout(scrollUpTimer.current);
+      }
+      
+      scrollUpTimer.current = setTimeout(() => {
+        setIsScrolling(false);
+      }, 150);
+    };
+    
+    const scrollElement = parentRef.current;
+    if (scrollElement) {
+      scrollElement.addEventListener('scroll', handleScroll);
+      return () => scrollElement.removeEventListener('scroll', handleScroll);
+    }
+  }, []);
 
   // Load NFTs using the appropriate loading strategy
   useEffect(() => {
     setIsLoading(true);
     setLoadingError(null);
     setLoadingProgress(0);
+    
+    // Show placeholder layout during loading
+    if (isInitialLoad) {
+      // Create placeholder NFTs
+      const placeholders = Array.from({ length: placeholderCount }, (_, i) => ({
+        id: `placeholder-${i}`,
+        tokenId: `${i}`,
+        name: 'Loading...',
+        imageUrl: '',
+        chain: chainId,
+        isPlaceholder: true
+      }));
+      
+      setNfts(placeholders);
+    }
     
     // Either use progressive loading or cursor-based loading
     const loadNFTs = async () => {
@@ -160,16 +212,37 @@ export default function VirtualizedNFTGrid({
         }
         
         setIsLoading(false);
+        setIsInitialLoad(false);
         if (onLoadingComplete) onLoadingComplete();
       } catch (error) {
         console.error('Error loading NFTs:', error);
         setLoadingError('Failed to load NFTs. Please try again.');
         setIsLoading(false);
-        toast({
-          title: 'Error',
-          description: 'Failed to load NFTs. Please try again.',
-          variant: 'destructive',
-        });
+        
+        // Auto-retry up to 3 times with increasing delay
+        if (retryCount < 3) {
+          const delay = Math.pow(2, retryCount) * 1000; // Exponential backoff
+          
+          toast({
+            title: 'Loading error',
+            description: `Retrying in ${delay/1000} seconds...`,
+            variant: 'destructive',
+          });
+          
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+            
+            // Try again
+            setIsLoading(true);
+            setLoadingError(null);
+          }, delay);
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to load NFTs after multiple attempts. Please try again later.',
+            variant: 'destructive',
+          });
+        }
       }
     };
     
@@ -179,11 +252,22 @@ export default function VirtualizedNFTGrid({
     return () => {
       // Could implement an abort controller here if needed
     };
-  }, [contractAddress, chainId, searchQuery, sortBy, sortDirection, JSON.stringify(attributes)]);
+  }, [
+    contractAddress, 
+    chainId, 
+    searchQuery, 
+    sortBy, 
+    sortDirection, 
+    JSON.stringify(attributes), 
+    retryCount,
+    progressiveLoading,
+    batchSize,
+    isInitialLoad
+  ]);
   
   // Load more NFTs when scrolling to the end (for cursor-based pagination)
   const loadMoreNFTs = useCallback(async () => {
-    if (!hasNextPage || isLoading || progressiveLoading) return;
+    if (!hasNextPage || isLoading || progressiveLoading || !cursor) return;
     
     try {
       setIsLoading(true);
@@ -223,7 +307,9 @@ export default function VirtualizedNFTGrid({
     sortBy, 
     sortDirection, 
     searchQuery, 
-    attributes
+    attributes,
+    progressiveLoading,
+    toast
   ]);
   
   // Load more when the virtualized rows include the loading row
@@ -267,7 +353,17 @@ export default function VirtualizedNFTGrid({
   
   // Handle NFT click
   const handleNFTClick = (nft: NFT) => {
-    if (onNFTClick) onNFTClick(nft);
+    if (onNFTClick && !nft.isPlaceholder) onNFTClick(nft);
+  };
+  
+  // Handle scroll to top
+  const handleScrollToTop = () => {
+    if (parentRef.current) {
+      parentRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
   };
   
   // Get memory usage estimate for debugging
@@ -288,7 +384,7 @@ export default function VirtualizedNFTGrid({
           </div>
           <div className="w-full bg-gray-800 rounded-full h-2">
             <div
-              className="h-2 rounded-full"
+              className="h-2 rounded-full transition-all duration-300 ease-out"
               style={{
                 width: `${loadingProgress}%`,
                 backgroundColor: chainTheme.primary
@@ -301,9 +397,27 @@ export default function VirtualizedNFTGrid({
       {/* Main virtualized grid container */}
       <div
         ref={parentRef}
-        className="relative h-[calc(100vh-280px)] w-full overflow-auto"
+        className="relative h-[calc(100vh-280px)] w-full overflow-auto scrollbar-thin scrollbar-track-gray-900 scrollbar-thumb-gray-700"
         style={{ contain: 'strict' }}
+        aria-label="NFT Collection Grid"
       >
+        {/* Scroll to top button */}
+        <AnimatePresence>
+          {showScrollTop && (
+            <motion.button
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="fixed bottom-8 right-8 z-40 p-3 rounded-full bg-black/80 backdrop-blur-sm border border-gray-700 text-white shadow-lg hover:bg-gray-800 transition-colors"
+              onClick={handleScrollToTop}
+              aria-label="Scroll to top"
+            >
+              <ArrowUpToLine className="h-5 w-5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+        
         {/* Virtualizer inner container */}
         <div
           ref={gridContentRef}
@@ -327,7 +441,10 @@ export default function VirtualizedNFTGrid({
                 >
                   {isLoading ? (
                     <div className="flex items-center space-x-2">
-                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                      <Loader2 
+                        className="h-6 w-6 animate-spin" 
+                        style={{ color: chainTheme.primary }} 
+                      />
                       <span className="text-gray-400">Loading more NFTs...</span>
                     </div>
                   ) : (
@@ -380,22 +497,47 @@ export default function VirtualizedNFTGrid({
         </div>
       </div>
       
-      {/* Error message */}
-      {loadingError && (
+      {/* Error message with retry ability */}
+      {loadingError && retryCount >= 3 && (
         <div className="mt-6 p-4 bg-red-900/30 border border-red-800 rounded-md">
-          <p className="text-red-300">{loadingError}</p>
-          <button
-            className="mt-2 text-red-300 underline"
-            onClick={() => window.location.reload()}
-          >
-            Reload page
-          </button>
+          <div className="flex items-center gap-3 mb-2">
+            <AlertTriangle className="h-5 w-5 text-red-400" />
+            <p className="text-red-300 font-medium">{loadingError}</p>
+          </div>
+          <p className="text-gray-400 mb-4 pl-8">
+            We encountered an issue loading this collection. This could be due to rate limits or an issue with the collection contract.
+          </p>
+          <div className="flex flex-wrap gap-3 pl-8">
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setRetryCount(0);
+                setIsLoading(true);
+                setLoadingError(null);
+              }}
+            >
+              Retry
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleClearCache}
+            >
+              Clear Cache
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => window.location.reload()}
+            >
+              Reload Page
+            </Button>
+          </div>
         </div>
       )}
       
       {/* Empty state */}
       {!isLoading && nfts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 px-4 border border-dashed border-gray-700 rounded-lg mt-6">
+          <Info className="h-12 w-12 text-gray-500 mb-4" />
           <div className="text-gray-400 text-center">
             <h3 className="text-xl mb-2">No NFTs Found</h3>
             <p className="mb-4">
@@ -404,12 +546,12 @@ export default function VirtualizedNFTGrid({
                 : 'This collection appears to be empty or still loading.'}
             </p>
             {isFiltered && (
-              <button
+              <Button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md transition-colors"
               >
                 Clear Filters
-              </button>
+              </Button>
             )}
           </div>
         </div>

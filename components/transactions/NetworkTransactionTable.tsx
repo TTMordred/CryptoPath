@@ -244,7 +244,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 </TableCell>
                 <TableCell className="font-medium">
                   <div className="flex items-center space-x-2">
-                    <Link href={`/transaction/${tx.hash}`}>
+                    <Link href={`/txn-hash/?hash=${tx.hash}`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {truncateAddress(tx.hash)}
                       </span>
@@ -266,7 +266,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 </TableCell>
                 {!selectedCoin && (
                   <TableCell>
-                    <Link href={`/block/${tx.block}`}>
+                    <Link href={`/block/?number=${tx.block}`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {tx.block}
                       </span>
@@ -276,7 +276,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 <TableCell>{typeof tx.timestamp === 'number' ? getRelativeTime(tx.timestamp) : getRelativeTime(new Date(tx.timestamp).getTime() / 1000)}</TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    <Link href={`/address/${tx.from}`}>
+                    <Link href={`/search/?address=${tx.from}`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {truncateAddress(tx.from)}
                       </span>
@@ -293,7 +293,7 @@ export default function NetworkTransactionTable({ selectedCoin }: NetworkTransac
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center space-x-2">
-                    <Link href={`/address/${tx.to}`}>
+                    <Link href={`/search/?address=${tx.to}`}>
                       <span className="cursor-pointer hover:underline text-[#F5B056]">
                         {truncateAddress(tx.to)}
                       </span>

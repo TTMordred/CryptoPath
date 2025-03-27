@@ -57,6 +57,12 @@ export default function BlockTransactions() {
 
   useEffect(() => {
     const fetchBlockData = async () => {
+      // Reset states when starting a new fetch
+      setLoading(true);
+      setError(null);
+      setBlockData(null);
+      setPage(1); // Reset pagination when new block is loaded
+
       if (!blockNumber) {
         setError("Block number is required");
         setLoading(false);
@@ -82,7 +88,6 @@ export default function BlockTransactions() {
       }
     };
 
-    setLoading(true);
     fetchBlockData();
   }, [blockNumber]);
 
@@ -166,7 +171,7 @@ export default function BlockTransactions() {
           </div>
         </div>
 
-        <Card className="bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px]">
+        <Card className="bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px] backdrop-blur-sm">
           <CardContent className="p-6">
             {totalTransactions > 0 ? (
               <>

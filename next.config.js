@@ -24,6 +24,11 @@ const nextConfig = {
       hostname: "img-cdn.magiceden.dev",
       pathname: "/**",
       },
+      {
+      protocol: "https",
+      hostname: "ipfs.frontera.games",
+      pathname: "/assets/**",
+      },
       // Add these to your existing remotePatterns array
       {
         protocol: "https", 
@@ -195,6 +200,11 @@ const nextConfig = {
       {
         protocol: "https",
         hostname: "s2.coinmarketcap.com",
+        pathname: "/**",
+      },
+      {
+        protocol: "https",
+        hostname: "img.cellula.life",
         pathname: "/**",
       },
       // Adding more blockchain image hosts

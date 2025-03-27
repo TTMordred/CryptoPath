@@ -12,7 +12,7 @@ import {
   Coins, Users, ArrowLeftRight, 
   Calendar, Shield, Clock,
   TrendingUp, DollarSign, BarChart3,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight, ArrowDownRight, ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
@@ -98,6 +98,11 @@ export default function TokenPage() {
 
   useEffect(() => {
     const fetchToken = async () => {
+      // Reset states when starting a new fetch
+      setLoading(true);
+      setError(null);
+      setToken(null);
+
       if (!address) {
         setError("Token address is required");
         setLoading(false);
@@ -113,16 +118,18 @@ export default function TokenPage() {
         }
 
         setToken(data);
+        setError(null);
       } catch (err) {
         console.error("Error fetching token:", err);
         setError(err instanceof Error ? err.message : "Failed to fetch token details");
+        setToken(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchToken();
-  }, [address]);
+  }, [address]); 
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -144,15 +151,30 @@ export default function TokenPage() {
 
   if (error || !token) {
     return (
-      <div className="container mx-auto p-4">
-        <Card className="mt-8 border-red-500/50">
-          <CardContent className="p-6">
-            <div className="text-center text-red-500">
-              <p className="text-lg">{error || "Token not found"}</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <ParticlesBackground />
+        <motion.div 
+          initial={{ opacity: 0 }} 
+          animate={{ opacity: 1 }}
+          className="container mx-auto p-4"
+        >
+          <Card className="mt-8 border-red-500/50">
+            <CardContent className="p-6">
+              <div className="text-center text-red-500">
+                <p className="text-lg">{error || "Token not found"}</p>
+                <Button
+                  variant="ghost"
+                  className="mt-4 text-amber-500 hover:text-amber-400"
+                  onClick={() => router.back()}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Go Back
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </>
     );
   }
 
@@ -165,7 +187,7 @@ export default function TokenPage() {
       transition={{ duration: 0.5 }}
       className="container mx-auto p-4"
     >
-      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px]">
+      <Card className="mt-8 bg-transparent border-amber-500/20 shadow-xl hover:shadow-amber-500/10 transition-all duration-500 rounded-[10px] backdrop-blur-sm">
         <CardHeader className="bg-black/40 border-b border-amber-500/10">
           <motion.div 
             initial={{ x: -20 }}
