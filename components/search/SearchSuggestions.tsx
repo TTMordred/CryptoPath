@@ -1,11 +1,8 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Clock, Sparkles, Database, Hash, Coins, Layers, Star, Activity, ShieldCheck, AlertTriangle } from "lucide-react"
+import { Search, Clock, Building2, Wallet, Coins, Image, Building, ArrowLeftRight, Globe, Database } from "lucide-react"
 import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface SearchSuggestionsProps {
   query: string
@@ -18,412 +15,205 @@ interface SearchSuggestionsProps {
 
 interface Suggestion {
   value: string
-  label?: string
+  label: string
+  category: 'dapp' | 'cex' | 'dex' | 'token' | 'nft' | 'dao' | 'bridge' | 'recent'
   description?: string
-  type: 'recent' | 'popular' | 'verified' | 'smart' | 'trending'
-  category?: 'address' | 'transaction' | 'token' | 'block' | 'neo4j'
+}
+
+// Comprehensive suggestions database
+const BLOCKCHAIN_SUGGESTIONS: Record<string, Suggestion[]> = {
+  // Popular DApps
+  dapp: [
+    { value: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", label: "Uniswap Router", category: 'dapp', description: "Decentralized Exchange Protocol" },
+    { value: "0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B", label: "Compound", category: 'dapp', description: "Lending Protocol" },
+    { value: "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f", label: "Uniswap Factory", category: 'dapp', description: "DEX Factory" },
+    { value: "0x0000000000A39bb272e79075ade125fd351887Ac", label: "Blur.io", category: 'dapp', description: "NFT Marketplace" },
+  ],
+  // Centralized Exchanges
+  cex: [
+    { value: "0x28C6c06298d514Db089934071355E5743bf21d60", label: "Binance Hot Wallet", category: 'cex', description: "Binance Exchange" },
+    { value: "0xDFd5293D8e347dFe59E90eFd55b2956a1343963d", label: "Coinbase", category: 'cex', description: "Coinbase Exchange" },
+    { value: "0x75e89d5979E4f6Fba9F97c104c2F0AFB3F1dcB88", label: "Kraken", category: 'cex', description: "Kraken Exchange" },
+    { value: "0x0681d8Db095565FE8A346fA0277bFfdE9C0eDBBF", label: "Crypto.com", category: 'cex', description: "Crypto.com Exchange" },
+  ],
+  // Decentralized Exchanges
+  dex: [
+    { value: "0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45", label: "Uniswap V3", category: 'dex', description: "Leading DEX Protocol" },
+    { value: "0xd9e1cE17f2641f24aE83637ab66a2cca9C378B9F", label: "SushiSwap", category: 'dex', description: "Multi-chain DEX" },
+    { value: "0xDef1C0ded9bec7F1a1670819833240f027b25EfF", label: "0x Protocol", category: 'dex', description: "DEX Aggregator" },
+    { value: "0x1111111254EEB25477B68fb85Ed929f73A960582", label: "1inch", category: 'dex', description: "DEX Aggregator" },
+  ],
+  // Popular Tokens
+  token: [
+    { value: "0xdAC17F958D2ee523a2206206994597C13D831ec7", label: "USDT", category: 'token', description: "Tether USD" },
+    { value: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", label: "USDC", category: 'token', description: "USD Coin" },
+    { value: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599", label: "WBTC", category: 'token', description: "Wrapped Bitcoin" },
+    { value: "0x514910771AF9Ca656af840dff83E8264EcF986CA", label: "LINK", category: 'token', description: "Chainlink" },
+  ],
+  // Notable NFT Collections
+  nft: [
+    { value: "0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D", label: "BAYC", category: 'nft', description: "Bored Ape Yacht Club" },
+    { value: "0x60E4d786628Fea6478F785A6d7e704777c86a7c6", label: "MAYC", category: 'nft', description: "Mutant Ape Yacht Club" },
+    { value: "0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB", label: "CryptoPunks", category: 'nft', description: "CryptoPunks Collection" },
+    { value: "0x34d85c9CDeB23FA97cb08333b511ac86E1C4E258", label: "Otherdeed", category: 'nft', description: "Otherside Land" },
+  ],
+  // DAOs
+  dao: [
+    { value: "0x408e41876cCCDC0F92210600ef50372656052a38", label: "REN DAO", category: 'dao', description: "Cross-chain Liquidity" },
+    { value: "0x0BEF27FEB58e857046d630B2c03dFb7bae567494", label: "Nexus Mutual", category: 'dao', description: "DeFi Insurance" },
+    { value: "0x470ebf5f030ed85fc1ed4c2d36b9dd02e77cf1b7", label: "TheGraph", category: 'dao', description: "Indexing Protocol" },
+    { value: "0x744d16d200175cd20c971fe0c1881168372c21d0", label: "Aave", category: 'dao', description: "Lending Protocol" },
+  ],
+  // Cross-chain Bridges
+  bridge: [
+    { value: "0x99C9fc46f92E8a1c0deC1b1747d010903E884bE1", label: "Optimism Bridge", category: 'bridge', description: "ETH-Optimism Bridge" },
+    { value: "0x8315177aB297bA92A06054cE80a67Ed4DBd7ed3a", label: "Arbitrum Bridge", category: 'bridge', description: "ETH-Arbitrum Bridge" },
+    { value: "0x40ec5B33f54e0E8A33A975908C5BA1c14e5BbbDf", label: "Polygon Bridge", category: 'bridge', description: "ETH-Polygon Bridge" },
+    { value: "0xa3A7B6F88361F48403514059F1F16C8E78d60EeC", label: "Arbitrum One", category: 'bridge', description: "Layer 2 Bridge" },
+  ],
+}
+
+const getCategoryIcon = (category: string) => {
+  switch (category) {
+    case 'dapp':
+      return <Building className="h-4 w-4 text-purple-400" />
+    case 'cex':
+      return <Building2 className="h-4 w-4 text-green-400" />
+    case 'dex':
+      return <ArrowLeftRight className="h-4 w-4 text-blue-400" />
+    case 'token':
+      return <Coins className="h-4 w-4 text-amber-400" />
+    case 'nft':
+      // eslint-disable-next-line jsx-a11y/alt-text
+      return <Image className="h-4 w-4 text-pink-400" />
+    case 'dao':
+      return <Globe className="h-4 w-4 text-indigo-400" />
+    case 'bridge':
+      return <ArrowLeftRight className="h-4 w-4 text-cyan-400" />
+    case 'recent':
+      return <Clock className="h-4 w-4 text-gray-400" />
+    default:
+      return <Search className="h-4 w-4 text-gray-400" />
+  }
 }
 
 export default function SearchSuggestions({
   query,
   searchType,
   onSelect,
-  visible,
-  onSuggestionMouseEnter,
-  onSuggestionMouseLeave
+  visible
 }: SearchSuggestionsProps) {
   const [recentSearches, setRecentSearches] = useState<string[]>([])
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-  const [activeSuggestion, setActiveSuggestion] = useState<number>(-1)
-  const [hoveredSuggestion, setHoveredSuggestion] = useState<number | null>(null)
 
   // Load recent searches from localStorage
   useEffect(() => {
-    const saved = localStorage.getItem('cryptoPathRecentSearches')
+    const saved = localStorage.getItem('recentSearches')
     if (saved) {
-      try {
-        setRecentSearches(JSON.parse(saved))
-      } catch (e) {
-        console.error("Failed to parse recent searches:", e)
-        setRecentSearches([])
-      }
+      setRecentSearches(JSON.parse(saved))
     }
   }, [])
 
-  // Save a new search to recent searches
-  const saveToRecentSearches = (value: string) => {
-    const updated = [value, ...recentSearches.filter(item => item !== value)].slice(0, 5)
-    setRecentSearches(updated)
-    localStorage.setItem('cryptoPathRecentSearches', JSON.stringify(updated))
-  }
-
-  // Handle selecting a suggestion
-  const handleSelect = (suggestion: Suggestion) => {
-    saveToRecentSearches(suggestion.value)
-    onSelect(suggestion.value)
-  }
-
-  // Smart suggestions based on search type
-  const getSmartSuggestions = (): Suggestion[] => {
-    switch (searchType) {
-      case "onchain":
-        return [
-          { 
-            value: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 
-            label: "Ethereum Foundation", 
-            description: "Official Ethereum Foundation wallet",
-            type: 'verified', 
-            category: 'address' 
-          },
-          { 
-            value: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", 
-            label: "Wrapped Ether (WETH)", 
-            description: "Largest ETH wrapper contract",
-            type: 'popular', 
-            category: 'address' 
-          },
-          { 
-            value: "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D", 
-            label: "Uniswap V2 Router", 
-            description: "Popular DEX router",
-            type: 'popular', 
-            category: 'address' 
-          },
-        ]
-      case "Txn Hash":
-        return [
-          { 
-            value: "0x88df016429689c079f3b2f6ad39fa052532c56795b733da78a91ebe6a713944b", 
-            label: "Large ETH Transfer", 
-            description: "Notable $156M transfer",
-            type: 'popular', 
-            category: 'transaction' 
-          },
-          { 
-            value: "0x4fc1580e7f66c58b7c26881cce0aab9c3509afe6e507527f30566fbf8039bcd0", 
-            label: "Genesis Block First Tx", 
-            description: "Historical transaction",
-            type: 'verified', 
-            category: 'transaction' 
-          },
-        ]
-      case "Token":
-        return [
-          { 
-            value: "0xdac17f958d2ee523a2206206994597c13d831ec7", 
-            label: "USDT (Tether)", 
-            description: "Popular stablecoin",
-            type: 'popular', 
-            category: 'token' 
-          },
-          { 
-            value: "0x6b175474e89094c44da98b954eedeac495271d0f", 
-            label: "DAI Stablecoin", 
-            description: "Decentralized stablecoin",
-            type: 'verified', 
-            category: 'token' 
-          },
-          { 
-            value: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984", 
-            label: "UNI Token", 
-            description: "Uniswap governance token",
-            type: 'popular', 
-            category: 'token' 
-          },
-        ]
-      case "Block":
-        return [
-          { 
-            value: "12965000", 
-            label: "London Hard Fork", 
-            description: "EIP-1559 implementation",
-            type: 'verified', 
-            category: 'block' 
-          },
-          { 
-            value: "17000000", 
-            label: "Recent Major Block", 
-            description: "Post-Merge significant block",
-            type: 'trending', 
-            category: 'block' 
-          },
-        ]
-      case "offchain":
-        return [
-          { 
-            value: "0x388c818ca8b9251b393131c08a736a67ccb19297", 
-            label: "Key Neo4j Node", 
-            description: "High centrality node",
-            type: 'smart', 
-            category: 'neo4j' 
-          },
-        ]
-      default:
-        // All/universal search combines all suggestions
-        return [
-          { 
-            value: "0x742d35Cc6634C0532925a3b844Bc454e4438f44e", 
-            label: "Ethereum Foundation", 
-            description: "Official Ethereum Foundation wallet",
-            type: 'verified', 
-            category: 'address' 
-          },
-          { 
-            value: "0xdac17f958d2ee523a2206206994597c13d831ec7", 
-            label: "USDT (Tether)", 
-            description: "Popular stablecoin",
-            type: 'popular', 
-            category: 'token' 
-          },
-          { 
-            value: "12965000", 
-            label: "London Hard Fork", 
-            description: "EIP-1559 implementation",
-            type: 'smart', 
-            category: 'block' 
-          },
-        ]
-    }
-  }
-
-  // Update suggestions based on input
+  // Update suggestions based on input and search type
   useEffect(() => {
-    if (!visible || !query.trim()) {
+    if (!visible) {
       setSuggestions([])
       return
     }
 
-    const smartSuggestions = getSmartSuggestions()
-    
-    // Format recent searches as suggestions
-    const recentSearchItems: Suggestion[] = recentSearches.map(value => ({
+    let filteredSuggestions: Suggestion[] = []
+    const searchLower = query.toLowerCase()
+
+    // Add recent searches first
+    const recentItems: Suggestion[] = recentSearches.map(value => ({
       value,
-      type: 'recent',
-      category: value.startsWith('0x') ? 
-        (value.length === 66 ? 'transaction' : 'address') : 
-        (/^\d+$/.test(value) ? 'block' : 'neo4j')
+      label: 'Recent Search',
+      category: 'recent'
     }))
 
-    // Combine and filter suggestions based on query
-    const allSuggestions = [...recentSearchItems, ...smartSuggestions]
-      .filter(suggestion => 
-        suggestion.value.toLowerCase().includes(query.toLowerCase()) ||
-        (suggestion.label && suggestion.label.toLowerCase().includes(query.toLowerCase())) ||
-        (suggestion.description && suggestion.description.toLowerCase().includes(query.toLowerCase()))
-      )
-      .slice(0, 6)
+    // Combine all categories
+    const allSuggestions = [
+      ...recentItems,
+      ...Object.values(BLOCKCHAIN_SUGGESTIONS).flat()
+    ]
 
-    setSuggestions(allSuggestions)
-    setActiveSuggestion(-1) // Reset active suggestion when suggestions change
+    if (!query) {
+      // Show popular items when no query
+      filteredSuggestions = allSuggestions
+        .filter(s => s.category !== 'recent')
+        .slice(0, 8)
+    } else {
+      // Filter based on query
+      filteredSuggestions = allSuggestions.filter(suggestion =>
+        suggestion.value.toLowerCase().includes(searchLower) ||
+        suggestion.label.toLowerCase().includes(searchLower) ||
+        (suggestion.description && suggestion.description.toLowerCase().includes(searchLower))
+      )
+    }
+
+    // Prioritize exact matches and starts with
+    filteredSuggestions.sort((a, b) => {
+      if (a.value.toLowerCase() === searchLower) return -1
+      if (b.value.toLowerCase() === searchLower) return 1
+      if (a.value.toLowerCase().startsWith(searchLower)) return -1
+      if (b.value.toLowerCase().startsWith(searchLower)) return 1
+      return 0
+    })
+
+    // Limit results
+    setSuggestions(filteredSuggestions.slice(0, 8))
   }, [query, searchType, recentSearches, visible])
 
-  // Handle keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!visible || suggestions.length === 0) return
-      
-      // Down arrow
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        setActiveSuggestion(prev => (prev + 1) % suggestions.length)
-      }
-      // Up arrow
-      else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        setActiveSuggestion(prev => (prev - 1 + suggestions.length) % suggestions.length)
-      }
-      // Enter key
-      else if (e.key === 'Enter' && activeSuggestion !== -1) {
-        e.preventDefault()
-        handleSelect(suggestions[activeSuggestion])
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [visible, suggestions, activeSuggestion])
-
   if (!visible || suggestions.length === 0) return null
-
-  const getIcon = (suggestion: Suggestion) => {
-    // For recent searches, show the clock icon
-    if (suggestion.type === 'recent') {
-      return <Clock className="h-4 w-4 text-gray-400" />
-    }
-
-    // Otherwise, show an icon based on the category
-    switch (suggestion.category) {
-      case 'address':
-        return <Database className="h-4 w-4 text-amber-400" />
-      case 'transaction':
-        return <Hash className="h-4 w-4 text-green-400" />
-      case 'token':
-        return <Coins className="h-4 w-4 text-pink-400" />
-      case 'block':
-        return <Layers className="h-4 w-4 text-cyan-400" />
-      case 'neo4j':
-        return <Database className="h-4 w-4 text-blue-400" />
-      default:
-        return <Search className="h-4 w-4 text-purple-400" />
-    }
-  }
-
-  const getTypeIcon = (type: Suggestion['type']) => {
-    switch (type) {
-      case 'verified':
-        return <ShieldCheck className="h-3 w-3 text-emerald-400" />
-      case 'popular':
-        return <Star className="h-3 w-3 text-amber-400" />
-      case 'trending':
-        return <Activity className="h-3 w-3 text-red-400" />
-      case 'smart':
-        return <Sparkles className="h-3 w-3 text-blue-400" />
-      default:
-        return <Clock className="h-3 w-3 text-gray-400" />
-    }
-  }
-
-  const getTypeBadgeColor = (type: Suggestion['type']) => {
-    switch (type) {
-      case 'verified':
-        return 'bg-emerald-900/30 text-emerald-400 border-emerald-500/20'
-      case 'popular':
-        return 'bg-amber-900/30 text-amber-400 border-amber-500/20'
-      case 'trending':
-        return 'bg-red-900/30 text-red-400 border-red-500/20'
-      case 'smart':
-        return 'bg-blue-900/30 text-blue-400 border-blue-500/20'
-      default:
-        return 'bg-gray-900/30 text-gray-400 border-gray-500/20'
-    }
-  }
-
-  // Truncate long addresses
-  const formatAddress = (value: string): string => {
-    if (value.startsWith('0x') && value.length > 16) {
-      return `${value.slice(0, 8)}...${value.slice(-6)}`
-    }
-    return value
-  }
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -5, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -5, scale: 0.98 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-        className="absolute top-full left-0 right-0 mt-1 bg-gray-900/95 border border-gray-700/50 rounded-xl shadow-2xl z-50 backdrop-blur-sm overflow-hidden"
-        style={{ maxHeight: '80vh', overflowY: 'auto' }}
-        onMouseEnter={onSuggestionMouseEnter}
-        onMouseLeave={onSuggestionMouseLeave}
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="absolute top-full left-0 right-0 mt-2 bg-gray-900/95 border border-gray-700 rounded-xl shadow-xl z-50 backdrop-blur-sm"
       >
-        <div className="p-1">
-          <div className="px-2 py-1.5 text-xs text-gray-400 flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" /> 
-            {suggestions.length} suggestion{suggestions.length !== 1 ? 's' : ''} for "{query}"
-          </div>
-
+        <div className="p-2 space-y-1">
           {suggestions.map((suggestion, index) => (
             <motion.div
-              key={`${suggestion.value}-${index}`}
-              initial={{ opacity: 0, x: -10 }}
+              key={suggestion.value}
+              initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.03 }}
-              onClick={() => handleSelect(suggestion)}
-              onMouseEnter={() => setHoveredSuggestion(index)}
-              onMouseLeave={() => setHoveredSuggestion(null)}
-              className={`px-3 py-2 cursor-pointer rounded-lg transition-all duration-150 relative ${
-                index === activeSuggestion || index === hoveredSuggestion 
-                  ? 'bg-gray-800/80' 
-                  : 'hover:bg-gray-800/50'
+              transition={{ delay: index * 0.05 }}
+              onClick={() => onSelect(suggestion.value)}
+              className={`px-4 py-3 cursor-pointer rounded-lg transition-all duration-200 group hover:bg-gray-800 ${
+                suggestion.category === 'recent' ? 'border-l-2 border-gray-600' : ''
               }`}
             >
               <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800/80 border border-gray-700/50">
-                  {getIcon(suggestion)}
+                <div className="flex-shrink-0">
+                  {getCategoryIcon(suggestion.category)}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-medium text-gray-200">
-                      {suggestion.label || formatAddress(suggestion.value)}
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm text-gray-200 truncate group-hover:text-white transition-colors duration-200">
+                      {suggestion.label}
                     </div>
-                    <Badge 
-                      variant="outline" 
-                      className={`ml-2 text-[10px] py-0.5 px-2 ${getTypeBadgeColor(suggestion.type)}`}
-                    >
-                      <span className="flex items-center gap-1">
-                        {getTypeIcon(suggestion.type)}
-                        <span>{suggestion.type}</span>
-                      </span>
-                    </Badge>
+                    <div className="text-xs px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 group-hover:bg-gray-700 transition-colors duration-200">
+                      {suggestion.category.toUpperCase()}
+                    </div>
                   </div>
                   
-                  {suggestion.label && (
-                    <div className="text-xs font-mono text-gray-400 truncate mt-0.5">
-                      {formatAddress(suggestion.value)}
-                    </div>
-                  )}
+                  <div className="text-xs text-gray-500 truncate group-hover:text-gray-400 transition-colors duration-200">
+                    {suggestion.value}
+                  </div>
                   
                   {suggestion.description && (
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-xs text-gray-400 truncate group-hover:text-gray-300 transition-colors duration-200 mt-1">
                       {suggestion.description}
                     </div>
                   )}
                 </div>
               </div>
-              
-              {(index === activeSuggestion || index === hoveredSuggestion) && (
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2"
-                >
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-7 px-2 text-xs text-amber-400 hover:text-amber-300"
-                  >
-                    Select
-                  </Button>
-                </motion.div>
-              )}
             </motion.div>
           ))}
-          
-          <div className="border-t border-gray-800 mt-1 pt-1">
-            <div className="flex items-center justify-between px-3 py-2 text-xs text-gray-500">
-              <div className="flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 hover:text-gray-300 transition-colors cursor-help">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span>Tips</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Use arrow keys to navigate suggestions</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-              <div>
-                <Button
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-6 px-2 text-xs text-gray-500 hover:text-gray-300"
-                  onClick={() => {
-                    localStorage.removeItem('cryptoPathRecentSearches')
-                    setRecentSearches([])
-                  }}
-                >
-                  Clear History
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </motion.div>
     </AnimatePresence>
