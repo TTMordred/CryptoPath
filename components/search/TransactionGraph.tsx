@@ -860,11 +860,15 @@ function TransactionGraph() {
             links: updatedLinks
           });
           
-          // Update graph by triggering a re-render with new data
+          // Update the graph's visual state
           requestAnimationFrame(() => {
             if (graphRef.current) {
-              // Force graph to update by calling d3Force
-              graphRef.current.d3Force('link').alpha(0.3).restart();
+              const forceLink = graphRef.current.d3Force('link');
+              if (forceLink) {
+                // Update force simulation
+                forceLink.distance((link: GraphLink) => (link.highlighted ? 100 : 50));
+                graphRef.current.d3ReheatSimulation();
+              }
             }
           });
         }

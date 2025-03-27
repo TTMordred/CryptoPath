@@ -87,6 +87,18 @@ export default function Portfolio() {
     }
   }, [address, provider, showZeroBalances]);
 
+  // Add a helper function to safely parse numeric values
+  const safeParseFloat = (value: any): number => {
+    if (value === undefined || value === null) return 0;
+    
+    // Try to convert to a number if it's not already
+    const numValue = typeof value === 'number' ? value : Number(value);
+    
+    // Check if the result is a valid number
+    return isNaN(numValue) ? 0 : numValue;
+  };
+  
+  // Modified fetchPortfolio function with improved value handling
   const fetchPortfolio = async (walletAddress: string) => {
     setLoading(true);
     setError(null);
@@ -100,12 +112,34 @@ export default function Portfolio() {
       }
 
       const data = await response.json();
+      console.log("API Response:", data); // Debug the API response
       
-      // Add mock price change data for demo purposes
-      const tokensWithPriceChange = data.tokens.map((token: TokenBalance) => ({
-        ...token,
-        priceChange24h: Math.random() * 20 - 10 // Random value between -10% and +10%
-      }));
+      // Process and normalize the data
+      const tokensWithPriceChange = data.tokens.map((token: TokenBalance) => {
+        // Ensure all numeric values are properly parsed
+        const processedToken = {
+          ...token,
+          usdValue: safeParseFloat(token.usdValue),
+          usdPrice: safeParseFloat(token.usdPrice),
+          balance: token.balance || token.balanceFormatted || '0',
+          priceChange24h: Math.random() * 20 - 10 // Random value between -10% and +10%
+        };
+        
+        // Log a sample token to debug
+        if (token === data.tokens[0]) {
+          console.log("Sample token after processing:", processedToken);
+        }
+        
+        return processedToken;
+      });
+      
+      // Calculate total value correctly
+      const calculatedTotalValue = tokensWithPriceChange.reduce(
+        (sum: number, token: TokenBalance) => sum + safeParseFloat(token.usdValue), 
+        0
+      );
+      
+      console.log("Calculated total value:", calculatedTotalValue);
       
       // Filter out zero balances if toggle is off
       const filteredTokens = showZeroBalances 
@@ -115,7 +149,14 @@ export default function Portfolio() {
           );
       
       setPortfolio(filteredTokens);
-      setTotalValue(data.totalValue);
+      
+      // Use the calculated total or the provided total, ensuring it's a number
+      const finalTotalValue = data.totalValue ? safeParseFloat(data.totalValue) : calculatedTotalValue;
+      setTotalValue(finalTotalValue);
+      
+      console.log("Final total value set:", finalTotalValue);
+      console.log("Sample portfolio tokens:", filteredTokens.slice(0, 2));
+
       setCurrentPage(1); // Reset to first page when data changes
     } catch (error) {
       console.error("Error fetching portfolio:", error);
@@ -214,18 +255,18 @@ export default function Portfolio() {
   const chartData = useMemo(() => {
     // Take top 5 by value
     const topTokens = [...filteredPortfolio]
-      .sort((a, b) => (b.usdValue || 0) - (a.usdValue || 0))
+      .sort((a, b) => safeParseFloat(b.usdValue) - safeParseFloat(a.usdValue))
       .slice(0, 5);
     
-    // Calculate others
-    const topTokensValue = topTokens.reduce((sum, token) => sum + (token.usdValue || 0), 0);
+    // Calculate others with safe parsing
+    const topTokensValue = topTokens.reduce((sum, token) => sum + safeParseFloat(token.usdValue), 0);
     const othersValue = totalValue - topTokensValue;
     
-    // Create chart data array
+    // Create chart data array with safe parsing
     const data: ChartData[] = topTokens.map((token, index) => ({
       name: token.name || 'Unknown',
       symbol: token.symbol || '?',
-      value: token.usdValue || 0,
+      value: safeParseFloat(token.usdValue), // Ensure this is a number
       color: COLORS[index % COLORS.length]
     }));
     
@@ -395,7 +436,7 @@ export default function Portfolio() {
             <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700/30">
               <div className="text-sm text-gray-400 mb-1">Value</div>
               <div className="text-lg font-semibold text-white">
-                ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
+                ${safeParseFloat(token.usdValue).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
                 })}
@@ -404,9 +445,8 @@ export default function Portfolio() {
             
             <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700/30">
               <div className="text-sm text-gray-400 mb-1">Price</div>
-              <div className="text-lg font-semibold text-white flex items-center">
-                <DollarSign className="h-4 w-4 mr-1 text-gray-400" />
-                {(token.usdPrice || 0).toLocaleString(undefined, {
+              <div className="text-lg font-semibold text-white">
+                ${(token.usdPrice || 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 6
                 })}
@@ -463,7 +503,7 @@ export default function Portfolio() {
         </div>
         <div className="text-right flex-shrink-0 ml-2">
           <div className="text-sm text-gray-300 font-semibold">
-            ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
+            ${safeParseFloat(token.usdValue).toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })}
@@ -572,7 +612,7 @@ export default function Portfolio() {
                 </TableCell>
                 <TableCell className="text-right text-gray-300 whitespace-nowrap">
                   <span>
-                    ${(parseFloat(String(token.usdValue || 0))).toLocaleString(undefined, {
+                    ${safeParseFloat(token.usdValue).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2
                     })}
@@ -1123,13 +1163,13 @@ export default function Portfolio() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right text-gray-300">
-                                  ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
+                                  ${safeParseFloat(token.usdValue).toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2
                                   })}
                                 </TableCell>
                                 <TableCell className="text-right text-gray-300">
-                                  {((parseFloat(String(token.usdValue || 0))) / totalValue * 100).toFixed(2)}%
+                                  {((safeParseFloat(token.usdValue) / totalValue * 100) || 0).toFixed(2)}%
                                 </TableCell>
                               </TableRow>
                             ))}
