@@ -7,6 +7,7 @@ interface NFTTabsProps {
   balances: { market: number; owned: number; listings: number };
   showMintTab: boolean;
   showWhitelistTab: boolean;
+  account: string | null; // Thêm prop account
 }
 
 export default function NFTTabs({ 
@@ -14,11 +15,12 @@ export default function NFTTabs({
   setActiveTab, 
   balances,
   showMintTab,
-  showWhitelistTab 
+  showWhitelistTab,
+  account // Nhận prop account
 }: NFTTabsProps) {
   return (
     <div className="flex flex-wrap gap-4 mb-8 border-b border-orange-400/20 pb-4">
-      {/* Market Tab */}
+      {/* Market Tab - Luôn hiển thị */}
       <button
         onClick={() => setActiveTab('market')}
         className={`px-6 py-2 rounded-full transition-all ${
@@ -30,56 +32,61 @@ export default function NFTTabs({
         Market ({balances.market})
       </button>
 
-      {/* Owned Tab */}
-      <button
-        onClick={() => setActiveTab('owned')}
-        className={`px-6 py-2 rounded-full transition-all ${
-          activeTab === 'owned'
-            ? 'bg-orange-400 text-black font-bold'
-            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-        }`}
-      >
-        My NFTs ({balances.owned})
-      </button>
+      {/* Các tab chỉ hiển thị khi có account */}
+      {account && (
+        <>
+          {/* Owned Tab */}
+          <button
+            onClick={() => setActiveTab('owned')}
+            className={`px-6 py-2 rounded-full transition-all ${
+              activeTab === 'owned'
+                ? 'bg-orange-400 text-black font-bold'
+                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+            }`}
+          >
+            My NFTs ({balances.owned})
+          </button>
 
-      {/* Listings Tab */}
-      <button
-        onClick={() => setActiveTab('listings')}
-        className={`px-6 py-2 rounded-full transition-all ${
-          activeTab === 'listings'
-            ? 'bg-orange-400 text-black font-bold'
-            : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-        }`}
-      >
-        My Listings ({balances.listings})
-      </button>
+          {/* Listings Tab */}
+          <button
+            onClick={() => setActiveTab('listings')}
+            className={`px-6 py-2 rounded-full transition-all ${
+              activeTab === 'listings'
+                ? 'bg-orange-400 text-black font-bold'
+                : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+            }`}
+          >
+            My Listings ({balances.listings})
+          </button>
 
-      {/* Mint Tab */}
-      {showMintTab && (
-        <button
-          onClick={() => setActiveTab('mint')}
-          className={`px-6 py-2 rounded-full transition-all ${
-            activeTab === 'mint'
-              ? 'bg-orange-400 text-black font-bold'
-              : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-          }`}
-        >
-          Mint
-        </button>
-      )}
+          {/* Mint Tab */}
+          {showMintTab && (
+            <button
+              onClick={() => setActiveTab('mint')}
+              className={`px-6 py-2 rounded-full transition-all ${
+                activeTab === 'mint'
+                  ? 'bg-orange-400 text-black font-bold'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+              }`}
+            >
+              Mint
+            </button>
+          )}
 
-      {/* Whitelist Tab */}
-      {showWhitelistTab && (
-        <button
-          onClick={() => setActiveTab('whitelist')}
-          className={`px-6 py-2 rounded-full transition-all ${
-            activeTab === 'whitelist'
-              ? 'bg-orange-400 text-black font-bold'
-              : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
-          }`}
-        >
-          Whitelist
-        </button>
+          {/* Whitelist Tab */}
+          {showWhitelistTab && (
+            <button
+              onClick={() => setActiveTab('whitelist')}
+              className={`px-6 py-2 rounded-full transition-all ${
+                activeTab === 'whitelist'
+                  ? 'bg-orange-400 text-black font-bold'
+                  : 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+              }`}
+            >
+              Whitelist
+            </button>
+          )}
+        </>
       )}
     </div>
   );
