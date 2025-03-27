@@ -1,19 +1,23 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Loader2, ArrowUpDown, Filter, RefreshCcw, BarChart3 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { Loader2, ArrowUpDown, Filter, RefreshCcw, BarChart3, Download, Check, ExternalLink, Copy, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 
 // Import types, utils, and components
 import { Transaction, TransactionType, FilterState } from "./types"
 import { CACHE_DURATION } from "./constants"
-import { categorizeTransaction, getTransactionMethod, getBlockExplorerUrl } from "./utils"
+import { categorizeTransaction, getTransactionMethod, getBlockExplorerUrl, shortenAddress } from "./utils"
 import FilterPopover from "./components/FilterPopover"
 import TransactionRow from "./components/TransactionRow"
 import TransactionDetails from "./components/TransactionDetails"
@@ -276,6 +280,58 @@ export default function TransactionTable() {
   const handleRowClick = (txId: string) => {
     setExpandedTx(expandedTx === txId ? null : txId)
   }
+  
+  // Add a function to navigate to transaction hash details
+  const router = useRouter()
+  const handleSearchHash = useCallback((hash: string) => {
+    router.push(`/txn-hash?hash=${hash}`)
+  }, [router])
+  
+  // Add a function to navigate to address details
+  const handleSearchAddress = useCallback((address: string) => {
+    router.push(`/search?address=${address}&network=${network}&provider=${provider}`)
+  }, [router, network, provider])
+  
+  // Add CSV download functionality
+  const handleDownload = useCallback(() => {
+    // Create headers for CSV
+    const headers = [
+      'Transaction Hash', 'Type', 'Status', 'From', 'To', 
+      'Value', 'Gas Used', 'Gas Price (Gwei)', 'Timestamp'
+    ]
+    
+    // Create rows for CSV
+    const csvRows = transactions.map(tx => [
+      tx.id,
+      tx.type,
+      tx.status || 'unknown',
+      tx.from,
+      tx.to || 'Contract Creation',
+      tx.value,
+      tx.gasUsed?.toString() || '0',
+      ((tx.gasPrice || 0) / 1e9).toString(),
+      new Date(tx.timestamp).toISOString()
+    ])
+    
+    // Combine headers and rows
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.join(','))
+    ].join('\n')
+    
+    // Create and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `transactions_${address}_${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    toast.success('Transaction data downloaded as CSV')
+  }, [transactions, address])
 
   // Handle filter state changes
   const handleFilterChange = (key: keyof FilterState, value: any) => {
@@ -388,153 +444,246 @@ export default function TransactionTable() {
   }
 
   return (
-    <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-xl font-bold">Recent Transactions</CardTitle>
-        <div className="flex items-center gap-2">
-          {loading && transactions.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-xs text-gray-400">Updating...</span>
-            </div>
-          )}
-          
-          {/* Analytics Button */}
-          <Button
-            onClick={() => setIsAnalyticsOpen(true)}
-            variant="outline"
-            size="sm"
-            className="text-xs bg-gradient-to-r from-amber-900/10 to-amber-800/10 text-amber-400 border-amber-800/70 hover:bg-amber-900/20"
-            disabled={transactions.length === 0}
-          >
-            <BarChart3 size={14} className="mr-1" />
-            Analytics
-          </Button>
-          
-          {/* Filter Button */}
-          <FilterPopover
-            open={showFilterPopover}
-            onOpenChange={setShowFilterPopover}
-            filterState={filterState}
-            onFilterChange={handleFilterChange}
-            onResetFilters={resetFilters}
-          />
-          
-          <Button 
-            onClick={toggleAutoRefresh}
-            variant="outline" 
-            size="sm"
-            className={`text-xs ${autoRefresh ? 'bg-amber-900/20 text-amber-400 border-amber-800' : ''}`}
-          >
-            {autoRefresh ? "Auto-refresh ON" : "Auto-refresh OFF"}
-          </Button>
-          <Button 
-            onClick={handleManualRefresh} 
-            variant="outline" 
-            size="icon"
-            disabled={loading}
-          >
-            <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <Tabs 
-          defaultValue="all" 
-          value={selectedTab}
-          onValueChange={(value) => setSelectedTab(value as any)}
-          className="w-full"
-        >
-          <TabsList className="grid w-full grid-cols-5 gap-2 p-1 bg-gradient-to-r from-gray-900 to-black rounded-lg">
-            {["all", "transfer", "swap", "inflow", "outflow"].map((tab) => (
-              <TabsTrigger 
-                key={tab}
-                value={tab}
-                className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200 
-                  hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
-                  data-[state=active]:bg-[#F5B056] data-[state=active]:text-black data-[state=active]:font-bold"
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <div className="mt-4 relative overflow-x-auto">
-            {filteredTransactions.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-400">No {selectedTab} transactions found.</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>{/* Use a fragment to remove whitespace */}
-                  <TableRow>{/* Write TableHead elements without line breaks between them */}
-                    <TableHead>Hash</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>From</TableHead><TableHead>To</TableHead><TableHead>Value</TableHead><TableHead className={isMobile ? "hidden" : ""}>Time</TableHead><TableHead className="text-right">Actions</TableHead><TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTransactions.map((tx) => (
-                    <TransactionRow
-                      key={tx.id}
-                      transaction={tx}
-                      expandedTx={expandedTx}
-                      isMobile={isMobile}
-                      onRowClick={handleRowClick}
-                      onCopy={copyToClipboard}
-                      onExternalLink={openExternalLink}
-                      getTransactionMethod={getTransactionMethod}
-                      onViewFullDetails={handleViewFullDetails}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm shadow-lg shadow-black/20">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center">
+            <CardTitle className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-600">
+              Recent Transactions
+            </CardTitle>
+            {transactions.length > 0 && (
+              <Badge variant="outline" className="ml-3 font-mono text-xs bg-amber-900/10 border-amber-500/30 text-amber-400">
+                {transactions.length}
+              </Badge>
             )}
           </div>
-        </Tabs>
+          
+          <div className="flex items-center gap-2">
+            {loading && transactions.length > 0 && (
+              <div className="flex items-center gap-1">
+                <Loader2 className="h-4 w-4 animate-spin text-amber-500" />
+                <span className="text-xs text-amber-400/80">Updating...</span>
+              </div>
+            )}
+            
+            {/* Download CSV Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleDownload}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-gradient-to-r from-gray-900/80 to-gray-800/80 text-gray-300 border-gray-700/70 hover:bg-gray-800"
+                    disabled={transactions.length === 0}
+                  >
+                    <Download size={14} className="mr-1" />
+                    CSV
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download transaction data as CSV</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {/* Analytics Button */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={() => setIsAnalyticsOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs bg-gradient-to-r from-amber-900/10 to-amber-800/10 text-amber-400 border-amber-800/70 hover:bg-amber-900/20"
+                    disabled={transactions.length === 0}
+                  >
+                    <BarChart3 size={14} className="mr-1" />
+                    Analytics
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View transaction analytics dashboard</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            {/* Filter Button */}
+            <FilterPopover
+              open={showFilterPopover}
+              onOpenChange={setShowFilterPopover}
+              filterState={filterState}
+              onFilterChange={handleFilterChange}
+              onResetFilters={resetFilters}
+            />
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={toggleAutoRefresh}
+                    variant="outline" 
+                    size="sm"
+                    className={`text-xs ${autoRefresh ? 'bg-amber-900/20 text-amber-400 border-amber-800' : ''}`}
+                  >
+                    {autoRefresh ? "Auto ON" : "Auto OFF"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh"} (every 30s)</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={handleManualRefresh} 
+                    variant="outline" 
+                    size="icon"
+                    disabled={loading}
+                  >
+                    <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Refresh transaction data</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardHeader>
         
-        <div className="flex items-center justify-between py-4 px-4 mt-4">
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(Math.max(1, page - 1))}
-            disabled={page === 1 || loading}
-            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+        <CardContent>
+          <Tabs 
+            defaultValue="all" 
+            value={selectedTab}
+            onValueChange={(value) => setSelectedTab(value as any)}
+            className="w-full"
           >
-            Previous
-          </Button>
-          
-          <span className="text-gray-400">
-            Page {page}
-          </span>
-          
-          <Button
-            variant="outline"
-            onClick={() => handlePageChange(page + 1)}
-            disabled={filteredTransactions.length < 20 || loading}
-            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-          >
-            Next
-          </Button>
-        </div>
-      </CardContent>
+            <TabsList className="grid w-full grid-cols-5 gap-2 p-1 bg-gradient-to-r from-gray-900 to-black rounded-lg">
+              {["all", "transfer", "swap", "inflow", "outflow"].map((tab) => (
+                <TabsTrigger 
+                  key={tab}
+                  value={tab}
+                  className="px-4 py-2 text-sm font-medium text-gray-300 rounded-md transition-all duration-200 
+                    hover:bg-gradient-to-r hover:from-[#F5B056] hover:to-orange-600 hover:text-black hover:shadow-lg
+                    data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#F5B056] data-[state=active]:to-orange-500 data-[state=active]:text-black data-[state=active]:font-bold data-[state=active]:shadow-md"
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </TabsTrigger>
+              ))}
+            </TabsList>
 
-      {/* Transaction Detail Modal */}
-      <TransactionDetails
-        transaction={selectedTx}
-        isOpen={isDetailModalOpen}
-        onOpenChange={setIsDetailModalOpen}
-        onCopy={copyToClipboard}
-        onExternalLink={openExternalLink}
-        copiedText={copiedText}
-        address={address}
-        network={network}
-        ethPriceUsd={ethPriceUsd}
-      />
-      
-      {/* Analytics Modal */}
-      <TransactionAnalytics
-        transactions={transactions}
-        isOpen={isAnalyticsOpen}
-        onOpenChange={setIsAnalyticsOpen}
-      />
-    </Card>
+            <div className="mt-4 relative overflow-x-auto rounded-lg border border-amber-500/10">
+              {filteredTransactions.length === 0 ? (
+                <div className="text-center py-12 bg-gradient-to-b from-gray-900/80 to-gray-800/80">
+                  <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className="p-4 rounded-full bg-amber-900/10 border border-amber-500/20">
+                      <AlertTriangle className="h-6 w-6 text-amber-400/70" />
+                    </div>
+                    <p className="text-gray-400 text-lg">No {selectedTab} transactions found.</p>
+                    <p className="text-gray-500 text-sm max-w-md">Try changing filters or refreshing the data.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-b from-gray-900/80 to-gray-800/80">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-b border-amber-500/10 bg-black/20">
+                        <TableHead className="font-medium text-amber-400/80">Hash</TableHead>
+                        <TableHead className="font-medium text-amber-400/80">Type</TableHead>
+                        <TableHead className="font-medium text-amber-400/80">Status</TableHead>
+                        <TableHead className="font-medium text-amber-400/80">From</TableHead>
+                        <TableHead className="font-medium text-amber-400/80">To</TableHead>
+                        <TableHead className="font-medium text-amber-400/80">Value</TableHead>
+                        <TableHead className={`font-medium text-amber-400/80 ${isMobile ? "hidden" : ""}`}>Time</TableHead>
+                        <TableHead className="text-right font-medium text-amber-400/80">Actions</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTransactions.map((tx, index) => (
+                        <TransactionRow
+                          key={tx.id}
+                          transaction={tx}
+                          expandedTx={expandedTx}
+                          isMobile={isMobile}
+                          onRowClick={handleRowClick}
+                          onCopy={copyToClipboard}
+                          onExternalLink={openExternalLink}
+                          getTransactionMethod={getTransactionMethod}
+                          onViewFullDetails={handleViewFullDetails}
+                          copiedText={copiedText}
+                          onSearchAddress={handleSearchAddress}
+                          onSearchHash={handleSearchHash}
+                          isHovered={index % 2 === 0}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </Tabs>
+          
+          <div className="flex items-center justify-between py-5 px-4 mt-6 bg-black/20 rounded-lg border border-amber-500/10">
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(Math.max(1, page - 1))}
+              disabled={page === 1 || loading}
+              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-all"
+            >
+              <ChevronLeft className="mr-1 h-4 w-4" />
+              Previous
+            </Button>
+            
+            <div className="flex items-center space-x-2">
+              <span className="text-gray-400">
+                Page
+              </span>
+              <div className="bg-black/20 px-3 py-1 rounded-md border border-amber-500/20 text-amber-400 font-medium">
+                {page}
+              </div>
+            </div>
+            
+            <Button
+              variant="outline"
+              onClick={() => handlePageChange(page + 1)}
+              disabled={filteredTransactions.length < 20 || loading}
+              className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-all"
+            >
+              Next
+              <ChevronRight className="ml-1 h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+
+        {/* Transaction Detail Modal */}
+        <TransactionDetails
+          transaction={selectedTx}
+          isOpen={isDetailModalOpen}
+          onOpenChange={setIsDetailModalOpen}
+          onCopy={copyToClipboard}
+          onExternalLink={openExternalLink}
+          copiedText={copiedText}
+          address={address}
+          network={network}
+          ethPriceUsd={ethPriceUsd}
+        />
+        
+        {/* Analytics Modal */}
+        <TransactionAnalytics
+          transactions={transactions}
+          isOpen={isAnalyticsOpen}
+          onOpenChange={setIsAnalyticsOpen}
+        />
+      </Card>
+    </motion.div>
   )
 }
