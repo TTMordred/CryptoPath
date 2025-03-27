@@ -860,12 +860,13 @@ function TransactionGraph() {
             links: updatedLinks
           });
           
-          // Add a visual effect to the clicked link (pulsing)
-          setTimeout(() => {
+          // Update graph by triggering a re-render with new data
+          requestAnimationFrame(() => {
             if (graphRef.current) {
-              graphRef.current.refresh();
+              // Force graph to update by calling d3Force
+              graphRef.current.d3Force('link').alpha(0.3).restart();
             }
-          }, 100);
+          });
         }
       }
     },

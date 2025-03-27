@@ -395,7 +395,7 @@ export default function Portfolio() {
             <div className="bg-gray-900/50 p-3 rounded-md border border-gray-700/30">
               <div className="text-sm text-gray-400 mb-1">Value</div>
               <div className="text-lg font-semibold text-white">
-                ${(token.usdValue || 0).toLocaleString(undefined, {
+                ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
                 })}
@@ -463,7 +463,7 @@ export default function Portfolio() {
         </div>
         <div className="text-right flex-shrink-0 ml-2">
           <div className="text-sm text-gray-300 font-semibold">
-            ${(token.usdValue || 0).toLocaleString(undefined, {
+            ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })}
@@ -488,7 +488,7 @@ export default function Portfolio() {
     </motion.div>
   );
 
-  // Improved table view with consistent sizing
+  // Improved table view with consistent sizing and pagination
   const renderTableView = () => (
     <motion.div
       initial={{ opacity: 0 }}
@@ -572,7 +572,7 @@ export default function Portfolio() {
                 </TableCell>
                 <TableCell className="text-right text-gray-300 whitespace-nowrap">
                   <span>
-                    ${(token.usdValue || 0).toLocaleString(undefined, {
+                    ${(parseFloat(String(token.usdValue || 0))).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2
                     })}
@@ -599,11 +599,36 @@ export default function Portfolio() {
         </Table>
       </div>
       
-      {/* ...existing pagination controls... */}
+      {/* Pagination controls for table view */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <Button 
+            onClick={prevPage} 
+            disabled={currentPage === 1}
+            variant="outline"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" /> Previous
+          </Button>
+          
+          <span className="text-gray-400">
+            Page {currentPage} of {totalPages}
+          </span>
+          
+          <Button 
+            onClick={nextPage} 
+            disabled={currentPage === totalPages}
+            variant="outline"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            Next <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 
-  // Improved card grid view with consistent sizing
+  // Improved card grid view with consistent sizing and pagination
   const renderCardView = () => (
     <motion.div
       initial={{ opacity: 0 }}
@@ -626,7 +651,80 @@ export default function Portfolio() {
         ))}
       </div>
 
-      {/* ...existing card view empty state and pagination... */}
+      {/* Empty state for card view when filtered results are empty */}
+      {paginatedPortfolio.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <Search className="w-12 h-12 text-amber-500/30 mb-4" />
+          <p className="text-gray-400">No tokens match your search</p>
+          {searchQuery && (
+            <Button 
+              variant="ghost"
+              onClick={() => setSearchQuery('')}
+              className="mt-2 text-amber-400 hover:text-amber-300"
+            >
+              Clear search
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Pagination for cards */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-6">
+          <Button 
+            onClick={prevPage} 
+            disabled={currentPage === 1}
+            variant="outline"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            <ArrowLeft className="mr-1 h-4 w-4" /> Previous
+          </Button>
+          
+          <div className="flex items-center">
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              // Logic to show correct page numbers with ellipsis
+              let pageNumber: number;
+              if (totalPages <= 5) {
+                pageNumber = i + 1;
+              } else if (currentPage <= 3) {
+                pageNumber = i < 4 ? i + 1 : totalPages;
+              } else if (currentPage >= totalPages - 2) {
+                pageNumber = i < 1 ? 1 : totalPages - 4 + i;
+              } else {
+                pageNumber = i < 1 ? 1 : (i === 4 ? totalPages : currentPage + i - 2);
+              }
+              
+              // Display ellipsis or page number
+              return (
+                <Button
+                  key={`page-${i}`}
+                  variant={currentPage === pageNumber ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={`mx-1 w-9 h-9 p-0 ${
+                    currentPage === pageNumber 
+                      ? 'bg-amber-500/20 text-amber-400' 
+                      : 'text-gray-400 hover:text-amber-400'
+                  } ${(i === 1 && pageNumber > 2 && currentPage > 3) || (i === 3 && pageNumber < totalPages - 1 && currentPage < totalPages - 2) ? 'font-bold' : ''}`}
+                >
+                  {(i === 1 && pageNumber > 2 && currentPage > 3) || (i === 3 && pageNumber < totalPages - 1 && currentPage < totalPages - 2) 
+                    ? '...' 
+                    : pageNumber}
+                </Button>
+              );
+            })}
+          </div>
+          
+          <Button 
+            onClick={nextPage} 
+            disabled={currentPage === totalPages}
+            variant="outline"
+            className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            Next <ArrowRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </motion.div>
   );
 
@@ -1025,13 +1123,13 @@ export default function Portfolio() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-right text-gray-300">
-                                  ${(token.usdValue || 0).toLocaleString(undefined, {
+                                  ${parseFloat(String(token.usdValue || 0)).toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
                                     maximumFractionDigits: 2
                                   })}
                                 </TableCell>
                                 <TableCell className="text-right text-gray-300">
-                                  {((token.usdValue || 0) / totalValue * 100).toFixed(2)}%
+                                  {((parseFloat(String(token.usdValue || 0))) / totalValue * 100).toFixed(2)}%
                                 </TableCell>
                               </TableRow>
                             ))}

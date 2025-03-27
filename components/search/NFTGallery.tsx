@@ -3,7 +3,7 @@
 import { useSearchParams } from "next/navigation"
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Loader2, Copy, Check, ExternalLink, AlertTriangle, EyeOff } from "lucide-react"
+import { Loader2, Copy, Check, ExternalLink, AlertTriangle, EyeOff, Grid, List, ArrowUpDown } from "lucide-react"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -94,14 +94,36 @@ export default function NFTGallery() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
-  const nftsPerPage = 15  // Changed from 20 to 15 NFTs per page
-  
-  // Modal state
+  const nftsPerPage = 15
+
+  // UI State
   const [selectedNft, setSelectedNft] = useState<NFT | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  
-  // Copy feedback state
   const [copiedText, setCopiedText] = useState<string | null>(null)
+  const [hideSpamNFTs, setHideSpamNFTs] = useState<boolean>(true)
+  const [filteredNFTs, setFilteredNFTs] = useState<NFT[]>([])
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortBy, setSortBy] = useState<'name' | 'id'>('name')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+
+  // Sort NFTs
+  const sortNFTs = (nfts: NFT[]) => {
+    return [...nfts].sort((a, b) => {
+      if (sortBy === 'name') {
+        const nameA = a.tokenName || 'Unnamed NFT';
+        const nameB = b.tokenName || 'Unnamed NFT';
+        return sortOrder === 'asc' 
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+      } else {
+        const idA = BigInt(a.tokenID);
+        const idB = BigInt(b.tokenID);
+        return sortOrder === 'asc'
+          ? idA > idB ? 1 : -1
+          : idB > idA ? 1 : -1;
+      }
+    });
+  };
 
   // Copy to clipboard function with visual feedback
   const copyToClipboard = (text: string, identifier: string) => {
@@ -114,7 +136,7 @@ export default function NFTGallery() {
   };
 
   const fetchNFTs = async (page: number, pageKey?: string | null) => {
-    if (!address) return
+    if (!address) return;
 
     setLoading(true)
     setError(null)
@@ -149,43 +171,7 @@ export default function NFTGallery() {
     fetchNFTs(1, null)
   }, [address])
 
-  const markImageAsError = (nftId: string) => {
-    setImageErrors(prev => ({
-      ...prev,
-      [nftId]: true
-    }))
-  }
-
-  const totalPages = Math.ceil(totalCount / nftsPerPage)
-
-  const handlePreviousPage = () => {
-    if (currentPage > 1) {
-      const newPage = currentPage - 1
-      setCurrentPage(newPage)
-      fetchNFTs(newPage, pageKeys[newPage - 1])
-    }
-  }
-
-  const handleNextPage = () => {
-    if (currentPage < totalPages && pageKeys[currentPage]) {
-      const newPage = currentPage + 1
-      setCurrentPage(newPage)
-      fetchNFTs(newPage, pageKeys[currentPage])
-    }
-  }
-  
-  // Handler for opening the detail modal
-  const openNftDetails = (nft: NFT) => {
-    setSelectedNft(nft);
-    setIsModalOpen(true);
-  };
-
-  // Add filter for spam NFTs
-  const [hideSpamNFTs, setHideSpamNFTs] = useState<boolean>(true);
-  const [filteredNFTs, setFilteredNFTs] = useState<NFT[]>([]);
-
   useEffect(() => {
-    // Filter NFTs when the spam filter changes or when nfts array changes
     if (hideSpamNFTs) {
       setFilteredNFTs(nfts.filter(nft => !isPotentialSpam(nft)));
     } else {
@@ -193,19 +179,29 @@ export default function NFTGallery() {
     }
   }, [nfts, hideSpamNFTs]);
 
-  if (!address) {
-    return null
-  }
+  // Loading skeleton component
+  const LoadingSkeleton = () => (
+    <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="h-8 w-40 bg-gray-800 animate-pulse rounded"></div>
+        <div className="flex gap-4">
+          <div className="h-8 w-24 bg-gray-800 animate-pulse rounded"></div>
+          <div className="h-8 w-24 bg-gray-800 animate-pulse rounded"></div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {[...Array(10)].map((_, i) => (
+            <div key={i} className="aspect-square bg-gray-800 animate-pulse rounded-xl"></div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-  if (loading) {
-    return (
-      <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
-        <CardContent className="flex items-center justify-center h-40">
-          <Loader2 className="h-10 w-10 animate-spin text-amber-400" />
-        </CardContent>
-      </Card>
-    )
-  }
+  if (!address) return null;
+  
+  if (loading) return <LoadingSkeleton />;
 
   if (error) {
     return (
@@ -214,7 +210,7 @@ export default function NFTGallery() {
           <p className="text-center text-red-400 font-medium">Error: {error}</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (nfts.length === 0) {
@@ -227,22 +223,88 @@ export default function NFTGallery() {
           <p className="text-center text-gray-400">No NFTs found for this address.</p>
         </CardContent>
       </Card>
-    )
+    );
   }
+
+  const totalPages = Math.ceil(totalCount / nftsPerPage);
+
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      fetchNFTs(newPage, pageKeys[newPage - 1]);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages && pageKeys[currentPage]) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      fetchNFTs(newPage, pageKeys[currentPage]);
+    }
+  };
+
+  const markImageAsError = (nftId: string) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [nftId]: true
+    }));
+  };
 
   return (
     <>
       <Card className="mt-4 border border-amber-500/20 bg-gradient-to-b from-gray-900/50 to-gray-800/50 backdrop-blur-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-2">
-          <CardTitle className="text-2xl font-bold text-amber-400">NFT Gallery</CardTitle>
-          <div className="flex items-center gap-2">
-            <Label htmlFor="hide-spam" className="text-sm text-gray-400">Hide Potential Spam</Label>
-            <Switch
-              id="hide-spam"
-              checked={hideSpamNFTs}
-              onCheckedChange={setHideSpamNFTs}
-              className="data-[state=checked]:bg-amber-500"
-            />
+        <CardHeader className="flex flex-col space-y-4 pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-2xl font-bold text-amber-400">NFT Gallery</CardTitle>
+            <div className="flex items-center gap-4">
+              {/* View Toggle */}
+              <div className="flex items-center gap-1 bg-gray-800/50 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('grid')}
+                  className="h-8 w-8"
+                >
+                  <Grid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="h-8 w-8"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+              {/* Sort Controls */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={`${sortBy}-${sortOrder}`}
+                  onChange={(e) => {
+                    const [newSortBy, newSortOrder] = e.target.value.split('-') as ['name' | 'id', 'asc' | 'desc'];
+                    setSortBy(newSortBy);
+                    setSortOrder(newSortOrder);
+                  }}
+                  className="bg-gray-800/50 border border-gray-700 rounded-lg px-2 py-1 text-sm text-gray-300"
+                >
+                  <option value="name-asc">Name (A-Z)</option>
+                  <option value="name-desc">Name (Z-A)</option>
+                  <option value="id-asc">Token ID (Low-High)</option>
+                  <option value="id-desc">Token ID (High-Low)</option>
+                </select>
+              </div>
+              {/* Spam Filter */}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="hide-spam" className="text-sm text-gray-400">Hide Spam</Label>
+                <Switch
+                  id="hide-spam"
+                  checked={hideSpamNFTs}
+                  onCheckedChange={setHideSpamNFTs}
+                  className="data-[state=checked]:bg-amber-500"
+                />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -258,21 +320,29 @@ export default function NFTGallery() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            {filteredNFTs.map((nft) => {
+          <div className={cn(
+            viewMode === 'grid'
+              ? "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"
+              : "flex flex-col space-y-4"
+          )}>
+            {sortNFTs(filteredNFTs).map((nft) => {
               const nftId = `${nft.contractAddress}-${nft.tokenID}`;
               const formattedTokenId = formatTokenId(nft.tokenID);
               const truncatedTokenId = truncateString(formattedTokenId, 6, 4);
               const isSpam = isPotentialSpam(nft);
 
-              return (
+              return viewMode === 'grid' ? (
+                // Grid View
                 <Card 
                   key={nftId} 
                   className={cn(
                     "group bg-gray-900/80 border border-amber-500/30 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-amber-500/30 transition-all duration-300 ease-out transform hover:-translate-y-2 cursor-pointer",
                     isSpam && !hideSpamNFTs && "border-red-500/30 bg-gray-900/90"
                   )}
-                  onClick={() => openNftDetails(nft)}
+                  onClick={() => {
+                    setSelectedNft(nft);
+                    setIsModalOpen(true);
+                  }}
                 >
                   <CardContent className="p-4">
                     <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-gray-800 mb-3">
@@ -285,60 +355,78 @@ export default function NFTGallery() {
                         </div>
                       ) : (
                         <Image
-                          src={nft.imageUrl || "/images/nft-placeholder.png"}
+                          src={nft.imageUrl}
                           alt={nft.tokenName || `NFT #${formattedTokenId}`}
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                           className="object-cover transition-transform duration-500 group-hover:scale-110"
-                          onError={(event) => {
-                            markImageAsError(nftId);
-                            handleImageError(event);
-                          }}
-                          {...getDevImageProps()} // Add development mode props
+                          onError={() => markImageAsError(nftId)}
+                          {...getDevImageProps()}
                         />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      
-                      {isSpam && !hideSpamNFTs && (
-                        <Badge className="absolute top-2 right-2 bg-red-600/90 text-white text-xs">
-                          Potential Spam
-                        </Badge>
-                      )}
                     </div>
                     <div className="flex flex-col space-y-1">
-                      <div className="flex justify-between items-start">
-                        <p className="font-semibold text-white truncate line-clamp-1 flex-1">{nft.tokenName || "Unnamed NFT"}</p>
-                      </div>
+                      <p className="font-semibold text-white line-clamp-1">{nft.tokenName || "Unnamed NFT"}</p>
                       <div className="flex items-center text-sm text-gray-400">
                         <span className="truncate">#{truncatedTokenId}</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild onClick={(e) => e.stopPropagation()}>
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-6 w-6 ml-1" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  copyToClipboard(nft.tokenID, `tokenId-${nft.tokenID}`);
-                                }}
-                              >
-                                {copiedText === `tokenId-${nft.tokenID}` ? 
-                                  <Check className="h-3 w-3 text-green-500" /> : 
-                                  <Copy className="h-3 w-3 text-amber-400" />
-                                }
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{copiedText === `tokenId-${nft.tokenID}` ? "Copied!" : "Copy token ID"}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              )
+              ) : (
+                // List View
+                <Card 
+                  key={nftId}
+                  className={cn(
+                    "group bg-gray-900/80 border border-amber-500/30 rounded-lg overflow-hidden hover:bg-gray-900/90 transition-all duration-300",
+                    isSpam && !hideSpamNFTs && "border-red-500/30"
+                  )}
+                  onClick={() => {
+                    setSelectedNft(nft);
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <CardContent className="p-3 flex items-center gap-4">
+                    <div className="h-16 w-16 relative rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
+                      {imageErrors[nftId] || !nft.imageUrl ? (
+                        <div className="absolute inset-0 flex items-center justify-center bg-gray-700">
+                          <p className="text-xs text-amber-400 font-medium">NFT</p>
+                        </div>
+                      ) : (
+                        <Image
+                          src={nft.imageUrl}
+                          alt={nft.tokenName || `NFT #${formattedTokenId}`}
+                          fill
+                          className="object-cover"
+                          onError={() => markImageAsError(nftId)}
+                          {...getDevImageProps()}
+                        />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-white line-clamp-1">{nft.tokenName || "Unnamed NFT"}</p>
+                        {isSpam && !hideSpamNFTs && (
+                          <Badge className="bg-red-600/90 text-white text-xs">Spam</Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-400 mt-1">#{formattedTokenId}</p>
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`https://etherscan.io/token/${nft.contractAddress}?a=${nft.tokenID}`, '_blank');
+                      }}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
             })}
           </div>
 
@@ -367,7 +455,7 @@ export default function NFTGallery() {
               <Button
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg hover:shadow-2xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 ease-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white"
               >
                 Previous
               </Button>
@@ -377,7 +465,7 @@ export default function NFTGallery() {
               <Button
                 onClick={handleNextPage}
                 disabled={currentPage === totalPages || !pageKeys[currentPage]}
-                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold py-2 px-6 rounded-xl shadow-lg hover:shadow-2xl hover:from-amber-600 hover:to-amber-700 transition-all duration-300 ease-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="bg-gradient-to-r from-amber-500 to-amber-600 text-white"
               >
                 Next
               </Button>
@@ -418,18 +506,15 @@ export default function NFTGallery() {
               )}
               
               <div className="grid gap-4">
-                <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-gray-700 mb-3">
+                <div className="aspect-square relative w-full overflow-hidden rounded-lg bg-gray-700">
                   {selectedNft.imageUrl && !imageErrors[`${selectedNft.contractAddress}-${selectedNft.tokenID}`] ? (
                     <Image
                       src={selectedNft.imageUrl}
                       alt={selectedNft.tokenName || `NFT #${formatTokenId(selectedNft.tokenID)}`}
                       fill
                       className="object-contain"
-                      onError={(event) => {
-                        markImageAsError(`${selectedNft.contractAddress}-${selectedNft.tokenID}`);
-                        handleImageError(event);
-                      }}
-                      {...getDevImageProps()} // Add development mode props
+                      onError={() => markImageAsError(`${selectedNft.contractAddress}-${selectedNft.tokenID}`)}
+                      {...getDevImageProps()}
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-700 text-gray-300">
@@ -499,5 +584,5 @@ export default function NFTGallery() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
