@@ -10,6 +10,37 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 
+// Helper function to format ETH values with appropriate precision
+function formatEthValue(valueText: string): string {
+  // Extract the numerical value (assuming format like "0.00042 ETH")
+  const parts = valueText.split(' ');
+  if (parts.length !== 2) return valueText;
+  
+  const value = parseFloat(parts[0]);
+  const unit = parts[1];
+  
+  // If value is zero, return as is
+  if (value === 0) return valueText;
+  
+  // Format small values with enough precision to show non-zero digits
+  if (value > 0 && value < 0.001) {
+    // Find the first non-zero digit position
+    let i = 0;
+    let tempVal = value;
+    while (tempVal < 0.1) {
+      tempVal *= 10;
+      i++;
+    }
+    
+    // Use enough decimal places to show at least one non-zero digit
+    const precision = Math.max(6, i + 1);
+    return `${value.toFixed(precision)} ${unit}`;
+  }
+  
+  // For normal values, use standard formatting (usually 4-6 decimals)
+  return value < 1 ? `${value.toFixed(6)} ${unit}` : `${value.toFixed(4)} ${unit}`;
+}
+
 interface TransactionRowProps {
   transaction: Transaction;
   expandedTx: string | null;
@@ -203,7 +234,7 @@ export default function TransactionRow({
       
       <TableCell>
         <div className="flex items-center">
-          <span>{tx.value}</span>
+          <span>{formatEthValue(tx.value)}</span>
           {parseFloat(tx.value) > 0.1 && (
             <div className="ml-2">
               <Badge className="bg-amber-900/30 border-amber-500/30 text-amber-300 text-xs">
