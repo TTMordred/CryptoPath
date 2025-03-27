@@ -54,6 +54,17 @@ export default function NFTCard({ nft, mode, onAction, processing }: NFTCardProp
 
   // Render the appropriate action button with solid color styling
   const getActionButton = () => {
+    if (!account) {
+      return (
+        <button
+          onClick={() => onAction(nft.id)}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl transition-all focus:outline-none"
+        >
+          Connect Wallet
+        </button>
+      );
+    }
+    
     if (processing) {
       return (
         <button

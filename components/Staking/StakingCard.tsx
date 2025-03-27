@@ -6,7 +6,7 @@ import { toast } from 'react-hot-toast';
 import { useWallet } from '@/components/Faucet/walletcontext';
 import { FaLock, FaUnlock, FaGift, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 
-const STAKING_CONTRACT_ADDRESS = '0xE84B932F5644932649feD2d4Ba8813439c6c9Ea0';
+const STAKING_CONTRACT_ADDRESS = '0xF7b094A4340734911492c1a030eE98EA1be0805E';
 const PATH_ADDRESS = '0xc3e9Cf26237c9002c0C04305D637AEa3d9A4A1DE';
 const BSC_TESTNET_CHAIN_ID = '0x61';
 
@@ -110,7 +110,7 @@ export default function StakingCard() {
 
       setStatus(prev => ({ ...prev, isPaused: paused, initialized: true }));
       
-      const aprValue = parseFloat(ethers.utils.formatUnits(apr, 5));
+      const aprValue = parseFloat(ethers.utils.formatUnits(apr, 2));
 
       setStakingData({
         staked: safeFormat(staked),
@@ -262,7 +262,7 @@ export default function StakingCard() {
         <h2 className="text-2xl font-bold text-white mb-2 text-shadow">PATH Staking</h2>
         <div className="flex justify-between text-sm text-purple-100">
           <span>Total Staked: <span className="text-purple-300">{stakingData.total}</span></span>
-          <span>APR: <span className="text-purple-300">{stakingData.apr}%</span></span>
+          <span>APR: <span className="text-purple-300">{parseFloat(stakingData.apr).toFixed(2)}%</span></span>
         </div>
       </div>
 
