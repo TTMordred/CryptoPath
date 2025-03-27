@@ -96,6 +96,9 @@ export default function TransactionTable() {
   const fetchEthPrice = useCallback(async () => {
     try {
       const response = await fetch('/api/ethprice')
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
       const data = await response.json()
       if (data.usd) {
         setEthPriceUsd(data.usd)
@@ -143,6 +146,11 @@ export default function TransactionTable() {
         throw new Error(`API responded with status: ${response.status}`)
       }
       
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('API did not return JSON')
+      }
+      
       const data = await response.json()
       if (!isMountedRef.current) return
       
@@ -179,7 +187,7 @@ export default function TransactionTable() {
       setLoading(false)
       pauseAutoRefreshRef.current = false
     }
-  }, [address, page, network, provider, categorizeTransaction, getCacheKey])
+  }, [address, page, network, provider, getCacheKey])
 
   // Handle page changes
   const handlePageChange = useCallback((newPage: number) => {
