@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Loader2, ArrowUpDown, Filter, RefreshCcw } from "lucide-react"
+import { Loader2, ArrowUpDown, Filter, RefreshCcw, BarChart3 } from "lucide-react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
 
@@ -17,6 +17,7 @@ import { categorizeTransaction, getTransactionMethod, getBlockExplorerUrl } from
 import FilterPopover from "./components/FilterPopover"
 import TransactionRow from "./components/TransactionRow"
 import TransactionDetails from "./components/TransactionDetails"
+import TransactionAnalytics from "./components/TransactionAnalytics"
 
 // Cache for storing transaction data
 const transactionCache = new Map<string, { data: Transaction[], timestamp: number }>();
@@ -39,6 +40,7 @@ export default function TransactionTable() {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
   const [showFilterPopover, setShowFilterPopover] = useState(false)
   const [ethPriceUsd, setEthPriceUsd] = useState<number | null>(null)
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false)
   
   // Search and filter states
   const [filterState, setFilterState] = useState<FilterState>({
@@ -397,6 +399,18 @@ export default function TransactionTable() {
             </div>
           )}
           
+          {/* Analytics Button */}
+          <Button
+            onClick={() => setIsAnalyticsOpen(true)}
+            variant="outline"
+            size="sm"
+            className="text-xs bg-gradient-to-r from-amber-900/10 to-amber-800/10 text-amber-400 border-amber-800/70 hover:bg-amber-900/20"
+            disabled={transactions.length === 0}
+          >
+            <BarChart3 size={14} className="mr-1" />
+            Analytics
+          </Button>
+          
           {/* Filter Button */}
           <FilterPopover
             open={showFilterPopover}
@@ -513,6 +527,13 @@ export default function TransactionTable() {
         address={address}
         network={network}
         ethPriceUsd={ethPriceUsd}
+      />
+      
+      {/* Analytics Modal */}
+      <TransactionAnalytics
+        transactions={transactions}
+        isOpen={isAnalyticsOpen}
+        onOpenChange={setIsAnalyticsOpen}
       />
     </Card>
   )
