@@ -57,6 +57,12 @@ export default function BlockTransactions() {
 
   useEffect(() => {
     const fetchBlockData = async () => {
+      // Reset states when starting a new fetch
+      setLoading(true);
+      setError(null);
+      setBlockData(null);
+      setPage(1); // Reset pagination when new block is loaded
+
       if (!blockNumber) {
         setError("Block number is required");
         setLoading(false);
@@ -82,7 +88,6 @@ export default function BlockTransactions() {
       }
     };
 
-    setLoading(true);
     fetchBlockData();
   }, [blockNumber]);
 
