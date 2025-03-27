@@ -1092,7 +1092,7 @@ export default function NFTCollectionPage() {
                         <SelectTrigger className="w-40 bg-gray-800/50 border-gray-700">
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='bg-gray-800 border-gray-700'>
                           {categories.map(category => (
                             <SelectItem key={category} value={category}>
                               {category === 'all' ? 'All Categories' : category.charAt(0).toUpperCase() + category.slice(1)}
@@ -1138,7 +1138,7 @@ export default function NFTCollectionPage() {
                         <SelectTrigger className="w-40 bg-gray-800/50 border-gray-700">
                           <SelectValue placeholder="Sort by" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className='bg-gray-800 border-gray-700'>
                           <SelectItem value="featured">
                             <div className="flex items-center">
                               <Stars className="h-3.5 w-3.5 mr-2 text-yellow-400" />
