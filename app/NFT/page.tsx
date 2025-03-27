@@ -526,6 +526,7 @@ export default function NFTMarketplace() {
         }}
         showMintTab={(isWhitelisted || isOwner) && !!account}
         showWhitelistTab={isOwner && !!account}
+        account={account}
       />
 
       {isInitialLoad ? (
