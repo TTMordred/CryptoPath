@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { QRCodeSVG } from 'qrcode.react'
 import { Progress } from "@/components/ui/progress"
+import ContractDetails from "@/components/isContract"
 
 // Only use timeout for Etherscan, not for Infura
 const ETHERSCAN_TIMEOUT = 120000; // 120 seconds
@@ -664,7 +665,9 @@ export default function WalletInfo() {
                     </div>
                   </div>
                 </div>
-                
+                {walletData && walletData.address && (
+                  <ContractDetails address={walletData.address} />
+                )}
                 {/* Action Buttons */}
                 <div className="flex gap-2 mb-4 relative z-10">
                   <Button 
