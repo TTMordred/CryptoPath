@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
@@ -17,6 +17,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import SearchSuggestions from "./SearchSuggestions"
 
 export type NetworkType = "mainnet" | "optimism" | "arbitrum"
 export type ProviderType = "etherscan" | "infura"
@@ -29,11 +30,28 @@ export default function SearchBar() {
   const [isLoading, setIsLoading] = useState(false)
   const [addressError, setAddressError] = useState<string | null>(null)
   const router = useRouter()
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const searchBarRef = useRef<HTMLDivElement>(null)
 
   const [searchType, setSearchType] = useState<"onchain" | "offchain"| "Txn Hash" | "Token" | "Block" | "All">("All")
   const [network, setNetwork] = useState<NetworkType>("mainnet")
   const [provider, setProvider] = useState<ProviderType>("etherscan")
+  const [isSuggestionHovered, setIsSuggestionHovered] = useState(false)
   
+  // Handle clicks outside the search bar to close suggestions
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (searchBarRef.current && !searchBarRef.current.contains(event.target as Node) && !isSuggestionHovered) {
+        setShowSuggestions(false)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isSuggestionHovered])
+
   const detectInputType = (input: string): InputType => {
     // Clean the input
     const cleanInput = input.trim().toLowerCase();
@@ -184,6 +202,12 @@ export default function SearchBar() {
     setIsLoading(true)
     
     try {
+      // Save to recent searches
+      const saved = localStorage.getItem('cryptoPathRecentSearches')
+      const recentSearches = saved ? JSON.parse(saved) : []
+      const updatedSearches = [address.trim(), ...recentSearches.filter((s: string) => s !== address.trim())].slice(0, 5)
+      localStorage.setItem('cryptoPathRecentSearches', JSON.stringify(updatedSearches))
+      
       // Simulate loading time
       await new Promise(resolve => setTimeout(resolve, 1000))
       if (searchType === "onchain") {
@@ -198,7 +222,7 @@ export default function SearchBar() {
         // Detect logic to search for all types
         const route = await handleUniversalSearch(address);
         router.push(route);
-    }else {
+      }else {
         router.push(`/search-offchain/?address=${encodeURIComponent(address)}`)
       }
     } catch (error) {
@@ -206,33 +230,57 @@ export default function SearchBar() {
       toast.error("An error occurred during search. Please try again.")
     } finally {
       setIsLoading(false)
+      setShowSuggestions(false)
     }
   }
 
   const clearAddress = () => {
     setAddress("")
     setAddressError(null)
+    setShowSuggestions(false)
   }
   
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAddress(e.target.value);
+    
+    // Show suggestions when typing
+    if (e.target.value.trim()) {
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
     
     // Clear error when user starts typing again
     if (addressError) {
       setAddressError(null);
     }
   };
+
+  const handleInputFocus = () => {
+    if (address.trim()) {
+      setShowSuggestions(true);
+    }
+  };
   
   const availableNetworks = getAvailableNetworks()
 
   return (
-    <>
+    <div className="relative w-full" ref={searchBarRef}>
       <form onSubmit={handleSearch} className="flex flex-col gap-4 w-full max-w-4xl mx-auto">
         <div className="relative group">
-          <Search 
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-400 group-hover:text-amber-300 transition-all duration-300 ease-out"
-            size={20}
-          />
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 flex items-center justify-center">
+            <Search 
+              className={`transition-all duration-300 ease-out ${
+                searchType === "All" ? "text-purple-400" :
+                searchType === "onchain" ? "text-amber-400" :
+                searchType === "offchain" ? "text-blue-400" :
+                searchType === "Txn Hash" ? "text-green-400" :
+                searchType === "Token" ? "text-pink-400" :
+                "text-cyan-400"
+              }`}
+              size={24}
+            />
+          </div>
           
           <Input
             type="text"
@@ -251,6 +299,7 @@ export default function SearchBar() {
             }
             value={address}
             onChange={handleAddressChange}
+            onFocus={handleInputFocus}
             className={`w-full pl-14 pr-12 py-3 text-white bg-gray-900/80 border rounded-xl focus:ring-2 placeholder-gray-400 transition-all duration-300 ease-out shadow-[0_0_15px_rgba(245,166,35,0.2)] hover:shadow-[0_0_25px_rgba(245,166,35,0.4)] ${
               addressError 
                 ? "border-red-500 focus:ring-red-500/50 focus:border-red-500" 
@@ -368,12 +417,12 @@ export default function SearchBar() {
                 </SelectContent>
               </Select>
             </>
-          ) : searchType === "offchain" ?(
+          ) : searchType === "offchain" ? (
             <div className="flex items-center gap-3 px-4 py-2 w-full sm:w-auto bg-gray-900/80 border border-blue-500/20 text-white rounded-xl">
               <Neo4jIcon className="text-[#008CC1]" size={22} />
               <span className="text-sm font-medium">Neo4j Graph Database</span>
             </div>
-          ): searchType === "Txn Hash" ? (
+          ) : searchType === "Txn Hash" ? (
             <div className="flex items-center gap-3 px-4 py-2 w-full sm:w-auto bg-gray-900/80 border border-green-500/20 text-white rounded-xl">
               <Hash className="text-green-400" size={18} />
               <span className="text-sm font-medium">Transaction Explorer</span>
@@ -419,7 +468,21 @@ export default function SearchBar() {
         </div>
       </form>
       
+      {showSuggestions && (
+        <SearchSuggestions 
+          query={address}
+          searchType={searchType}
+          onSelect={(suggestion: string) => {
+            setAddress(suggestion)
+            setShowSuggestions(false)
+          }}
+          visible={showSuggestions}
+          onSuggestionMouseEnter={() => setIsSuggestionHovered(true)}
+          onSuggestionMouseLeave={() => setIsSuggestionHovered(false)}
+        />
+      )}
+      
       <LoadingScreen isLoading={isLoading} />
-    </>
+    </div>
   )
 }

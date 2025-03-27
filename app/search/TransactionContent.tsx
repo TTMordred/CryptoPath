@@ -1,5 +1,4 @@
-// transactioncontent.tsx
-// Search page content with wallet info, transaction graph, table, and NFT gallery
+// TransactionContent.tsx
 'use client'
 
 import SearchBar from "@/components/search/SearchBar"
@@ -15,6 +14,7 @@ import { toast } from "sonner"
 import { ErrorCard } from "@/components/ui/error-card"
 import AddressErrorCard from "@/components/search/AddressErrorCard"
 import ChainalysisDisplay from "@/components/Chainalysis"
+import { motion, AnimatePresence } from "framer-motion"
 
 // Ethereum address validation regex pattern
 const ETH_ADDRESS_REGEX = /^0x[a-fA-F0-9]{40}$/;
@@ -31,13 +31,11 @@ export default function Transactions() {
   const [isLoading, setIsLoading] = useState(false)
   const [addressError, setAddressError] = useState<string | null>(null)
   
-  // Update network and provider state when URL parameters change
   useEffect(() => {
     setNetwork(networkParam)
     setProvider(providerParam)
   }, [networkParam, providerParam])
   
-  // Validate address on component mount and when address changes
   useEffect(() => {
     if (address) {
       if (!ETH_ADDRESS_REGEX.test(address)) {
@@ -50,7 +48,6 @@ export default function Transactions() {
     }
   }, [address]);
   
-  // Get available networks based on selected provider
   const getAvailableNetworks = () => {
     if (provider === "infura") {
       return [
@@ -59,18 +56,14 @@ export default function Transactions() {
         { value: "arbitrum", label: "Arbitrum" },
       ];
     } else {
-      // Default Etherscan only supports Ethereum mainnet
       return [
         { value: "mainnet", label: "Ethereum Mainnet" },
       ];
     }
   };
   
-  // Handle network change
   const handleNetworkChange = (value: string) => {
     setNetwork(value)
-    
-    // Update the URL to include the new network
     if (address) {
       router.push(`/search?address=${address}&network=${value}&provider=${provider}`)
     } else {
@@ -78,15 +71,11 @@ export default function Transactions() {
     }
   }
   
-  // Handle provider change
   const handleProviderChange = (value: string) => {
     setIsLoading(true);
     setProvider(value);
     
-    // Get available networks for the new provider
     const availableNetworks = getAvailableNetworks().map(net => net.value);
-    
-    // If current network is not available in the new provider, use first available
     let newNetwork = network;
     if (!availableNetworks.includes(network)) {
       newNetwork = availableNetworks[0];
@@ -94,7 +83,6 @@ export default function Transactions() {
     
     setNetwork(newNetwork);
     
-    // Update the URL
     if (address) {
       router.push(`/search?address=${address}&network=${newNetwork}&provider=${value}`)
     } else {
@@ -106,7 +94,6 @@ export default function Transactions() {
     }, 500);
   }
   
-  // Fetch pending transactions for the current network
   useEffect(() => {
     if (network) {
       const baseUrl = typeof window !== 'undefined' 
@@ -122,62 +109,173 @@ export default function Transactions() {
         })
         .catch(err => {
           console.error("Error fetching pending transactions:", err)
+          toast.error("Failed to fetch pending transactions")
         })
     }
   }, [network])
   
   const availableNetworks = getAvailableNetworks();
   
-  // Function to render appropriate content
   const renderContent = () => {
-    // If we have an address but it's invalid
     if (address && addressError) {
-      return <AddressErrorCard address={address} errorMessage={addressError} />;
-    }
-    
-    // If we have a valid address, render the wallet info
-    if (address) {
       return (
-      <>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <WalletInfo />
-        <TransactionGraph />
-        </div>
-        <ChainalysisDisplay address={address} />
-        <div className="mb-8">
-        <Portfolio />
-        </div>
-        <TransactionTable />
-        <NFTGallery />
-      </>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <AddressErrorCard address={address} errorMessage={addressError} />
+        </motion.div>
       );
     }
     
-    // Default welcome screen
+    if (address) {
+      return (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <WalletInfo />
+            </motion.div>
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <TransactionGraph />
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <ChainalysisDisplay address={address} />
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mb-8"
+          >
+            <Portfolio />
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <TransactionTable />
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.7 }}
+          >
+            <NFTGallery />
+          </motion.div>
+        </motion.div>
+      );
+    }
+    
     return (
-      <div className="text-center mt-8">
-        <h2 className="text-2xl font-bold mb-4">Welcome to CryptoPath</h2>
-        <p className="text-lg">
-          Enter an Ethereum address above to explore wallet details, transactions, and NFTs.
-        </p>
-        <p className="mt-4 text-gray-400">
-          Currently connected to: <span className="font-semibold text-[#F5B056]">{network}</span> using <span className="font-semibold text-[#F5B056]">{provider}</span>
-          {pendingTxCount !== null && (
-            <span className="ml-2">({pendingTxCount} pending transactions)</span>
-          )}
-        </p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="text-center mt-12"
+      >
+        <motion.h2 
+          className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-amber-300"
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          Welcome to CryptoPath Explorer
+        </motion.h2>
+        
+        <motion.p 
+          className="text-xl text-gray-300 mb-8"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          Enter an Ethereum address above to explore wallet details, transactions, and NFTs
+        </motion.p>
+        
+        <motion.div
+          className="flex flex-col items-center gap-4"
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.3 }}
+        >
+          <div className="px-6 py-4 bg-gray-800/50 rounded-xl border border-amber-500/20 backdrop-blur-sm">
+            <p className="text-gray-300">
+              Currently connected to:{" "}
+              <span className="font-semibold text-amber-400">{network}</span> using{" "}
+              <span className="font-semibold text-amber-400">{provider}</span>
+              {pendingTxCount !== null && (
+                <span className="ml-2 text-gray-400">
+                  ({pendingTxCount} pending transactions)
+                </span>
+              )}
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="p-6 bg-gray-800/50 rounded-xl border border-amber-500/20 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-semibold text-amber-400 mb-2">On-Chain Data</h3>
+              <p className="text-gray-300">Explore transactions, balances, and smart contracts</p>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="p-6 bg-gray-800/50 rounded-xl border border-blue-500/20 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-semibold text-blue-400 mb-2">Off-Chain Analysis</h3>
+              <p className="text-gray-300">Discover patterns and relationships in the blockchain</p>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="p-6 bg-gray-800/50 rounded-xl border border-purple-500/20 backdrop-blur-sm"
+            >
+              <h3 className="text-xl font-semibold text-purple-400 mb-2">NFT Gallery</h3>
+              <p className="text-gray-300">View and analyze NFT collections</p>
+            </motion.div>
+          </div>
+        </motion.div>
+      </motion.div>
     );
   };
   
   return (
     <div className="min-h-screen text-white">
       <main className="container mx-auto p-4">
-        <div className="mb-8">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
           <div className="flex flex-col items-start justify-between gap-4 mb-4">
             <SearchBar />
           </div>
-        </div>
+        </motion.div>
         
         {renderContent()}
       </main>
