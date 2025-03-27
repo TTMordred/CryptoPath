@@ -551,8 +551,35 @@ function TransactionGraph() {
         
       console.log(`Fetching transactions for ${address} on ${network} using ${provider}...`);
         
-      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&provider=${provider}&offset=50`, { signal })
+      // Function to manage Infura API key
+      const getInfuraApiKey = () => {
+        return process.env.NEXT_PUBLIC_INFURA_KEY || "your-fallback-key";
+      };
+      
+      // Retry mechanism for better error handling
+      const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3): Promise<Response> => {
+        let retries = 0;
+        while (retries < maxRetries) {
+          try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response;
+          } catch (err) {
+            retries++;
+            if (retries === maxRetries) throw err;
+            await new Promise(r => setTimeout(r, 1000 * retries));
+          }
+        }
+        // This ensures TypeScript knows we always return a Response or throw an error
+        throw new Error("Failed to fetch after max retries");
+      };
+
+      fetchWithRetry(`${baseUrl}/api/transactions?address=${address}&network=${network}&provider=${provider}&offset=50`, {
+        signal,
+        headers: provider === 'infura' ? { 'X-Infura-Source': 'cryptopath-app', 'Infura-Api-Key': getInfuraApiKey() } : {}
+      })
         .then((res) => {
+          // res is now guaranteed to be defined
           if (!res.ok) {
             if (res.status === 404) {
               setErrorType("notFound");
@@ -733,20 +760,15 @@ function TransactionGraph() {
             setError("Network error. Please check your internet connection.");
           } else if (err.message.includes('not found') || err.message.includes('No transaction data')) {
             setErrorType("notFound");
+            if (provider === 'etherscan') {
+              console.log("Attempting to switch to Infura as fallback...");
+              router.push(`/search?address=${address}&network=${network}&provider=infura`);
+              return;
+            }
             setError(err.message || "No transactions found for this address");
-            
-            // Create a fallback simple graph with just the address
-            const fallbackNode = {
-              id: address,
-              label: shortenAddress(address),
-              color: "#f5b056", // Match theme color
-              type: "both",
-            };
-            
-            setGraphData({
-              nodes: [fallbackNode],
-              links: [],
-            });
+          } else if (err.message.includes('exceeded') || err.message.includes('rate limit')) {
+            setErrorType("api");
+            setError("Infura API rate limit exceeded. Please try again later or use a different provider.");
           } else {
             setErrorType("api");
             setError(err.message || "Failed to fetch transaction data for graph");
@@ -974,9 +996,11 @@ function TransactionGraph() {
         <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-4" />
         <div className="text-center">
           <p className="text-sm text-gray-300 mb-1">
-            {provider === 'infura' 
-              ? 'Loading transaction graph from Infura...' 
-              : 'Loading transaction graph...'}
+            {provider === 'infura'
+              ? loadingTimeElapsed > 30
+                ? "Processing large transaction history with Infura..."
+                : "Loading transaction graph from Infura..."
+              : "Loading transaction graph..."}
           </p>
           <div className="w-64 h-2 bg-gray-800 rounded-full mt-2 mb-1 overflow-hidden">
             <div 
