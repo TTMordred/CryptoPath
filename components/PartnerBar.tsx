@@ -21,6 +21,26 @@ const partners = [
     name: 'Next.js',
     logo: '/partners/nextjs.svg',
     url: 'https://nextjs.org'
+  },
+  {
+    name: 'BNB Chain',
+    logo: 'https://bscscan.com/assets/bsc/images/svg/logos/logo-dark.svg?v=25.3.3.0',
+    url: 'https://www.bnbchain.org'
+  },
+  {
+    name: 'CoinMarketcap',
+    logo: 'https://s2.coinmarketcap.com/static/cloud/img/coinmarketcap_white_1.svg?_=4f6ae86',
+    url: 'https://coinmarketcap.com/'
+  },
+  {
+    name: 'Alchemy',
+    logo: '/partners/alchemy.svg',
+    url: 'https://www.alchemy.com'
+  },
+  {
+    name: 'Moralis',
+    logo: '/partners/moralis.svg',
+    url: 'https://moralis.io'
   }
 ];
 
@@ -56,13 +76,9 @@ export default function PartnerBar() {
           className="flex justify-center flex-wrap items-center gap-16 md:gap-24"
         >
           {partners.map((partner) => (
-            <a
+            <div
               key={partner.name}
-              href={partner.url}
-              target="_blank"
-              rel="noopener noreferrer"
               className="partner-logo group relative transition-all duration-500 hover:scale-110"
-              aria-label={partner.name}
             >
               {/* Glow effect on hover */}
               <div className="absolute inset-0 bg-[#F5B056]/0 group-hover:bg-[#F5B056]/20 rounded-full blur-xl -z-10 transition-all duration-300 opacity-0 group-hover:opacity-100"></div>
@@ -82,7 +98,7 @@ export default function PartnerBar() {
               <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 text-xs text-white/60 opacity-0 group-hover:opacity-100 transition-all duration-300">
                 {partner.name}
               </span>
-            </a>
+            </div>
           ))}
         </div>
       </div>

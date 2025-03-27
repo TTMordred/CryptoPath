@@ -492,3 +492,67 @@ body {
   50% { border-radius: 20px; }
   100% { border-radius: 0px; }
 }
+
+/* Add these styles to your globals.css */
+.shadow-glow-sm {
+  box-shadow: 0 0 8px 0px rgba(245, 158, 11, 0.2);
+}
+
+.shadow-glow-md {
+  box-shadow: 0 0 15px 0px rgba(245, 158, 11, 0.3);
+}
+
+/* Animated hover effects */
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+}
+
+/* Smoother hover transitions */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
+/* Token cell hover effect */
+tr.hover\:bg-amber-500\/5:hover td {
+  background-color: rgba(245, 158, 11, 0.05);
+  position: relative;
+}
+
+/* Animated token card hover */
+.token-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.token-card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(245, 158, 11, 0.2);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+/* Ensure text truncation works consistently */
+.truncate-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Fix height issues in tables */
+.token-table-row {
+  height: 64px;
+}
+
+.token-table-row > td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}

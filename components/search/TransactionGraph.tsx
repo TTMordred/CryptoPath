@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Clock, AlertTriangle, Info, Lock, Unlock, ZoomIn, ZoomOut,
-  Maximize2, Minimize2, ArrowLeftRight, ExternalLink, Sparkles, History
+  Maximize2, Minimize2, ArrowLeftRight, ExternalLink, Sparkles, History, Check, Copy, ArrowUpRight, ArrowDown
 } from "lucide-react";
 import { ErrorCard } from "@/components/ui/error-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -15,6 +15,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { formatEthValue } from "@/components/search/TransactionTable/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import StatusBadge from "@/components/search/TransactionTable/components/StatusBadge";
 
 // Only apply timeout for non-Infura providers - Infura needs unlimited time
 const ETHERSCAN_TIMEOUT = 120000; // 120 seconds timeout for Etherscan
@@ -40,6 +43,8 @@ interface Transaction {
   blockNumber?: number;
   nonce?: number;
   input?: string;
+  status?: string;
+  gasUsed?: number;
 }
 
 // Define our node type with our custom properties
@@ -118,9 +123,11 @@ function formatValue(value: string): string {
   }).format(num) + " ETH";
 }
 
-// Transaction details modal component with improved UI
+// Enhanced Transaction details modal component with improved UI
 const TransactionDetails = ({ transaction, isOpen, onClose, network }: TransactionDetailsProps) => {
   if (!transaction) return null;
+  
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
 
   const formatDate = (timestamp: string) => {
     try {
@@ -139,6 +146,8 @@ const TransactionDetails = ({ transaction, isOpen, onClose, network }: Transacti
   
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
+    setCopiedItem(type);
+    setTimeout(() => setCopiedItem(null), 2000);
     toast.success(`${type} copied to clipboard`);
   };
   
@@ -174,147 +183,275 @@ const TransactionDetails = ({ transaction, isOpen, onClose, network }: Transacti
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="bg-gray-900 border border-amber-500/20 text-white max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="text-amber-400 flex items-center gap-2">
-            {getTransactionDirection()}
-            Transaction Details
-          </DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Transaction {shortenAddress(transaction.id)}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-2">
-          {/* Transaction type - visual indicator */}
-          <div className="flex items-center justify-center">
-            <div className="flex items-center gap-3 border border-gray-800 px-4 py-3 rounded-lg bg-gray-800/50">
-              <div className="flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center">
-                  <span className="text-xs font-bold">From</span>
-                </div>
-                <div className="text-sm mt-1 font-mono text-gray-400">{shortenAddress(transaction.from)}</div>
-              </div>
-              
-              <div className="h-[2px] w-12 bg-gradient-to-r from-red-500/50 to-green-500/50 relative">
-                <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-amber-500 rounded-full"></div>
-              </div>
-              
-              <div className="flex flex-col items-center">
-                <div className="w-6 h-6 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">
-                  <span className="text-xs font-bold">To</span>
-                </div>
-                <div className="text-sm mt-1 font-mono text-gray-400">{shortenAddress(transaction.to)}</div>
-              </div>
-            </div>
-          </div>
+      <DialogContent className="max-w-4xl bg-gradient-to-b from-gray-900 to-gray-950 border border-amber-500/20 shadow-lg shadow-amber-900/10 p-0 overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full h-full"
+        >
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-500/0 via-amber-500 to-amber-500/0"></div>
           
-          <div className="space-y-1">
-            <div className="text-sm text-gray-400">Transaction Hash</div>
-            <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
-              <code className="text-amber-400 font-mono break-all text-xs">{transaction.id}</code>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => copyToClipboard(transaction.id, "Hash")}
-                className="h-6 w-6 hover:bg-gray-800"
+          <DialogHeader className="p-6 pb-2 border-b border-amber-500/10">
+            <motion.div 
+              initial={{ y: -10 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <DialogTitle className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-amber-600 flex items-center gap-2">
+                <Info className="h-5 w-5 text-amber-500" />
+                Transaction Details
+              </DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Transaction {shortenAddress(transaction.id)}
+              </DialogDescription>
+            </motion.div>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh] lg:max-h-[600px] pr-4">
+            <div className="p-6 space-y-6">
+              {/* Transaction Overview Card */}
+              <motion.div 
+                className="p-4 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-amber-500/10 shadow-md"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
               >
-                <Lock className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="text-sm text-gray-400">From</div>
-              <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
-                <code className="text-red-400 font-mono truncate text-xs">{transaction.from}</code>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => copyToClipboard(transaction.from, "From address")}
-                  className="h-6 w-6 hover:bg-gray-800"
-                >
-                  <Unlock className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="text-sm text-gray-400">To</div>
-              <div className="flex items-center justify-between rounded-md bg-gray-950 p-2 text-sm">
-                <code className="text-green-400 font-mono truncate text-xs">{transaction.to}</code>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => copyToClipboard(transaction.to, "To address")}
-                  className="h-6 w-6 hover:bg-gray-800"
-                >
-                  <Lock className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <div className="text-sm text-gray-400">Value</div>
-              <div className="rounded-md bg-gray-950 p-2 text-sm font-medium text-white">
-                <span className="text-amber-400">{formatValue(transaction.value)}</span>
-              </div>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="text-sm text-gray-400">Timestamp</div>
-              <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
-                {formatDate(transaction.timestamp)}
-              </div>
-            </div>
-          </div>
-          
-          {(transaction.blockNumber || transaction.gas) && (
-            <div className="grid grid-cols-2 gap-4">
-              {transaction.blockNumber && (
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-400">Block Number</div>
-                  <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
-                    #{transaction.blockNumber.toLocaleString()}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-400 mb-2 flex items-center">
+                      <div className="w-1 h-4 bg-amber-500 rounded-full mr-2"></div>
+                      Transaction Hash
+                    </h3>
+                    <div className="relative group">
+                      <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500/10 to-amber-500/5 opacity-0 group-hover:opacity-100 rounded-lg blur-sm transition duration-300"></div>
+                      <div className="relative flex items-center bg-gray-900 p-2 rounded-lg">
+                        <code className="text-xs font-mono text-amber-300 truncate overflow-hidden w-full break-all">
+                          {transaction.id}
+                        </code>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="ml-2 h-7 w-7 opacity-50 hover:opacity-100 hover:bg-gray-800" 
+                          onClick={() => copyToClipboard(transaction.id, 'Hash')}
+                        >
+                          {copiedItem === 'Hash' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4 flex gap-6">
+                      <div>
+                        <span className="text-xs text-gray-400 block">Status</span>
+                        <div className="mt-1">
+                          <StatusBadge status={transaction.status} />
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-400 block">Block</span>
+                        <span className="text-md font-mono text-amber-400">#{transaction.blockNumber}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-400 mb-2 flex items-center">
+                      <div className="w-1 h-4 bg-amber-500 rounded-full mr-2"></div>
+                      Transaction Value
+                    </h3>
+                    
+                    <div className="flex flex-col bg-gray-900 p-3 rounded-lg">
+                      <span className="text-2xl font-bold text-white">{formatEthValue(transaction.value)}</span>
+                    </div>
+                    
+                    <div className="mt-4 flex items-center justify-between text-sm bg-gray-900/50 p-2 rounded-lg">
+                      <span className="text-gray-400">Transaction Fee:</span>
+                      <span className="font-mono text-amber-400">
+                        {((transaction.gasUsed || 0) * (transaction.gasPrice || 0) / 1e18).toFixed(6)} ETH
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
+              </motion.div>
               
-              {transaction.gas && (
-                <div className="space-y-1">
-                  <div className="text-sm text-gray-400">Gas</div>
-                  <div className="rounded-md bg-gray-950 p-2 text-sm text-white">
-                    {transaction.gas.toLocaleString()}
+              {/* From/To Card with Animation */}
+              <motion.div 
+                className="p-4 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-amber-500/10 shadow-md"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+              >
+                <h3 className="text-sm font-medium text-amber-400 mb-3 flex items-center">
+                  <div className="w-1 h-4 bg-amber-500 rounded-full mr-2"></div>
+                  Transaction Path
+                </h3>
+                
+                <div className="relative">
+                  {/* Sender */}
+                  <div className="flex flex-col mb-2">
+                    <div className="text-xs text-gray-400 mb-1">From</div>
+                    <div className="flex items-center gap-2 bg-gray-900 p-2 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500/20 to-amber-700/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-amber-500">F</span>
+                      </div>
+                      <div className="flex-1">
+                        <code className="text-sm font-mono text-amber-300 break-all">
+                          {transaction.from}
+                        </code>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => copyToClipboard(transaction.from, 'From Address')}
+                        className="h-8 w-8 opacity-50 hover:opacity-100 hover:bg-gray-800"
+                      >
+                        {copiedItem === 'From Address' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Arrow */}
+                  <div className="flex justify-center my-2">
+                    <motion.div 
+                      animate={{ y: [0, 4, 0] }}
+                      transition={{ repeat: Infinity, duration: 1.5 }}
+                    >
+                      <ArrowDown className="h-6 w-6 text-amber-500/50" />
+                    </motion.div>
+                  </div>
+                  
+                  {/* Recipient */}
+                  <div className="flex flex-col">
+                    <div className="text-xs text-gray-400 mb-1">To</div>
+                    <div className="flex items-center gap-2 bg-gray-900 p-2 rounded-lg">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-blue-700/20 flex items-center justify-center">
+                        <span className="text-xs font-bold text-blue-500">T</span>
+                      </div>
+                      <div className="flex-1">
+                        <code className="text-sm font-mono text-blue-300 break-all">
+                          {transaction.to || "Contract Creation"}
+                        </code>
+                      </div>
+                      {transaction.to && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => copyToClipboard(transaction.to, 'To Address')}
+                          className="h-8 w-8 opacity-50 hover:opacity-100 hover:bg-gray-800"
+                        >
+                          {copiedItem === 'To Address' ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-gray-400" />}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
+              </motion.div>
+              
+              {/* Transaction Details Card */}
+              <motion.div 
+                className="p-4 rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-amber-500/10 shadow-md"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
+              >
+                <h3 className="text-sm font-medium text-amber-400 mb-3 flex items-center">
+                  <div className="w-1 h-4 bg-amber-500 rounded-full mr-2"></div>
+                  Technical Details
+                </h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Timestamp</span>
+                    <span className="text-sm text-gray-200">{formatDate(transaction.timestamp)}</span>
+                  </div>
+                  
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Gas Limit</span>
+                    <span className="text-sm text-gray-200">{transaction.gas?.toLocaleString() || 'N/A'}</span>
+                  </div>
+                  
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Gas Used</span>
+                    <span className="text-sm text-gray-200">
+                      {transaction.gasUsed?.toLocaleString() || 'N/A'} 
+                      {transaction.gasUsed && transaction.gas && (
+                        <span className="text-amber-500/70 ml-1">
+                          ({((transaction.gasUsed / transaction.gas) * 100).toFixed(1)}%)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Gas Price</span>
+                    <span className="text-sm text-gray-200">
+                      {transaction.gasPrice ? `${(transaction.gasPrice / 1e9).toFixed(2)} Gwei` : 'N/A'}
+                    </span>
+                  </div>
+                  
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Nonce</span>
+                    <span className="text-sm text-gray-200">{transaction.nonce}</span>
+                  </div>
+                  
+                  <div className="bg-gray-900/70 p-3 rounded-lg flex flex-col">
+                    <span className="text-xs text-gray-400 mb-1">Block Confirmation</span>
+                    <span className="text-sm text-gray-200">
+                      {transaction.blockNumber ? 'Confirmed' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
             </div>
-          )}
-        </div>
-        
-        <DialogFooter>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
-                  onClick={() => window.open(getBlockExplorerUrl(transaction.id), '_blank')}
-                >
-                  <Info className="mr-2 h-4 w-4" />
-                  View on {getBlockExplorerName()}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>See full transaction details in the block explorer</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </DialogFooter>
+          </ScrollArea>
+          
+          {/* Action Buttons */}
+          <div className="p-6 border-t border-amber-500/10 bg-black/20">
+            <motion.div 
+              className="flex justify-center gap-3"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.3 }}
+            >
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      onClick={() => window.open(getBlockExplorerUrl(transaction.id), '_blank')}
+                      className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10 transition-all flex items-center gap-2"
+                    >
+                      <ArrowUpRight className="h-4 w-4" />
+                      View on {getBlockExplorerName()}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Open in blockchain explorer</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="secondary"
+                      onClick={() => copyToClipboard(transaction.id, 'Full Transaction')}
+                      className="border-gray-700 bg-gray-800/80 hover:bg-gray-700 transition-all flex items-center gap-2"
+                    >
+                      {copiedItem === 'Full Transaction' ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      {copiedItem === 'Full Transaction' ? 'Copied' : 'Copy TX Hash'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy transaction hash to clipboard</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </motion.div>
+          </div>
+        </motion.div>
       </DialogContent>
     </Dialog>
   );
@@ -414,8 +551,35 @@ function TransactionGraph() {
         
       console.log(`Fetching transactions for ${address} on ${network} using ${provider}...`);
         
-      fetch(`${baseUrl}/api/transactions?address=${address}&network=${network}&provider=${provider}&offset=50`, { signal })
+      // Function to manage Infura API key
+      const getInfuraApiKey = () => {
+        return process.env.NEXT_PUBLIC_INFURA_KEY || "your-fallback-key";
+      };
+      
+      // Retry mechanism for better error handling
+      const fetchWithRetry = async (url: string, options: RequestInit, maxRetries = 3): Promise<Response> => {
+        let retries = 0;
+        while (retries < maxRetries) {
+          try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return response;
+          } catch (err) {
+            retries++;
+            if (retries === maxRetries) throw err;
+            await new Promise(r => setTimeout(r, 1000 * retries));
+          }
+        }
+        // This ensures TypeScript knows we always return a Response or throw an error
+        throw new Error("Failed to fetch after max retries");
+      };
+
+      fetchWithRetry(`${baseUrl}/api/transactions?address=${address}&network=${network}&provider=${provider}&offset=50`, {
+        signal,
+        headers: provider === 'infura' ? { 'X-Infura-Source': 'cryptopath-app', 'Infura-Api-Key': getInfuraApiKey() } : {}
+      })
         .then((res) => {
+          // res is now guaranteed to be defined
           if (!res.ok) {
             if (res.status === 404) {
               setErrorType("notFound");
@@ -596,20 +760,15 @@ function TransactionGraph() {
             setError("Network error. Please check your internet connection.");
           } else if (err.message.includes('not found') || err.message.includes('No transaction data')) {
             setErrorType("notFound");
+            if (provider === 'etherscan') {
+              console.log("Attempting to switch to Infura as fallback...");
+              router.push(`/search?address=${address}&network=${network}&provider=infura`);
+              return;
+            }
             setError(err.message || "No transactions found for this address");
-            
-            // Create a fallback simple graph with just the address
-            const fallbackNode = {
-              id: address,
-              label: shortenAddress(address),
-              color: "#f5b056", // Match theme color
-              type: "both",
-            };
-            
-            setGraphData({
-              nodes: [fallbackNode],
-              links: [],
-            });
+          } else if (err.message.includes('exceeded') || err.message.includes('rate limit')) {
+            setErrorType("api");
+            setError("Infura API rate limit exceeded. Please try again later or use a different provider.");
           } else {
             setErrorType("api");
             setError(err.message || "Failed to fetch transaction data for graph");
@@ -701,12 +860,17 @@ function TransactionGraph() {
             links: updatedLinks
           });
           
-          // Add a visual effect to the clicked link (pulsing)
-          setTimeout(() => {
+          // Update the graph's visual state
+          requestAnimationFrame(() => {
             if (graphRef.current) {
-              graphRef.current.refresh();
+              const forceLink = graphRef.current.d3Force('link');
+              if (forceLink) {
+                // Update force simulation
+                forceLink.distance((link: GraphLink) => (link.highlighted ? 100 : 50));
+                graphRef.current.d3ReheatSimulation();
+              }
             }
-          }, 100);
+          });
         }
       }
     },
@@ -837,9 +1001,11 @@ function TransactionGraph() {
         <Loader2 className="h-8 w-8 animate-spin text-amber-500 mb-4" />
         <div className="text-center">
           <p className="text-sm text-gray-300 mb-1">
-            {provider === 'infura' 
-              ? 'Loading transaction graph from Infura...' 
-              : 'Loading transaction graph...'}
+            {provider === 'infura'
+              ? loadingTimeElapsed > 30
+                ? "Processing large transaction history with Infura..."
+                : "Loading transaction graph from Infura..."
+              : "Loading transaction graph..."}
           </p>
           <div className="w-64 h-2 bg-gray-800 rounded-full mt-2 mb-1 overflow-hidden">
             <div 
