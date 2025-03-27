@@ -529,7 +529,7 @@ const LandingPage = () => {
                   transition={{ duration: 0.8, delay: 0.4 }}
                   className="relative"
                 >
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 to-purple-600 rounded-full opacity-20 blur-2xl animate-pulse"></div>
+
                   <video className="max-w-[300px] mx-auto rounded-xl border border-white/10" autoPlay loop muted playsInline>
                     <source src="/Img/Videos/TradingVideo.webm" type="video/webm" />
                     <source src="/Img/Videos/TradingVideo.mp4" type="video/mp4" />
