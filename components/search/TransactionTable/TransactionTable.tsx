@@ -452,17 +452,9 @@ export default function TransactionTable() {
               </div>
             ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Hash</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead>Value</TableHead>
-                    <TableHead className={isMobile ? "hidden" : ""}>Time</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                    <TableHead></TableHead> {/* Column for expand button */}
+                <TableHeader>{/* Use a fragment to remove whitespace */}
+                  <TableRow>{/* Write TableHead elements without line breaks between them */}
+                    <TableHead>Hash</TableHead><TableHead>Type</TableHead><TableHead>Status</TableHead><TableHead>From</TableHead><TableHead>To</TableHead><TableHead>Value</TableHead><TableHead className={isMobile ? "hidden" : ""}>Time</TableHead><TableHead className="text-right">Actions</TableHead><TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
