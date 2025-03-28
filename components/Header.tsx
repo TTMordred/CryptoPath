@@ -201,7 +201,7 @@ const HeaderContent = () => {
           </h1>
         </div>
 
-        <nav className="hidden 2xl:flex justify-center items-center space-x-6">
+        <nav className="hidden 2xl:flex justify-center items-center space-x-5">
           <Link href="/" className="text-white text-sm hover:text-[#F5B056] transition">
             Home
           </Link>
