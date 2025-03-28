@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, memo, Suspense, useRef } fro
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area, ComposedChart } from "recharts";
 import { fetchAvailableCoins, CoinOption, TOKEN_CONTRACTS } from "@/services/cryptoService";
-import { Loader2, AlertCircle, RefreshCcw, TrendingUp, ChevronDown, Clock, DollarSign, RefreshCw } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCcw, TrendingUp, ChevronDown, Clock, DollarSign, RefreshCw, Globe } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -21,6 +21,12 @@ import dynamic from 'next/dynamic';
 const dataCache = new Map<string, { data: any, timestamp: number }>();
 const CACHE_DURATION = 30 * 1000; // 30 seconds cooldown
 const FORCED_COOLDOWN = 30 * 1000; // 30 seconds between refresh attempts
+
+// Define supported chains
+const SUPPORTED_CHAINS = [
+  { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', color: '#3b82f6' },
+  { id: 'bnb', name: 'BNB Chain', symbol: 'BNB', color: '#F0B90B' },
+];
 
 // Use lightweight skeleton loader
 const ChartSkeleton = () => (
@@ -78,6 +84,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [selectedCoin, setSelectedCoin] = useState<CoinOption | null>(null);
+  const [selectedChain, setSelectedChain] = useState(SUPPORTED_CHAINS[0]);
   const [availableCoins, setAvailableCoins] = useState<CoinOption[]>([
     { id: 'ethereum', symbol: 'ETH', name: 'Ethereum' },
     { id: 'usd-coin', symbol: 'USDC', name: 'USDC' },
@@ -139,6 +146,16 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
       setError(null);
     }
   }, [availableCoins, onCoinChange]);
+
+  const handleChainChange = useCallback((chainId: string) => {
+    const chain = SUPPORTED_CHAINS.find(c => c.id === chainId);
+    if (chain) {
+      setSelectedChain(chain);
+      setError(null); // Clear error state
+      setLoading(true); // Set loading state
+      setRetryCount(prev => prev + 1); // Trigger a refresh
+    }
+  }, []);
 
   // Set initial coin immediately to improve perceived performance
   useEffect(() => {
@@ -210,18 +227,6 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }, []);
   
-  // Modify x-axis rendering to show more context
-  <XAxis 
-  dataKey="date"
-  stroke="#666666"
-  tickLine={false}
-  axisLine={false}
-  tick={{ fill: '#9ca3af', fontSize: 12 }}
-  dy={10}
-  interval={timeRange === '1d' ? 'preserveStart' : 'preserveStartEnd'} // Adjust interval for daily vs. longer ranges
-  minTickGap={timeRange === '1d' ? 20 : 50} // Increase space between ticks for longer time ranges
-/>
-
   // Add a new function to filter unique dates
   const getUniqueChartData = useCallback((data: ChartData[]) => {
     const uniqueDates = new Set<string>();
@@ -238,7 +243,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
   const fetchData = useCallback(async () => {
     if (!selectedCoin) return;
 
-    const cacheKey = `${selectedCoin.symbol}-${timeRange}`;
+    const cacheKey = `${selectedChain.id}-${selectedCoin.symbol}-${timeRange}`;
     const cachedData = dataCache.get(cacheKey);
     const now = Date.now();
     const lastFetchTime = lastFetchTimeRef.current[cacheKey] || 0;
@@ -283,26 +288,63 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
       // Request only what's needed
       const limit = 24; // 24 hours for 1d
 
-      // Use Binance API with optimized parameters
-      const response = await fetch(
-        `https://data-api.binance.vision/api/v3/klines?symbol=${selectedCoin.symbol.toUpperCase()}USDT&interval=${interval}&limit=${limit}`,
-        { cache: 'no-store' } // Disable browser caching to ensure we control the cache
-      );
+      // Define possible trading pairs to try
+      let tradingPairs = [];
       
-      if (!response.ok) {
-        throw new Error('API request failed');
+      if (selectedChain.id === 'bnb') {
+        // For BNB Chain, try multiple pair formats
+        if (['USDT', 'USDC', 'DAI', 'BUSD'].includes(selectedCoin.symbol.toUpperCase())) {
+          // Stablecoins usually paired with BNB
+          tradingPairs = [`${selectedCoin.symbol.toUpperCase()}BNB`];
+        } else {
+          // Try both BNB and USDT pairs
+          tradingPairs = [
+            `${selectedCoin.symbol.toUpperCase()}BNB`,
+            `${selectedCoin.symbol.toUpperCase()}USDT`,
+            `BNB${selectedCoin.symbol.toUpperCase()}`
+          ];
+        }
+      } else {
+        // For Ethereum, try USDT and ETH pairs
+        tradingPairs = [
+          `${selectedCoin.symbol.toUpperCase()}USDT`,
+          `${selectedCoin.symbol.toUpperCase()}ETH`
+        ];
       }
-
-      const rawData = await response.json();
+      
+      let successfulResponse = null;
+      let responseError = null;
+      
+      // Try each trading pair until one works
+      for (const pair of tradingPairs) {
+        try {
+          console.log(`Trying trading pair: ${pair}`);
+          const response = await fetch(
+            `https://data-api.binance.vision/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`,
+            { cache: 'no-store' }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data && data.length > 0) {
+              successfulResponse = data;
+              break;
+            }
+          }
+        } catch (pairError) {
+          responseError = pairError;
+          console.warn(`Failed with pair ${pair}:`, pairError);
+        }
+      }
+      
+      if (!successfulResponse) {
+        throw new Error(responseError ? responseError.toString() : 'No valid trading pair found');
+      }
 
       if (!mounted) return;
 
-      if (!rawData || rawData.length === 0) {
-        throw new Error('No data available');
-      }
-
       // Optimize data processing
-      const chartData = rawData.map((item: any) => {
+      const chartData = successfulResponse.map((item: any) => {
         return {
           date: formatDate(item[0]),
           price: Number(item[4]), // Closing price
@@ -319,6 +361,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
       setData(chartData);
       setLoading(false);
       setInitialLoad(false);
+      setError(null); // Clear any previous errors
       
       // Set the next refresh time
       setNextRefreshTime(now + FORCED_COOLDOWN);
@@ -326,7 +369,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     } catch (err) {
       console.error('Error fetching data:', err);
       if (mounted) {
-        setError('Failed to load chart data');
+        setError(`Failed to load chart data for ${selectedCoin.name} on ${selectedChain.name}`);
         setLoading(false);
         setInitialLoad(false);
       }
@@ -335,7 +378,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
     return () => {
       mounted = false;
     };
-  }, [selectedCoin, timeRange, loading, initialLoad, formatDate]);
+  }, [selectedCoin, selectedChain, timeRange, loading, initialLoad, formatDate]);
 
   // Fetch data when timeRange changes (added retryCount to dependencies)
   useEffect(() => {
@@ -395,8 +438,8 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
           <ComposedChart data={uniqueData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
             <defs>
               <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="5%" stopColor={selectedChain.color} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={selectedChain.color} stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#444444" vertical={false} />
@@ -437,8 +480,13 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
                 return (
                   <div className="bg-gray-900/95 border border-gray-700/50 rounded-lg p-2 shadow-lg">
                     <p className="text-gray-400 text-sm">{props.label}</p>
-                    {priceValue && <p className="text-[#3b82f6] text-sm font-medium">Price: ${priceValue.value.toLocaleString()}</p>}
+                    {priceValue && (
+                      <p className="text-sm font-medium" style={{ color: selectedChain.color }}>
+                        Price: ${priceValue.value.toLocaleString()}
+                      </p>
+                    )}
                     {volumeValue && <p className="text-[#22d3ee] text-sm font-medium">Vol: {volumeValue.value.toLocaleString()}</p>}
+                    <p className="text-xs text-gray-500 mt-1">Chain: {selectedChain.name}</p>
                   </div>
                 );
               }}
@@ -457,7 +505,7 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
               yAxisId="left"
               type="monotone"
               dataKey="price"
-              stroke="#3b82f6"
+              stroke={selectedChain.color}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 6, strokeWidth: 2 }}
@@ -494,7 +542,34 @@ const RevenueGraph: React.FC<RevenueGraphProps> = memo(({ onCoinChange }) => {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Removed TimeRangeSelector since we only have 1d option now */}
+              <Select
+                value={selectedChain.id}
+                onValueChange={handleChainChange}
+              >
+                <SelectTrigger className="w-[140px] bg-gray-800/70 border-gray-700/50 text-gray-300">
+                  <div className="flex items-center w-full">
+                    <Globe className="h-3.5 w-3.5 mr-2 text-gray-400" />
+                    <span className="truncate">{selectedChain.name}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800/95 border-gray-700/50 backdrop-blur-md">
+                  {SUPPORTED_CHAINS.map((chain) => (
+                    <SelectItem
+                      key={chain.id}
+                      value={chain.id}
+                      className="text-gray-300"
+                    >
+                      <div className="flex items-center">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2"
+                          style={{ backgroundColor: chain.color }}
+                        ></div>
+                        {chain.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select
                 value={selectedCoin?.id}
                 onValueChange={handleCoinChange}
