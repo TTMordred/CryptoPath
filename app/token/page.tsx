@@ -341,7 +341,7 @@ export default function TokenPage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(`https://etherscan.io/block/${transfer.blockNumber}`, "_blank")}
+                            onClick={() => router.push(`/block/?number=${transfer.blockNumber}`)}
                             className="hover:text-amber-500 transition-colors p-0"
                         >
                             {formatNumber(transfer.blockNumber, false)}
