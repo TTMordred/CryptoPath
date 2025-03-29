@@ -373,7 +373,7 @@ const Footer = () => {
       {/* Back to top button */}
       <motion.button
         onClick={scrollToTop}
-        className="fixed bottom-6 right-6 z-50 bg-[#F5B056] text-black p-3 rounded-full shadow-lg"
+        className="fixed bottom-6 left-6 z-50 bg-[#F5B056] text-black p-3 rounded-full shadow-lg"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ 
           opacity: showBackToTop ? 1 : 0,

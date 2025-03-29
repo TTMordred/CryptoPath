@@ -1,11 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { projectInfo, faqQuestions, reportSummary } from "./project-knowledge";
-import { getRelevantReportSections } from "./pdf-extraction";
+import { projectInfo, faqQuestions, reportSummary, type MainFeature } from "./project-knowledge";
 
 // Initialize the Gemini API client
 const genAI = new GoogleGenerativeAI(process.env.NEXT_PUBLIC_GEMINI_API_KEY || "");
 
-// Create a chat model instance with Gemini 1.5 Flash (more accessible model)
+// Create a chat model instance with Gemini 1.5 Flash
 const model = genAI.getGenerativeModel({ 
   model: "gemini-1.5-flash",
   generationConfig: {
@@ -14,127 +13,165 @@ const model = genAI.getGenerativeModel({
 });
 
 export type ChatMessage = {
-  role: "user" | "model" | "system";
+  role: "user" | "model";
   content: string;
 };
 
+// Get relevant feature information
+function getRelevantFeatures(query: string): MainFeature[] {
+  const normalizedQuery = query.toLowerCase();
+  return projectInfo.mainFeatures.filter(feature => 
+    normalizedQuery.includes(feature.name.toLowerCase()) ||
+    feature.capabilities.some(cap => normalizedQuery.includes(cap.toLowerCase()))
+  );
+}
+
+// Format all core features
+function getAllCoreFeatures(): string {
+  const features = projectInfo.mainFeatures;
+  return `Here are our exciting core features:
+
+🔍 **Search & Blockchain Explorer**
+- Multi-chain transaction search and analysis
+- Interactive graph visualization of transactions
+- Smart contract verification and interaction
+- Advanced filtering and analytics
+
+📊 **Market Overview & TopTokens**
+- Real-time cryptocurrency market data and trends
+- Global market metrics with caps and volumes
+- Fear & Greed Index with sentiment analysis
+- Customizable watchlists and price alerts
+
+💼 **Portfolio Tracker**
+- Multi-wallet and multi-chain asset tracking
+- Performance analytics with historical charts
+- Transaction history with gas analysis
+- Asset allocation visualization
+
+🖼️ **NFT Marketplace**
+- Trade NFTs across multiple chains
+- Collection exploration with metadata filtering
+- Floor price tracking and analytics
+- Seamless wallet integration
+
+💧 **Faucet**
+- Get free PATH tokens on BSC Testnet
+- Test features without real funds
+- Automated network switching
+- Balance monitoring
+
+💱 **Token Swap**
+- Cross-chain token exchange
+- Real-time price impact calculation
+- Customizable slippage settings
+- Complete transaction history
+
+🥩 **Staking**
+- Multiple staking pools with various APY rates
+- Flexible and locked staking periods
+- Auto-compounding rewards
+- Detailed staking analytics
+
+🎮 **Click2Earn Game**
+- Earn PATH tokens through gameplay
+- Strategic progression system
+- Competitive leaderboards
+- Direct wallet rewards`;
+}
+
+// Get feature list based on query
+function getFeatureList(query: string): string {
+  if (query.match(/how many|number of|list of|what|feature|main/i)) {
+    return getAllCoreFeatures();
+  }
+  return '';
+}
+
+// Format features for display
+function formatFeatures(features: MainFeature[]): string {
+  return features.map(f => `**${f.name}**:\n${f.description}\n\nCapabilities:\n${
+    f.capabilities.map(c => `- ${c}`).join('\n')
+  }`).join('\n\n');
+}
+
 // System prompt that provides context about the project
-const systemPrompt = `
-You are the AI assistant for CryptoPath, a comprehensive blockchain explorer and visualization tool. 
-Your role is to help users understand the platform's features and capabilities.
+function getSystemPrompt(query: string): string {
+  const relevantFeatures = getRelevantFeatures(query);
+  const featureList = getFeatureList(query);
+  
+  return `
+You are the AI assistant for CryptoPath, a comprehensive blockchain explorer and visualization platform.
 
-Here is key information about CryptoPath:
-- Name: ${projectInfo.name}
-- Description: ${projectInfo.description}
-- Main features: Blockchain Explorer, Portfolio Tracker, NFT Marketplace, Transaction Visualizer
-- Supported blockchain networks: Ethereum, Polygon, Solana, Avalanche
+Project Overview:
+${projectInfo.description}
 
-When answering questions:
-1. Focus on providing accurate information about CryptoPath's features and functionality
-2. Be helpful and concise in your explanations
-3. If asked about technical details, provide clear explanations without unnecessary jargon
-4. If you don't know something specific about CryptoPath, acknowledge this and provide general information
-5. Always maintain a professional but friendly tone
+${featureList || (relevantFeatures.length > 0 ? formatFeatures(relevantFeatures) : '')}
+
+Key Information:
+- Supported networks: ${projectInfo.components.blockchain.supportedNetworks.join(', ')}
+- Advanced tech stack with ${projectInfo.techStack.apiIntegrations.length} integrated APIs
+- Full mobile compatibility and responsive design
+- Secure wallet integration and transaction handling
+
+When answering:
+1. Always mention ALL core features when asked about features
+2. Use emojis and clear formatting for better readability
+3. Be specific about actual features and capabilities
+4. Provide clear, actionable information
+5. Keep responses engaging and informative
+
+Remember: CryptoPath is more than just a blockchain explorer - it's a complete platform for blockchain interaction, portfolio management, NFT trading, token swapping, staking, and gamified earning!
 `;
+}
 
 export async function getChatResponse(messages: ChatMessage[]) {
   try {
-    // Extract the user's query from the last message
     const userQuery = messages[messages.length - 1].content;
     
-    // Get relevant information from our knowledge base
-    let contextualInfo = "";
-    
-    // Check if the query matches any FAQ
-    const matchingFaq = faqQuestions.find(faq => 
-      userQuery.toLowerCase().includes(faq.question.toLowerCase().slice(0, 15)) || 
+    // Get FAQ match if available
+    const relevantFAQ = faqQuestions.find(faq => 
+      userQuery.toLowerCase().includes(faq.question.toLowerCase()) ||
       faq.question.toLowerCase().includes(userQuery.toLowerCase())
     );
-    
-    if (matchingFaq) {
-      contextualInfo = `FAQ Answer: ${matchingFaq.answer}\n\n`;
-    }
-    
-    // Get relevant report sections based on the query
-    try {
-      const relevantReportContent = await getRelevantReportSections(userQuery);
-      if (relevantReportContent && !relevantReportContent.includes('No specific information')) {
-        contextualInfo += `Relevant Information from Project Report:\n${relevantReportContent}\n\n`;
-      }
-    } catch (error) {
-      console.error('Error getting report sections:', error);
-    }
-    
-    // Prepare feature-specific context based on the query
-    const lowerQuery = userQuery.toLowerCase();
-    
-    if (lowerQuery.includes('blockchain') || lowerQuery.includes('explorer') || lowerQuery.includes('transaction')) {
-      const feature = projectInfo.mainFeatures.find(f => f.name === "Blockchain Explorer");
-      if (feature) {
-        contextualInfo += `About ${feature.name}: ${feature.description}\nCapabilities: ${feature.capabilities.join(", ")}\n\n`;
-      }
-    }
-    
-    if (lowerQuery.includes('portfolio') || lowerQuery.includes('track') || lowerQuery.includes('holdings')) {
-      const feature = projectInfo.mainFeatures.find(f => f.name === "Portfolio Tracker");
-      if (feature) {
-        contextualInfo += `About ${feature.name}: ${feature.description}\nCapabilities: ${feature.capabilities.join(", ")}\n\n`;
-      }
-    }
-    
-    if (lowerQuery.includes('nft') || lowerQuery.includes('marketplace') || lowerQuery.includes('token')) {
-      const feature = projectInfo.mainFeatures.find(f => f.name === "NFT Marketplace");
-      if (feature) {
-        contextualInfo += `About ${feature.name}: ${feature.description}\nCapabilities: ${feature.capabilities.join(", ")}\n\n`;
-      }
-    }
-    
-    if (lowerQuery.includes('visual') || lowerQuery.includes('graph') || lowerQuery.includes('chart')) {
-      const feature = projectInfo.mainFeatures.find(f => f.name === "Transaction Visualizer");
-      if (feature) {
-        contextualInfo += `About ${feature.name}: ${feature.description}\nCapabilities: ${feature.capabilities.join(", ")}\n\n`;
-      }
-    }
-    
-    if (lowerQuery.includes('how to') || lowerQuery.includes('guide') || lowerQuery.includes('tutorial')) {
-      contextualInfo += `User Guide:\n${JSON.stringify(projectInfo.userGuide, null, 2)}\n\n`;
-    }
-    
-    // Create a proper conversation history for the API
-    const preparedMessages = [];
-    
-    // First, include a proper user/model chat about the system context
-    preparedMessages.push({
-      role: "user",
-      parts: [{ text: `Please act as the CryptoPath assistant with this context: ${systemPrompt}\n${contextualInfo}` }]
-    });
-    
-    preparedMessages.push({
-      role: "model", 
-      parts: [{ text: "I'll help users understand CryptoPath's features and capabilities." }]
-    });
-    
-    // Then add the actual conversation history
-    for (let i = 0; i < messages.length - 1; i++) {
-      const msg = messages[i];
-      preparedMessages.push({
-        role: msg.role === "model" ? "model" : "user",
-        parts: [{ text: msg.content }]
-      });
-    }
 
-    // Start a new chat with the prepared history
+    // Initialize chat with system prompt and context
     const chat = model.startChat({
-      history: preparedMessages,
+      history: [
+        // System prompt
+        {
+          role: "user",
+          parts: [{ text: "Please use this context for our conversation:" }]
+        },
+        {
+          role: "model",
+          parts: [{ text: getSystemPrompt(userQuery) }]
+        },
+        // FAQ answer if available
+        ...(relevantFAQ ? [
+          {
+            role: "user",
+            parts: [{ text: "Here is a relevant FAQ answer:" }]
+          },
+          {
+            role: "model",
+            parts: [{ text: relevantFAQ.answer }]
+          }
+        ] : []),
+        // Previous conversation history
+        ...messages.slice(0, -1).map(msg => ({
+          role: msg.role === "model" ? "model" : "user",
+          parts: [{ text: msg.content }],
+        }))
+      ],
     });
 
-    // Send the user's query
     const result = await chat.sendMessage(userQuery);
     const response = await result.response;
     let text = response.text();
     
-    // Replace asterisk bold with markdown bold
-    text = text.replace(/\*\*([^*]+)\*\*/g, '**$1**');
+    // Ensure proper markdown formatting
+    text = text.replace(/\*([^*]+)\*/g, '**$1**');
     
     return text;
   } catch (error) {
@@ -144,11 +181,10 @@ export async function getChatResponse(messages: ChatMessage[]) {
 }
 
 export const suggestedQuestions = [
-  "What is CryptoPath?",
+  "What is CryptoPath and what are its main features?",
   "How can I explore blockchain transactions?",
-  "What features does the portfolio tracking have?",
-  "How do I use the NFT marketplace?",
-  "Which blockchain networks are supported?",
-  "How do I connect my wallet?",
-  "Can you explain the transaction visualizer?"
+  "Tell me about the NFT marketplace",
+  "How does staking work?",
+  "What is the Click2Earn game feature?",
+  "How do I use the Token Swap feature?"
 ];
