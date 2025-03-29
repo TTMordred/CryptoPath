@@ -209,7 +209,7 @@ const HeaderContent = () => {
             Market Overview
           </Link>
           <Link href="/pricetable" className="text-sm hover:text-[#F5B056] transition">
-            PriceTable
+            TopTokens
           </Link>
           <Link href="/transactions" className="text-white text-sm hover:text-[#F5B056] transition">
             Transactions
@@ -298,6 +298,15 @@ const HeaderContent = () => {
               >
                 Home
               </Link>
+              
+              <Link
+                href="/market-overview"
+                className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
+                onClick={() => setIsOpen(false)}
+              >
+                Market OverView
+              </Link>
+              
               <Link
                 href="/pricetable"
                 className="text-sm uppercase hover:text-[#F5B056] transition border-b-[1px] border-gray-500"
