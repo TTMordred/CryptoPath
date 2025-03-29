@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ParticlesBackground from "@/components/ParticlesBackground";
+import ChatBubble from "@/components/ChatBubble";
 import { SplashScreen } from '@/components/SplashScreen';
 // State management and context providers
 import QueryProvider from "./QueryProvider"; // Data fetching provider
@@ -116,7 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   {children} {/* Page-specific content */}
                   <Toaster position="top-center" /> {/* Toast notification container */}
                   <Footer /> {/* Global footer */}
-                  
+                  <ChatBubble /> {/* Chat assistant */}
                   {/* Debug Badge - Only shows in development when needed */}
                   <DebugBadge position="bottom-right" />
                 </QueryProvider>
