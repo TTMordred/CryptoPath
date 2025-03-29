@@ -4,7 +4,52 @@
  * This information is extracted from the project report and codebase
  */
 
-export const projectInfo = {
+export interface MainFeature {
+  name: string;
+  description: string;
+  capabilities: string[];
+}
+
+export interface FAQ {
+  question: string;
+  answer: string;
+}
+
+export interface ProjectComponents {
+  frontEnd: {
+    technologies: string[];
+    features: string[];
+  };
+  backEnd: {
+    technologies: string[];
+    features: string[];
+  };
+  blockchain: {
+    supportedNetworks: string[];
+    features: string[];
+  };
+}
+
+export interface ProjectInfo {
+  name: string;
+  description: string;
+  components: ProjectComponents;
+  mainFeatures: MainFeature[];
+  architecture: {
+    frontendArchitecture: string;
+    backendArchitecture: string;
+    dataFlow: string;
+    deployment: string;
+  };
+  userGuide: {
+    gettingStarted: string;
+    blockchainExplorer: string;
+    portfolioTracker: string;
+    nftMarketplace: string;
+  };
+}
+
+export const projectInfo: ProjectInfo = {
   name: "CryptoPath",
   description: "A comprehensive blockchain explorer and visualization tool that helps users navigate and understand blockchain transactions, analyze wallet activities, track portfolios, and explore NFT marketplaces.",
   
@@ -96,7 +141,7 @@ export const projectInfo = {
   }
 };
 
-export const faqQuestions = [
+export const faqQuestions: FAQ[] = [
   {
     question: "What is CryptoPath?",
     answer: "CryptoPath is a comprehensive blockchain explorer and visualization tool that helps users navigate and understand blockchain transactions, analyze wallet activities, track portfolios, and explore NFT marketplaces. It supports multiple blockchain networks including Ethereum, Polygon, Solana, and Avalanche."
