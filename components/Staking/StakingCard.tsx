@@ -1,4 +1,3 @@
-// components/Staking/StakingCard.tsx
 'use client';
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
@@ -56,7 +55,6 @@ export default function StakingCard() {
     initialized: false
   });
   const [rawStaked, setRawStaked] = useState(ethers.BigNumber.from(0));
-
 
   const getStakingContract = (signer?: ethers.Signer) => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -146,7 +144,7 @@ export default function StakingCard() {
       await action();
       toast.success(successMessage, { 
         id: toastId,
-        style: { background: '#4CAF50', color: 'white' }
+        style: { background: '#F5B056', color: 'black' }
       });
       await loadStakingData();
       await updateBalances();
@@ -235,24 +233,27 @@ export default function StakingCard() {
   }
 
   return (
-    <div className="bg-transparent back-drop-blur-[10px] rounded-2xl p-4 md:p-6 shadow-xl w-full max-w-md relative border-2 border-[#F5B056]">
+    <div className="bg-[#1a1a1a] rounded-3xl p-6 shadow-2xl w-full max-w-md relative border border-[#333] transition-all duration-300 animate-fade-in">
       {loading && (
-        <div className="absolute inset-0 bg-gray-900 bg-opacity-50 rounded-2xl flex items-center justify-center z-10">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm rounded-3xl flex items-center justify-center z-10 animate-fade-in">
+          <div className="flex flex-col items-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#F5B056]"></div>
+            <p className="mt-4 text-white">Processing transaction...</p>
+          </div>
         </div>
       )}
 
       {/* Phần thông báo mạng và trạng thái */}
       {status.wrongNetwork && (
-        <div className="bg-red-600 text-white p-3 rounded-lg mb-4 flex items-center animate-fade-in">
-          <FaExclamationTriangle className="mr-2 animate-pulse" />
-          Please connect to BSC Testnet
+        <div className="bg-[#332b22] text-[#F5B056] p-4 rounded-xl mb-6 flex items-center">
+          <FaExclamationTriangle className="mr-3 text-xl" />
+          <span className="font-medium">Please connect to BSC Testnet</span>
         </div>
       )}
       
       {status.isPaused && (
-        <div className="bg-yellow-500 text-black p-3 rounded-lg mb-4 flex items-center animate-fade-in">
-          <FaExclamationTriangle className="mr-2 animate-pulse" />
+        <div className="bg-[#332b22] text-[#F5B056] p-4 rounded-xl mb-6 flex items-center">
+          <FaExclamationTriangle className="mr-3 text-xl" />
           Staking is currently paused
         </div>
       )}
@@ -268,109 +269,93 @@ export default function StakingCard() {
 
       <div className="space-y-4">
         {/* Thông tin staking */}
-        <div className="bg-gray-800 rounded-[10px] g p-4 animate-pop-in">
+        <div className="bg-[#252525] rounded-xl p-4 shadow-inner">
           <div className="flex justify-between mb-3">
             <span className="text-gray-400">Your Staked</span>
-            <span className="text-white text-shadow">
-              {stakingData.staked} <span className="text-purple-300">PATH</span>
-            </span>
+            <span className="text-[#F5B056]">{stakingData.staked} PATH</span>
           </div>
-          <div className="flex justify-between ">
+          <div className="flex justify-between">
             <span className="text-gray-400">Pending Rewards</span>
-            <span className="text-green-400 text-shadow">
-              {stakingData.rewards} <span className="text-purple-300">PATH</span>
-            </span>
+            <span className="text-green-400">{stakingData.rewards} PATH</span>
           </div>
         </div>
 
-        {/* Input field với validation */}
-        <div className="relative animate-slide-up">
+        {/* Input field with validation */}
+        <div className="relative">
           <input
             type="text"
             value={amount}
             onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-            placeholder= "0.0000"
-            className="w-full bg-gray-800 text-white rounded-[10px] p-3 pr-20 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:opacity-50 transition-all"
+            placeholder="0.0000"
+            className="w-full bg-[#252525] text-white rounded-xl p-3 pr-20 focus:outline-none focus:ring-2 focus:ring-[#F5B056] disabled:opacity-50"
             inputMode="decimal"
             disabled={loading || status.isPaused}
           />
           <span className="absolute right-3 top-3 text-gray-400">PATH</span>
           {parseFloat(amount) > parseFloat(pathBalance) && (
-            <p className="text-red-400 text-sm mt-1 animate-fade-in">Exceeds available balance</p>
+            <p className="text-red-400 text-sm mt-1">Exceeds available balance</p>
           )}
         </div>
 
-        {/* Nhóm nút tương tác */}
+        {/* Button group */}
         <div className="space-y-3">
-          {/* Nút Approve full width */}
           <button
             onClick={handleApprove}
             disabled={loading || status.isPaused}
-            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-[10px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
+            className="w-full bg-[#F5B056] hover:bg-[#d48f3f] text-black p-3 rounded-xl flex items-center justify-center disabled:opacity-50"
             aria-label="Approve PATH token"
           >
             {loading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             ) : (
-              <>
-                <FaCheckCircle className="mr-2" /> Approve
-              </>
+              <><FaCheckCircle className="mr-2" /> Approve</>
             )}
           </button>
 
-          {/* Nhóm Stake/Unstake */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={handleStake}
               disabled={loading || !amount || parseFloat(amount) <= 0 || status.isPaused}
-              className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-[10px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
+              className="bg-[#F5B056] text-black p-3 rounded-xl flex items-center justify-center disabled:opacity-50"
               aria-label="Stake PATH token"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                <>
-                  <FaLock className="mr-2" /> Stake
-                </>
+                <><FaLock className="mr-2" /> Stake</>
               )}
             </button>
 
             <button
               onClick={handleUnstake}
               disabled={loading || !amount || parseFloat(amount) <= 0 || rawStaked.lt(ethers.utils.parseUnits(amount, 18)) || status.isPaused}
-              className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-[10px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
+              className="bg-[#F5B056] text-black p-3 rounded-xl flex items-center justify-center disabled:opacity-50"
               aria-label="Unstake PATH token"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
               ) : (
-                <>
-                  <FaUnlock className="mr-2" /> Unstake
-                </>
+                <><FaUnlock className="mr-2" /> Unstake</>
               )}
             </button>
           </div>
 
-          {/* Nút Claim Rewards */}
           <button
             onClick={handleClaim}
             disabled={loading || parseFloat(stakingData.rewards) <= 0 || status.isPaused}
-            className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-[10px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-95"
+            className="w-full bg-[#F5B056] hover:bg-[#d48f3f] text-black p-3 rounded-xl flex items-center justify-center disabled:opacity-50"
             aria-label="Claim rewards"
           >
             {loading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             ) : (
-              <>
-                <FaGift className="mr-2" /> Claim Rewards
-              </>
+              <><FaGift className="mr-2" /> Claim Rewards</>
             )}
           </button>
         </div>
 
-        {/* Số dư ví */}
-        <div className="text-center text-sm text-gray-400 animate-fade-in">
-          Available in Wallet: <span className="text-purple-300">{pathBalance}</span> PATH
+        <div className="text-center text-sm text-gray-400">
+          Available in Wallet: <span className="text-[#F5B056]">{pathBalance}</span> PATH
         </div>
       </div>
     </div>
