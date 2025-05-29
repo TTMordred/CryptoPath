@@ -2,6 +2,8 @@
 
 **CryptoPath** is a comprehensive blockchain explorer and visualization tool that helps users navigate and understand blockchain transactions, analyze wallet activities, track portfolios, and explore NFT marketplaces across multiple blockchain networks.
 
+Youtube Demo Video ( hopefully the view increases ): https://www.youtube.com/watch?v=G2aUsYP8Ql4
+
 ![CryptoPath Logo](./public/logo.png)
 
 [![Next.js](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
